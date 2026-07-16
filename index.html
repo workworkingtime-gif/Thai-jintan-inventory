@@ -549,6 +549,18 @@ const STOCK_RECOUNTS = [
     items:[
       {flavor:'Hongkong edition',ku:6986},
     ]
+  },
+  // Ji นับสต็อกจริงที่ APEX รอบใหม่ (16 ก.ค. 2026) — Hongkong edition เคลียร์เป็น 0,
+  // Pride ยืนยันเท่าเดิม (1538), Donki ติดลบ (-432) เพราะ APEX เบิกเกินกว่าที่มี
+  {
+    id:'hk_apex_recount_0716',
+    market:'hk', kind:'inner',
+    ref:'Ji นับสต็อกจริงที่ APEX — งานฮ่องกง 16 ก.ค. 2026',
+    items:[
+      {flavor:'Hongkong edition',apex:0},
+      {flavor:'Pride',apex:1538},
+      {flavor:'Donki',apex:-432},
+    ]
   }
 ];
 // item schema: {flavor, apex?, ku?, type? (kr only)} — apex/ku are each optional
