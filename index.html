@@ -228,7 +228,7 @@ const REORDER = {
   KR_INNER:{default:10000}, KR_CARTON:{default:1000}
 };
 const FLAVORS = {
-  HK:['Peppermint','Raspberry','Honey lemon','Melon','Spearmint','Black Spearmint','Grapefruit','Donki','Hongkong edition','Pride'],
+  HK:['Peppermint','Raspberry','Honey lemon','Melon','Black Spearmint','Grapefruit','Donki','Hongkong edition','Pride'],
   SG:['Peppermint','Spearmint','Melon','Honey lemon','Raspberry','Fusion','Pride','Grapefruit','Party'],
   KR:['Peppermint','Spearmint']
 };
@@ -245,9 +245,9 @@ function serialToMs(n){ return n?Date.UTC(1899,11,30)+n*86400000:null; }
 const DEF_HK = [
   {flavor:'Peppermint',apex:610,ku:637},{flavor:'Raspberry',apex:0,ku:3613},
   {flavor:'Honey lemon',apex:1558,ku:875},{flavor:'Melon',apex:634,ku:3823},
-  {flavor:'Spearmint',apex:619,ku:1644},{flavor:'Black Spearmint',apex:0,ku:0},
+  {flavor:'Black Spearmint',apex:379,ku:1644},
   {flavor:'Grapefruit',apex:0,ku:0},{flavor:'Donki',apex:0,ku:0},
-  {flavor:'Hongkong edition',apex:0,ku:4154},{flavor:'Pride',apex:1538,ku:0}
+  {flavor:'Hongkong edition',apex:0,ku:6986},{flavor:'Pride',apex:1538,ku:0}
 ];
 // Outer box (ลังนอก) stock for HK — separate packaging tier from Inner box
 // above, entered manually by Ji via chat (not live-synced). null = "ยังไม่มี
@@ -255,7 +255,7 @@ const DEF_HK = [
 const DEF_HK_OUTER = [
   {flavor:'Peppermint',apex:null,ku:null},{flavor:'Raspberry',apex:19,ku:null},
   {flavor:'Honey lemon',apex:null,ku:null},{flavor:'Melon',apex:27,ku:null},
-  {flavor:'Spearmint',apex:2,ku:null},{flavor:'Black Spearmint',apex:null,ku:null},
+  {flavor:'Black Spearmint',apex:null,ku:null},
   {flavor:'Grapefruit',apex:null,ku:null},{flavor:'Donki',apex:null,ku:null},
   {flavor:'Hongkong edition',apex:null,ku:null},{flavor:'Pride',apex:null,ku:null}
 ];
@@ -539,6 +539,16 @@ const STOCK_RECOUNTS = [
       {flavor:'Donki',ku:0},
       {flavor:'Hongkong edition',ku:0},
     ]
+  },
+  // Ji correction 16 ก.ค. 2026: ยอด Hongkong edition ที่กู๋ตัวจริงคือ 6,986
+  // (ไม่ใช่ 0 อย่างที่อ่านจากตารางรอบก่อน — ดู hk_ku_recount_0715 ด้านบน)
+  {
+    id:'hk_ku_correction_hkedition_0716',
+    market:'hk', kind:'inner',
+    ref:'กู๋ (Chumseang) แก้ไขตัวเลข Hongkong edition — 16 ก.ค. 2026',
+    items:[
+      {flavor:'Hongkong edition',ku:6986},
+    ]
   }
 ];
 // item schema: {flavor, apex?, ku?, type? (kr only)} — apex/ku are each optional
@@ -750,6 +760,19 @@ function applyLoadedState_(d){
   });
   // apply any pending patches / receipts (one-time events, run once each via id)
   let patched = false;
+  // merge "Spearmint" into "Black Spearmint" for HK — Ji confirmed (16 Jul 2026)
+  // these were the same product tracked under two names by mistake, and that
+  // only Black Spearmint's own numbers (apex 379, ku 1644) are the real ones.
+  // Drop the old separate "Spearmint" line entirely (not merged/added into
+  // Black Spearmint's totals) for anyone whose already-synced state still has it.
+  if(D.hk.find(x=>x.flavor==='Spearmint')){
+    D.hk = D.hk.filter(x=>x.flavor!=='Spearmint');
+    patched = true;
+  }
+  if(D.hkOuter.find(x=>x.flavor==='Spearmint')){
+    D.hkOuter = D.hkOuter.filter(x=>x.flavor!=='Spearmint');
+    patched = true;
+  }
   PATCHES.forEach(p=>{
     if(!D.patches_applied.includes(p.id)){ applyPatch(p); D.patches_applied.push(p.id); patched = true; }
   });
