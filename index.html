@@ -1204,16 +1204,26 @@ async function syncSupplierPOs(){
     // first cell is always self-describing: "SJR"/"JRS"/"PPP"/"Thai BB" alone
     // (rest blank) = marker, "Nationality" = header, every other cell in col
     // A blank = blank row, anything else while a vendor is active = its data.
+    const norm = str => String(str||'').replace(/\s+/g,' ').trim().toUpperCase();
     const blocksByVendor = {};
     let currentVendor = null;
     for(let i=0;i<rows.length;i++){
       const row = rows[i]||[];
       if(isBlankRow(row)) continue; // blank rows never carry meaning either way
-      const a = cellStr(row[0]);
-      const restBlank = row.slice(1).every(c=>!cellStr(c));
-      const marker = VENDOR_NAMES.find(v=>v.toUpperCase()===a.toUpperCase());
-      if(marker && restBlank){ currentVendor = marker; continue; } // switch active vendor, skip the marker row itself
-      if(a.toUpperCase()==='NATIONALITY') continue; // header row (every block's header starts with this) — always skip, regardless of position
+      const a = norm(cellStr(row[0]));
+      // Match on column A alone — do NOT also require the rest of the row to
+      // be blank. Requiring that turned out to be the second failure mode
+      // (16 Jul 2026, round 2): a live screenshot showed a Thai BB PO
+      // duplicated under the wrong (previous) vendor's card, which only
+      // happens if the "Thai BB" marker row itself failed to switch
+      // currentVendor — most likely because gviz returned something in
+      // another cell of that row that broke the old "rest must be blank"
+      // check. A vendor code ("SJR"/"JRS"/"PPP"/"Thai BB") is never a real
+      // Nationality value, so matching on column A alone carries no
+      // real risk of misfiring on an actual data row.
+      const marker = VENDOR_NAMES.find(v=>norm(v)===a);
+      if(marker){ currentVendor = marker; continue; } // switch active vendor, skip the marker row itself
+      if(a==='NATIONALITY') continue; // header row (every block's header starts with this) — always skip, regardless of position
       if(!currentVendor) continue; // stray content before the first marker — ignore
       (blocksByVendor[currentVendor] = blocksByVendor[currentVendor] || []).push(row);
     }
@@ -1246,7 +1256,15 @@ async function syncSupplierPOs(){
         const sent = layout.sent!=null ? pickDate(row[layout.sent]) : {ms:null,str:null};
         const exp = pickDate(row[layout.exp]);
         const act = pickDate(row[layout.act]);
-        const entry = D.pos.find(p=>p.po===po && p.vendor===vendorCode);
+        // Match by PO number alone, not po+vendor. PO codes already embed
+        // the vendor abbreviation in the string itself (e.g. "01INT-SJR26/004",
+        // "03INT-TBB26/010"), so they're unique on their own — and matching
+        // this way means even if block-parsing ever mis-tags a row's vendor
+        // for some future gviz quirk we haven't seen yet, it updates the
+        // existing PO instead of silently creating a second copy of it under
+        // the wrong vendor's card (confirmed happened 16 Jul 2026, round 3 —
+        // Thai BB's PO showed up duplicated under a different vendor card).
+        const entry = D.pos.find(p=>p.po===po);
         if(entry){
           // existing PO — sync status fields only, items/product/nat frozen
           if(exp.ms!=null){ entry.expMs = exp.ms; entry.exp = exp.str; }
