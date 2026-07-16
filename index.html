@@ -983,7 +983,7 @@ async function pollGasState(){
 // one the way a human reading the sheet can. A cell that mixes old+new text
 // via color only will show up exactly as typed, colors and all stripped out.
 const SHEET_ID = '117ap7Y6kpBwI34dgxy5jaqvbkzgemdry9Db5WH4e70A';
-const LIVE = { apex:{status:'idle',ts:null}, sg:{status:'idle',ts:null} };
+const LIVE = { apex:{status:'idle',ts:null}, sg:{status:'idle',ts:null}, supplier:{status:'idle',ts:null} };
 function liveBadge(key){
   const s=LIVE[key];
   if(!s || s.status==='idle') return '';
@@ -1128,7 +1128,149 @@ async function syncSingapore(){
 // sum from the sheet and force ku back to 0 on every sync, wiping out
 // manually-entered numbers. Disabled per Ji's request; APEX Orders sync is
 // unaffected.
-function syncAllLive(){ syncApex(); }
+// ─── SUPPLIER PO LIVE SYNC ─────────────────────────────────────────────────
+// (16 Jul 2026, per Ji's request: "then pls make it sync") Reads the
+// "Supplier" tab of the same Google Sheet, which stacks four vendor blocks
+// (SJR / JRS / PPP / Thai BB) in one tab, each starting with a single-cell
+// vendor-name marker row, then a header row, then data rows, separated by
+// blank rows. Scope, confirmed with Ji this session (go with option 3, but
+// with an explicit carve-out she asked for):
+//   - Dates (sent/expected/actual), destination, and remark DO live-sync from
+//     the sheet for POs that already exist in DEF_POS/D.pos — these are
+//     status fields Ji wants to track live, and there's no known conflict.
+//   - Item/quantity breakdowns for POs that ALREADY exist are NEVER touched
+//     by this sync. Those numbers are confirmed with Ji directly in chat
+//     (e.g. SJR PO 04's Donki=3,000 — the sheet's own Remark text still says
+//     "2,500", stale, proven wrong this same session) and must not silently
+//     regress on every sync just because the sheet wasn't updated to match.
+//   - Brand-new POs not yet in DEF_POS auto-appear with everything the sheet
+//     has except items (per Ji: "ขึ้นโชว์อัตโนมัติ (ยังไม่มี items)") — item
+//     breakdowns for those still need to go through chat before being added.
+function normalizeSupplierPO(raw, vendor){
+  let s = String(raw||'').trim();
+  if(!s) return '';
+  if(vendor==='SJR'){
+    // sheet uses short form "PO 01"/"PO 03"/"PO 04" → formal "01INT-SJR26/0NN"
+    const m = /^PO\s*(\d+)$/i.exec(s);
+    if(m) return `01INT-SJR26/${m[1].padStart(3,'0')}`;
+  }
+  // JRS/PPP/Thai BB: strip an optional leading "PO " prefix and any internal
+  // whitespace (Thai BB's sheet has "03 INT-TBB26/010" with a stray space)
+  return s.replace(/^PO\s+/i,'').replace(/\s+/g,'');
+}
+function normalizeSupplierProduct(raw){
+  const s = String(raw||'').trim();
+  if(!s) return '';
+  return /^cartons?$/i.test(s) ? 'Carton' : s;
+}
+// column layout per vendor block, 0-based index into the raw A:H row
+const SUPPLIER_BLOCK_LAYOUT = {
+  'SJR':     {nat:0, product:null, po:2, sent:3,    exp:4, act:5, dest:6, remark:7},
+  'JRS':     {nat:0, product:1,    po:2, sent:null, exp:3, act:4, dest:5, remark:6},
+  'PPP':     {nat:0, product:1,    po:2, sent:null, exp:3, act:4, dest:5, remark:6},
+  'Thai BB': {nat:0, product:1,    po:2, sent:null, exp:3, act:4, dest:5, remark:6},
+};
+async function syncSupplierPOs(){
+  LIVE.supplier.status='loading'; if(TAB==='po') renderMain();
+  try{
+    const resp = await gvizLoad('Supplier', {range:'A1:H60', headers:0});
+    if(!resp || resp.status==='error' || !resp.table) throw new Error('bad response');
+    const rows = resp.table.rows.map(r=>(r.c||[]));
+    const cellStr = c => (c && c.v!=null) ? String(c.v).trim() : '';
+    const isBlankRow = row => row.every(c=>!cellStr(c));
+    const VENDOR_NAMES = ['SJR','JRS','PPP','Thai BB'];
+    // sheet block-marker name -> vendor code actually stored in DEF_POS/D.pos
+    // (Thai BB's marker cell literally says "Thai BB" but every existing
+    // DEF_POS entry for it uses the abbreviated code 'TBB' — without this
+    // mapping, matching by vendor code fails on every sync and a duplicate
+    // "new" PO gets created every single time instead of updating s9)
+    const VENDOR_CODE = {'SJR':'SJR','JRS':'JRS','PPP':'PPP','Thai BB':'TBB'};
+    const blocks = [];
+    let i=0;
+    while(i<rows.length){
+      const row = rows[i]||[];
+      const a = cellStr(row[0]);
+      const restBlank = row.slice(1).every(c=>!cellStr(c));
+      const vendor = VENDOR_NAMES.find(v=>v.toUpperCase()===a.toUpperCase());
+      if(vendor && restBlank){
+        let j = i+2; // skip the marker row itself + the header row right after it
+        const dataRows = [];
+        while(j<rows.length && !isBlankRow(rows[j]||[])){ dataRows.push(rows[j]); j++; }
+        blocks.push({vendor, rows:dataRows});
+        i = j;
+      } else {
+        i++;
+      }
+    }
+    if(!blocks.length) throw new Error('no vendor blocks found — sheet layout changed, keeping last known data');
+    // gviz date cells parse to a real serial number; free-text cells (e.g. Thai
+    // BB's "06.07.2026\n11.07.2026" two-dates-in-one-cell) return null here on
+    // purpose — the caller then just leaves the existing date alone rather
+    // than blanking it out or crashing on the irregular text.
+    const pickDate = c => {
+      if(!c || c.v==null || c.v==='') return {ms:null, str:null};
+      const serial = gvizDateToSerial(c.v);
+      if(serial==null) return {ms:null, str:null};
+      return {ms:xlMs(serial), str:xl(serial)};
+    };
+    const usedIds = new Set(D.pos.map(p=>p.id));
+    let dupeIdx = 1;
+    blocks.forEach(({vendor, rows})=>{
+      const layout = SUPPLIER_BLOCK_LAYOUT[vendor];
+      const vendorCode = VENDOR_CODE[vendor] || vendor;
+      rows.forEach(row=>{
+        const poRaw = cellStr(row[layout.po]);
+        if(!poRaw) return;
+        const po = normalizeSupplierPO(poRaw, vendor);
+        if(!po) return;
+        const nat = cellStr(row[layout.nat]);
+        const product = layout.product!=null ? normalizeSupplierProduct(cellStr(row[layout.product])) : 'Inner box';
+        const dest = cellStr(row[layout.dest]);
+        const remark = cellStr(row[layout.remark]);
+        const sent = layout.sent!=null ? pickDate(row[layout.sent]) : {ms:null,str:null};
+        const exp = pickDate(row[layout.exp]);
+        const act = pickDate(row[layout.act]);
+        const entry = D.pos.find(p=>p.po===po && p.vendor===vendorCode);
+        if(entry){
+          // existing PO — sync status fields only, items/product/nat frozen
+          if(exp.ms!=null){ entry.expMs = exp.ms; entry.exp = exp.str; }
+          if(act.ms!=null){ entry.actMs = act.ms; entry.act = act.str; }
+          if(layout.sent!=null && sent.ms!=null){ entry.sentMs = sent.ms; entry.sent = sent.str; }
+          if(dest) entry.dest = dest;
+          if(remark){
+            // keep the "needs items via chat" flag showing on every subsequent
+            // sync (not just the first one) for as long as items stays empty —
+            // otherwise it silently disappears the next time this runs (every
+            // ~3 min) and Ji would have no visible cue to tell me the breakdown
+            entry.remark = (entry.items&&entry.items.length===0)
+              ? remark+' · [ดึงจากชีตอัตโนมัติ — ยังไม่มีรายการสินค้า รอ confirm ผ่านแชท]'
+              : remark;
+          }
+        } else {
+          // brand-new PO the dashboard doesn't know about yet — auto-add,
+          // no items (needs chat confirmation before quantities go in)
+          let id = 'sync_' + po.toLowerCase().replace(/[^a-z0-9]/g,'');
+          if(usedIds.has(id)) id = id + '_' + (dupeIdx++);
+          usedIds.add(id);
+          D.pos.push({
+            id, vendor:vendorCode, nat: nat||'', product, po,
+            sentMs: sent.ms, sent: sent.str,
+            expMs: exp.ms, exp: exp.str,
+            actMs: act.ms, act: act.str,
+            dest: dest||'', items: [],
+            remark: (remark ? remark+' · ' : '')+'[ดึงจากชีตอัตโนมัติ — ยังไม่มีรายการสินค้า รอ confirm ผ่านแชท]'
+          });
+        }
+      });
+    });
+    LIVE.supplier = {status:'ok', ts:Date.now()};
+  }catch(e){
+    console.warn('Supplier PO live sync failed, keeping last known data:', e);
+    LIVE.supplier.status='error';
+  }
+  if(TAB==='po') renderMain();
+}
+function syncAllLive(){ syncApex(); syncSupplierPOs(); }
 // ─── STOCK STATUS ─────────────────────────────────────────────────────────
 // (9 ก.ค. 2026, ตามที่ Ji ขอ) เดิมเป็น fill bar แบบ % + threshold — Ji อยากได้
 // แค่สถานะง่ายๆ ว่า "มีของ" หรือ "หมด" พอ: หมด = คงเหลือรวม ≤ 0
@@ -1416,7 +1558,7 @@ function pageKR(){
 // ─── PO PAGE ─────────────────────────────────────────────────────────────
 function pagePO(){
   const vendors=[...new Set(D.pos.map(p=>p.vendor))];
-  let html=`<div class="pt">Supplier PO Status</div><div class="ps">SJR (แสงเจริญ) · JRS (จรัสแสง) · PPP (PaperPack) · TBB · YJ (วายเจ)</div>`;
+  let html=`<div class="pt">Supplier PO Status</div><div class="ps">SJR (แสงเจริญ) · JRS (จรัสแสง) · PPP (PaperPack) · TBB · YJ (วายเจ) ${liveBadge('supplier')}</div>`;
   vendors.forEach(v=>{
     const rows=D.pos.filter(p=>p.vendor===v);
     const done=rows.filter(p=>p.act||D.received[p.id]).length;
