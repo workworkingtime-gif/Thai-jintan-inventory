@@ -332,6 +332,24 @@ const SUPPLIER_ADDITIONS = [
       {flavor:'Honey lemon', apexDelta:4102, kuDelta:1898, showQty:3000, note:'แก้ไข: เดิมตัดสต็อกผิด ตอนนี้บวกเข้าสต็อกที่ APEX แทน (สั่งใหม่ ยังไม่รับของจริง)'},
       {flavor:'Donki',       apexDelta:3000, kuDelta:3000, showQty:3000, note:'แก้ไข: เดิมตัดสต็อกผิด ตอนนี้บวกเข้าสต็อกที่ APEX แทน Don Don Donki (สั่งใหม่ ยังไม่รับของจริง)'},
     ]
+  },
+  {
+    // 16 ก.ค. 2026: Ji ยืนยันว่ายอดของ PO นี้ (Peppermint 4,000/Honey lemon 3,000/
+    // Donki 3,000) ยังไม่เคยถูกบวกเข้าสต็อกปัจจุบันจริงๆ แม้ระบบจะมี milestone
+    // บันทึกไว้ว่า "ถึง APEX แล้ว 18 Jul 2026" ก็ตาม — สาเหตุคือการนับสต็อกจริงรอบ
+    // 10 Jul 2026 (hk_apex_inner_recount_0710) เป็นการ "set" ค่า apex ทับตรงๆ
+    // (ไม่ใช่บวกเพิ่ม) ซึ่งเกิดขึ้นก่อนของจาก PO นี้จะมาถึงจริง (18 Jul) เลยเขียน
+    // ทับยอดที่เคยบวกไว้จาก sjr_po04_hk_fix_add_0709 ไปโดยไม่ตั้งใจ ทำให้ของจริง
+    // ที่มาถึงแล้วไม่เคยถูกนับในตัวเลขปัจจุบันเลย — บวกกลับเข้าไปตอนนี้ (apex
+    // เท่านั้น ไม่แตะกู๋ เพราะการนับสต็อกรอบ 10 Jul ก็ไม่ได้แตะกู๋เหมือนกัน)
+    id:'sjr_po04_readd_after_recount_0716',
+    ref:'SJR PO 04 (01INT-SJR26/004)',
+    summary:'บวกสต็อกจริงกลับเข้า APEX รวม 10,000 กล่องใน (Peppermint 4,000 / Honey lemon 3,000 / Donki 3,000) — ยอดนี้เคยถูกบวกไว้ครั้งแรกแล้วแต่โดนเขียนทับไปโดยการนับสต็อกจริงรอบ 10 Jul 2026 ก่อนของจะมาถึง Ji ยืนยัน 16 Jul 2026 ว่ายังไม่เคยถูกบวกจริงในตัวเลขปัจจุบัน',
+    items:[
+      {flavor:'Peppermint',  apexDelta:4000, kuDelta:0, showQty:4000, note:'ของจาก SJR PO 04 ถึง APEX จริงแล้ว (18 Jul 2026) — บวกกลับเข้าสต็อกหลังจากถูกเขียนทับไปโดยการนับสต็อกจริงรอบ 10 Jul 2026'},
+      {flavor:'Honey lemon', apexDelta:3000, kuDelta:0, showQty:3000, note:'ของจาก SJR PO 04 ถึง APEX จริงแล้ว (18 Jul 2026) — บวกกลับเข้าสต็อกหลังจากถูกเขียนทับไปโดยการนับสต็อกจริงรอบ 10 Jul 2026'},
+      {flavor:'Donki',       apexDelta:3000, kuDelta:0, showQty:3000, note:'ของจาก SJR PO 04 ถึง APEX จริงแล้ว (18 Jul 2026) — บวกกลับเข้าสต็อกหลังจากถูกเขียนทับไปโดยการนับสต็อกจริงรอบ 10 Jul 2026'},
+    ]
   }
 ];
 function applySupplierAddition(patch){
@@ -560,6 +578,23 @@ const STOCK_RECOUNTS = [
       {flavor:'Hongkong edition',apex:0},
       {flavor:'Pride',apex:1538},
       {flavor:'Donki',apex:-432},
+    ]
+  },
+  // ⚠️ STOCK_RECOUNTS ทำงานเป็น "set" ทับตรงๆ และ replay หลัง SUPPLIER_ADDITIONS
+  // เสมอ (ลำดับคงที่ใน applyLoadedState_ ไม่ใช่ตามลำดับเวลาจริงที่เพิ่ม entry)
+  // ดังนั้น entry sjr_po04_readd_after_recount_0716 (SUPPLIER_ADDITIONS ด้านบน)
+  // ที่บวก apex เข้าไป จะถูก hk_apex_inner_recount_0710 (ซึ่งมาทีหลังใน array
+  // เดียวกันนี้) เขียนทับกลับเป็นค่าก่อนบวกอยู่ดี ถ้าไม่มี entry นี้ปิดท้าย —
+  // entry นี้ "ยืนยัน" ค่าสุดท้ายที่ถูกต้องหลังรวมยอด PO 04 เข้าไปแล้วจริง
+  // (274+4,000=4,274 / 1,102+3,000=4,102 / -432+3,000=2,568) ให้ค้างอยู่แน่นอน
+  {
+    id:'hk_apex_sjr_po04_credit_0716',
+    market:'hk', kind:'inner',
+    ref:'SJR PO 04 (01INT-SJR26/004) — ยืนยันยอดสุดท้ายหลังบวกของจริงกลับเข้า APEX',
+    items:[
+      {flavor:'Peppermint',apex:4274},
+      {flavor:'Honey lemon',apex:4102},
+      {flavor:'Donki',apex:2568},
     ]
   }
 ];
