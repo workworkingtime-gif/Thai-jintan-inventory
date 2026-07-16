@@ -1192,40 +1192,32 @@ async function syncSupplierPOs(){
     // mapping, matching by vendor code fails on every sync and a duplicate
     // "new" PO gets created every single time instead of updating s9)
     const VENDOR_CODE = {'SJR':'SJR','JRS':'JRS','PPP':'PPP','Thai BB':'TBB'};
-    const blocks = [];
-    let i=0;
-    while(i<rows.length){
+    // Classify every row purely by its OWN content — never by its position or
+    // distance from another row. Earlier versions skipped a fixed "marker+1"
+    // or "marker+2" offset to land on data rows, which broke against the real
+    // gviz response in more than one way (blank-row gaps not always present,
+    // and even when a next-vendor marker WAS used as a stop condition, a
+    // header row could still slip through and get read as data — confirmed
+    // 16 Jul 2026 from a live screenshot showing a bogus po="NO." row and,
+    // separately, a bogus row inside the Thai BB group with product="Product"
+    // / nat="Nationality" literally being the header text itself). A row's
+    // first cell is always self-describing: "SJR"/"JRS"/"PPP"/"Thai BB" alone
+    // (rest blank) = marker, "Nationality" = header, every other cell in col
+    // A blank = blank row, anything else while a vendor is active = its data.
+    const blocksByVendor = {};
+    let currentVendor = null;
+    for(let i=0;i<rows.length;i++){
       const row = rows[i]||[];
+      if(isBlankRow(row)) continue; // blank rows never carry meaning either way
       const a = cellStr(row[0]);
       const restBlank = row.slice(1).every(c=>!cellStr(c));
-      const vendor = VENDOR_NAMES.find(v=>v.toUpperCase()===a.toUpperCase());
-      if(vendor && restBlank){
-        let j = i+2; // skip the marker row itself + the header row right after it
-        const dataRows = [];
-        // Stop consuming data rows at EITHER a genuinely blank row OR the next
-        // vendor's marker row — whichever comes first. Relying on blank rows
-        // alone is not safe: the live gviz endpoint does not reliably return
-        // placeholder objects for fully-empty rows the way a naive mock does,
-        // so without this second stop condition a block can silently swallow
-        // the next vendor's marker+header rows as if they were its own data
-        // (confirmed 16 Jul 2026 — this corrupted the live PO tracker: it
-        // created a bogus "NO." PO entry and mis-mapped JRS/PPP/Thai BB dates
-        // under the wrong vendor's column layout).
-        while(j<rows.length){
-          const rj = rows[j]||[];
-          if(isBlankRow(rj)) break;
-          const aj = cellStr(rj[0]);
-          const rjRestBlank = rj.slice(1).every(c=>!cellStr(c));
-          const isNextMarker = rjRestBlank && VENDOR_NAMES.some(v=>v.toUpperCase()===aj.toUpperCase());
-          if(isNextMarker) break;
-          dataRows.push(rj); j++;
-        }
-        blocks.push({vendor, rows:dataRows});
-        i = j;
-      } else {
-        i++;
-      }
+      const marker = VENDOR_NAMES.find(v=>v.toUpperCase()===a.toUpperCase());
+      if(marker && restBlank){ currentVendor = marker; continue; } // switch active vendor, skip the marker row itself
+      if(a.toUpperCase()==='NATIONALITY') continue; // header row (every block's header starts with this) — always skip, regardless of position
+      if(!currentVendor) continue; // stray content before the first marker — ignore
+      (blocksByVendor[currentVendor] = blocksByVendor[currentVendor] || []).push(row);
     }
+    const blocks = Object.keys(blocksByVendor).map(vendor=>({vendor, rows:blocksByVendor[vendor]}));
     if(!blocks.length) throw new Error('no vendor blocks found — sheet layout changed, keeping last known data');
     // gviz date cells parse to a real serial number; free-text cells (e.g. Thai
     // BB's "06.07.2026\n11.07.2026" two-dates-in-one-cell) return null here on
