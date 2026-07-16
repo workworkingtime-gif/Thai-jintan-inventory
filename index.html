@@ -1202,7 +1202,24 @@ async function syncSupplierPOs(){
       if(vendor && restBlank){
         let j = i+2; // skip the marker row itself + the header row right after it
         const dataRows = [];
-        while(j<rows.length && !isBlankRow(rows[j]||[])){ dataRows.push(rows[j]); j++; }
+        // Stop consuming data rows at EITHER a genuinely blank row OR the next
+        // vendor's marker row — whichever comes first. Relying on blank rows
+        // alone is not safe: the live gviz endpoint does not reliably return
+        // placeholder objects for fully-empty rows the way a naive mock does,
+        // so without this second stop condition a block can silently swallow
+        // the next vendor's marker+header rows as if they were its own data
+        // (confirmed 16 Jul 2026 — this corrupted the live PO tracker: it
+        // created a bogus "NO." PO entry and mis-mapped JRS/PPP/Thai BB dates
+        // under the wrong vendor's column layout).
+        while(j<rows.length){
+          const rj = rows[j]||[];
+          if(isBlankRow(rj)) break;
+          const aj = cellStr(rj[0]);
+          const rjRestBlank = rj.slice(1).every(c=>!cellStr(c));
+          const isNextMarker = rjRestBlank && VENDOR_NAMES.some(v=>v.toUpperCase()===aj.toUpperCase());
+          if(isNextMarker) break;
+          dataRows.push(rj); j++;
+        }
         blocks.push({vendor, rows:dataRows});
         i = j;
       } else {
