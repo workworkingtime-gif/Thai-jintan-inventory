@@ -643,6 +643,13 @@ const DEF_POS = [
   {id:'s11',vendor:'YJ',nat:'France',product:'สติ๊กเกอร์ฮาลาล',po:'01INT-YJ26/001',sentMs:xlMs(46104),sent:xl(46104),expMs:null,exp:null,actMs:null,act:null,dest:'Thai Jintan',items:[],remark:'Sticker Halal · 960.00 บาท (exc.Vat) · PIC: Jidapa P. · ยังไม่ทราบวันรับของจริง'},
   {id:'s12',vendor:'YJ',nat:'Italy',product:'สติ๊กเกอร์ฮาลาล',po:'01INT-YJ26/002',sentMs:xlMs(46191),sent:xl(46191),expMs:null,exp:null,actMs:null,act:null,dest:'Thai Jintan',items:[],remark:'Sticker Halal · 960.00 บาท (exc.Vat) · PIC: Amonrat S. · ยังไม่ทราบวันรับของจริง'},
   {id:'s13',vendor:'JRS',nat:'KR',product:'Inner box',po:'01INT-JP26/002',sentMs:xlMs(46071),sent:xl(46071),expMs:null,exp:null,actMs:null,act:null,dest:'Apex',items:[{f:'Peppermint',q:33600}],remark:'กล่อง Duo Burster + Pertition ด้านใน Peppermint 33,600 ชิ้น · 134,400.00 บาท (exc.Vat) · PIC: Jidapa P. · ยังไม่ทราบวันรับของจริง'},
+  // s14 — เพิ่ม 16 Jul 2026 ตามที่ Ji ขอ ("Brand new PO you can add in the link
+  // for me to make it match") หลังระบบ Supplier PO sync เจอ PO นี้ในชีตแล้ว
+  // auto-show แบบไม่มี items ตามที่ตกลงไว้ — จำนวนด้านล่างดึงมาจาก remark ของ
+  // ชีตจริง ("Peppermint 1000 Spearmint 500") ยืนยันแล้วว่าตรงกับชีต ตอนนี้ที่
+  // ใส่ items ให้แล้ว รายการนี้จะกลายเป็น "PO ที่มีอยู่แล้ว" — sync ครั้งต่อไปจะ
+  // อัปเดตแค่วันที่/สถานะ ไม่แตะ items นี้อีก (เหมือน PO อื่นๆ ทั้งหมด)
+  {id:'s14',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/007',sentMs:null,sent:null,expMs:Date.UTC(2026,6,23),exp:'23 Jul 2026',actMs:Date.UTC(2026,6,23),act:'23 Jul 2026',dest:'Thai Jintan',items:[{f:'Peppermint',q:1000},{f:'Spearmint',q:500}],remark:'กล่องลัง USA; Peppermint 1000 Spearmint 500'},
 ];
 // Each APEX PO row stores raw Excel-serial day numbers (…D) for clean single dates,
 // plus free-text fallbacks (…Text) for cells that contain multiple/irregular dates
