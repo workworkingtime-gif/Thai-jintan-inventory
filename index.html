@@ -1555,25 +1555,50 @@ const KU_PENDING = {
   SG: 'ตัวเลขฝั่ง APEX เพิ่งอัปเดตจากการนับสต็อกจริง (10 Jul 2026) — ตัวเลขฝั่ง กู๋ ยังเป็นค่าเดิม รอ Ji แจ้งอัปเดตอีกที',
 };
 // ─── HK / SG PAGE ────────────────────────────────────────────────────────
+// รวมจำนวนที่ "กำลังจะมา" ต่อรสชาติ จาก Supplier PO tracker (`D.pos`) — เฉพาะ PO
+// ที่ (1) ปลายทางเป็น APEX จริงๆ (ของที่ส่ง Thai Jintan/Customer ตรงไม่นับ เพราะ
+// ไม่เข้าสต็อก apex ของหน้านี้) (2) ยังไม่ถูกรับ (`!p.act`) (3) เป็น Inner box
+// (คาร์ตอง/ลังนอกไม่นับในตารางกล่องในนี้) (4) `nat` ตรงกับตลาดนี้ (HK/SG) — ตรงกับ
+// ที่ Ji ขอ 17 ก.ค. 2026: "show the current remaining that if we plus the PO
+// that we order how much it will be" กรณี PO04 (ยังรออยู่หลังดึงเครดิตกลับ) จะขึ้น
+// เป็นตัวเลข "กำลังจะมา" ตรงนี้แทน ให้เห็นว่าถ้าของมาจริงจะรวมเป็นเท่าไหร่ โดยไม่ไป
+// แตะยอด apex ปัจจุบันเลย (แค่แสดงผลบวกล่วงหน้าเฉยๆ)
+function incomingByFlavor(marketKey){
+  const map = {};
+  D.pos.forEach(p=>{
+    if(p.nat!==marketKey) return;
+    if(String(p.dest||'').toUpperCase()!=='APEX') return;
+    if(p.act) return; // already received — already counted in current apex, not "incoming" anymore
+    if(p.product && p.product!=='Inner box') return;
+    (p.items||[]).forEach(it=>{ map[it.f] = (map[it.f]||0) + (it.q||0); });
+  });
+  return map;
+}
 function pageMarket(mktId, title, sub, data, key){
   const thr = key==='HK'?REORDER.HK:REORDER.SG;
   const low = data.filter(r=>(r.apex+r.ku)<(thr[r.flavor]||thr.default));
+  const incoming = incomingByFlavor(key);
   let html = `<div class="pt">${title}</div><div class="ps">${sub}</div>`;
   if(KU_PENDING[key]) html+=`<div style="background:#eef6fb;border-left:4px solid #17a2b8;padding:10px 16px;border-radius:0 8px 8px 0;margin-bottom:14px;font-size:13px;color:#0c5464">⏳ ${KU_PENDING[key]}</div>`;
   if(low.length) html+=`<div style="background:#fff3cd;border-left:4px solid #ffc107;padding:10px 16px;border-radius:0 8px 8px 0;margin-bottom:14px;font-size:13px;color:#856404">⚠ ต้องเติม: <strong>${low.map(r=>r.flavor).join(', ')}</strong></div>`;
   html+=`<div class="card"><div class="card-head" onclick="toggleCard(this)">
       <span class="cht">📦 Inner box (กล่องใน)<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
       <span class="chm">${data.length} รสชาติ<span class="chev">▾</span></span></div>
-    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด</div>
-    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>กู๋</th><th>คงเหลือรวม</th><th>สถานะ</th></tr></thead><tbody>`;
+    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด · "กำลังจะมา" คือยอดจาก Supplier PO ที่สั่งแล้วแต่ยังไม่ได้รับ (ไม่รวมในคงเหลือรวมจนกว่าจะยืนยันรับของจริง)</div>
+    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>กู๋</th><th>คงเหลือรวม</th><th>กำลังจะมา</th><th>รวมคาดการณ์</th><th>สถานะ</th></tr></thead><tbody>`;
   data.forEach(r=>{
     const total = (r.apex||0)+(r.ku||0);
+    const inc = incoming[r.flavor]||0;
+    const projected = total+inc;
     const nc = total>0?'np':total<0?'nn':'nz';
+    const pnc = projected>0?'np':projected<0?'nn':'nz';
     html+=`<tr onclick="showMktSheet(this,${JSON.stringify({...r,mktId,key}).replace(/"/g,'&quot;')})">
       <td><strong>${r.flavor}</strong></td>
       <td class="n">${fD(r.apex)}</td>
       <td class="n">${f(r.ku)}</td>
       <td class="n ${nc}">${f(total)}</td>
+      <td class="n" style="${inc?'color:#0d6efd;font-weight:600':'color:#b7c0c8'}">${inc?'+'+f(inc):'—'}</td>
+      <td class="n ${pnc}" style="${inc?'font-weight:700':''}">${f(projected)}</td>
       <td>${stockStatus(total)}</td>
     </tr>`;
   });
