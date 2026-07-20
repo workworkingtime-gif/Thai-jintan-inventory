@@ -1731,20 +1731,13 @@ function apexPoSortKey(p){
   const m = /PO\s*(\d+)/.exec(p.apexPO||'');
   return m ? parseInt(m[1]) : -1;
 }
-function pageAPEX(){
-  let html=`<div class="pt">APEX PO Order Log</div><div class="ps">ประวัติ Order ทั้งหมดที่ส่งให้ APEX (เรียงเลข PO ใหม่สุด→เก่าสุด) ${liveBadge('apex')}</div>
-  <div class="card"><div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด</div><div class="tw"><table><thead><tr>
-    <th>Nat.</th><th>APEX PO</th><th>Customer PO / INV</th><th>ส่ง PO</th><th>Expected</th><th>Actual</th><th>Status</th><th>Remark</th>
-  </tr></thead><tbody>`;
-  const sortedApexPos = [...APEX_POS].sort((a,b)=>apexPoSortKey(b)-apexPoSortKey(a));
-  sortedApexPos.forEach(p=>{
-    const actStr=apexDate(p,'act');
-    const done=!!actStr;
-    const nc={KR:'nkr',HK:'nhk',USA:'nusa'}[p.nat]||'';
-    // Status badge เหมือนหน้า Supplier PO — บอกชัดๆ ว่ามาถึงแล้วหรือยังรออยู่
-    // (Ji ขอ 20 Jul 2026 เพราะหน้านี้เดิมดูออกยากว่ารับแล้วรึยัง)
-    const statusBadge = done?'<span class="badge bg">✓ มาแล้ว</span>':'<span class="badge bb">⏳ รออยู่</span>';
-    html+=`<tr onclick="showAPEXSheet(this,${JSON.stringify(p).replace(/"/g,'&quot;')})">
+// สร้างแถวเดียวของตาราง APEX PO Order Log — ใช้ร่วมกันทั้ง 2 ส่วน (ยังไม่มา/มาแล้ว)
+function apexRow(p){
+  const actStr=apexDate(p,'act');
+  const done=!!actStr;
+  const nc={KR:'nkr',HK:'nhk',USA:'nusa'}[p.nat]||'';
+  const statusBadge = done?'<span class="badge bg">✓ มาแล้ว</span>':'<span class="badge bb">⏳ รออยู่</span>';
+  return `<tr onclick="showAPEXSheet(this,${JSON.stringify(p).replace(/"/g,'&quot;')})">
       <td><span class="nat ${nc}">${p.nat}</span></td>
       <td style="font-weight:600">${p.apexPO}</td>
       <td style="font-size:12px">${p.custPO||'—'}<br><span style="color:#8fa3b0">${p.inv||''}</span></td>
@@ -1754,8 +1747,37 @@ function pageAPEX(){
       <td style="white-space:nowrap">${statusBadge}</td>
       <td style="white-space:nowrap">${p.remark?`<span title="${String(p.remark).replace(/"/g,'&quot;')}" style="cursor:help">📝</span>`:''}</td>
     </tr>`;
-  });
-  html+=`</tbody></table></div></div></div>`;
+}
+// (20 Jul 2026, ตามที่ Ji ขอ) แยกตาราง APEX PO Order Log เป็น 2 ส่วนชัดเจน —
+// "ยังไม่มา" (rออยู่) กับ "มาแล้ว รับไปแล้ว" — แทนที่จะรวมกันเป็นตารางยาวเดียว
+// หาของที่ยังต้องติดตามยากเพราะปนกับของเก่าที่จบไปแล้ว ส่วน "มาแล้ว" พับเก็บ
+// ไว้ก่อนโดย default (ประวัติเก่า ไม่ต้องดูบ่อย) กดขยายดูได้
+function pageAPEX(){
+  const THEAD = `<thead><tr>
+    <th>Nat.</th><th>APEX PO</th><th>Customer PO / INV</th><th>ส่ง PO</th><th>Expected</th><th>Actual</th><th>Status</th><th>Remark</th>
+  </tr></thead>`;
+  const sortedApexPos = [...APEX_POS].sort((a,b)=>apexPoSortKey(b)-apexPoSortKey(a));
+  const pending = sortedApexPos.filter(p=>!apexDate(p,'act'));
+  const arrived = sortedApexPos.filter(p=>!!apexDate(p,'act'));
+  let html=`<div class="pt">APEX PO Order Log</div><div class="ps">ประวัติ Order ทั้งหมดที่ส่งให้ APEX (เรียงเลข PO ใหม่สุด→เก่าสุด) ${liveBadge('apex')}</div>
+  <div class="card">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="cht">⏳&nbsp;&nbsp;ยังไม่มา<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
+      <span class="chm">${pending.length} รายการ<span class="chev">▾</span></span>
+    </div>
+    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด</div><div class="tw"><table>${THEAD}<tbody>
+      ${pending.length?pending.map(apexRow).join(''):'<tr><td colspan="8" style="text-align:center;color:#8fa3b0;padding:20px">ไม่มีรายการที่ยังไม่มา — ครบทุก PO แล้ว 🎉</td></tr>'}
+    </tbody></table></div></div>
+  </div>
+  <div class="card">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="cht">✓&nbsp;&nbsp;มาแล้ว / รับไปแล้ว<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
+      <span class="chm">${arrived.length} รายการ<span class="chev closed">▾</span></span>
+    </div>
+    <div class="card-body collapsed"><div class="hint">คลิกแถวเพื่อดูรายละเอียด</div><div class="tw"><table>${THEAD}<tbody>
+      ${arrived.length?arrived.map(apexRow).join(''):'<tr><td colspan="8" style="text-align:center;color:#8fa3b0;padding:20px">ยังไม่มีรายการที่รับแล้ว</td></tr>'}
+    </tbody></table></div></div>
+  </div>`;
   return html;
 }
 // ─── CALENDAR ─────────────────────────────────────────────────────────────
