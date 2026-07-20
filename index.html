@@ -322,11 +322,11 @@ function applyPatch(patch){
 const SUPPLIER_ADDITIONS = [
   {
     // แก้ไขผลของ sjr_po04_hk_2607 ด้านบน (ซึ่งตัดสต็อกผิดไปแล้ว) ให้ลงเอยถูกต้อง:
-    // apexDelta/kuDelta คำนวณให้ตอนจบ กู๋ กลับไปเท่าค่าก่อนหน้า (ไม่โดนแตะ) และ
+    // apexDelta/kuDelta คำนวณให้ตอนจบ Thai Jintan กลับไปเท่าค่าก่อนหน้า (ไม่โดนแตะ) และ
     // apex ได้ +4,000/+3,000/+3,000 ตามจำนวนที่สั่งจริงเพิ่มเข้าไปเต็มจำนวน
     id:'sjr_po04_hk_fix_add_0709',
     ref:'SJR PO 04 (01INT-SJR26/004)',
-    summary:'แก้ไขตรรกะ: PO ที่สั่งกับซัพพลายเออร์ต้องบวกเข้าสต็อก ไม่ใช่หักออก — บวกกลับเข้าที่ APEX รวม 10,000 กล่องใน (Peppermint 4,000 / Honey lemon 3,000 / Donki 3,000) แล้วคืนกู๋กลับเป็นค่าก่อนหน้า',
+    summary:'แก้ไขตรรกะ: PO ที่สั่งกับซัพพลายเออร์ต้องบวกเข้าสต็อก ไม่ใช่หักออก — บวกกลับเข้าที่ APEX รวม 10,000 กล่องใน (Peppermint 4,000 / Honey lemon 3,000 / Donki 3,000) แล้วคืนThai Jintanกลับเป็นค่าก่อนหน้า',
     items:[
       {flavor:'Peppermint',  apexDelta:4274, kuDelta:3726, showQty:4000, note:'แก้ไข: เดิมตัดสต็อกผิด ตอนนี้บวกเข้าสต็อกที่ APEX แทน (สั่งใหม่ ยังไม่รับของจริง)'},
       {flavor:'Honey lemon', apexDelta:4102, kuDelta:1898, showQty:3000, note:'แก้ไข: เดิมตัดสต็อกผิด ตอนนี้บวกเข้าสต็อกที่ APEX แทน (สั่งใหม่ ยังไม่รับของจริง)'},
@@ -341,7 +341,7 @@ const SUPPLIER_ADDITIONS = [
     // (ไม่ใช่บวกเพิ่ม) ซึ่งเกิดขึ้นก่อนของจาก PO นี้จะมาถึงจริง (18 Jul) เลยเขียน
     // ทับยอดที่เคยบวกไว้จาก sjr_po04_hk_fix_add_0709 ไปโดยไม่ตั้งใจ ทำให้ของจริง
     // ที่มาถึงแล้วไม่เคยถูกนับในตัวเลขปัจจุบันเลย — บวกกลับเข้าไปตอนนี้ (apex
-    // เท่านั้น ไม่แตะกู๋ เพราะการนับสต็อกรอบ 10 Jul ก็ไม่ได้แตะกู๋เหมือนกัน)
+    // เท่านั้น ไม่แตะThai Jintan เพราะการนับสต็อกรอบ 10 Jul ก็ไม่ได้แตะThai Jintanเหมือนกัน)
     id:'sjr_po04_readd_after_recount_0716',
     ref:'SJR PO 04 (01INT-SJR26/004)',
     summary:'บวกสต็อกจริงกลับเข้า APEX รวม 10,000 กล่องใน (Peppermint 4,000 / Honey lemon 3,000 / Donki 3,000) — ยอดนี้เคยถูกบวกไว้ครั้งแรกแล้วแต่โดนเขียนทับไปโดยการนับสต็อกจริงรอบ 10 Jul 2026 ก่อนของจะมาถึง Ji ยืนยัน 16 Jul 2026 ว่ายังไม่เคยถูกบวกจริงในตัวเลขปัจจุบัน',
@@ -459,7 +459,7 @@ function applyReceipt(r){
 // (+/-) ผูกกับ PO เฉพาะใบ — อันนี้คือ Ji นับสต็อกจริงที่ APEX แล้วบอกตัวเลขที่
 // "ควรจะเป็น" ตรงๆ (ไม่ผูกกับ PO ใบไหนโดยเฉพาะ) จึง "set" ค่า apex ทับไปเลย
 // ไม่ใช่ "add/subtract" — ใช้เมื่อ Ji ทำสต็อกเทค (stocktake) จริง ไม่ใช่เหตุการณ์
-// ตัด/บวกจาก PO ตามปกติ — ไม่แตะ กู๋ (ku) เลย เพราะ Ji ยังไม่ได้บอกตัวเลขฝั่งนั้น
+// ตัด/บวกจาก PO ตามปกติ — ไม่แตะ Thai Jintan (ku) เลย เพราะ Ji ยังไม่ได้บอกตัวเลขฝั่งนั้น
 const STOCK_RECOUNTS = [
   {
     id:'hk_apex_inner_recount_0710',
@@ -540,13 +540,13 @@ const STOCK_RECOUNTS = [
       {flavor:'Pride',apex:0},
     ]
   },
-  // Ji ส่งตาราง "สต็อคที่เหลืออยู่บริษัทฯ" จากกู๋ (Chumseang) งานฮ่องกง 15 ก.ค. 2026
+  // Ji ส่งตาราง "สต็อคที่เหลืออยู่บริษัทฯ" จากThai Jintan (Chumseang) งานฮ่องกง 15 ก.ค. 2026
   // — ยืนยันแล้วว่าคอลัมน์นี้ (ไม่ใช่คอลัมน์ "สรุปรวมของเหลือที่มีใช้ได้อีก" ซึ่งรวม
-  // ของที่ยังไม่มาถึงด้วย) คือยอดที่กู๋มีอยู่จริงตอนนี้ ช่องว่าง = 0 (ไม่มีของเหลือ)
+  // ของที่ยังไม่มาถึงด้วย) คือยอดที่Thai Jintanมีอยู่จริงตอนนี้ ช่องว่าง = 0 (ไม่มีของเหลือ)
   {
     id:'hk_ku_recount_0715',
     market:'hk', kind:'inner',
-    ref:'กู๋ (Chumseang) นับสต็อกจริง — งานฮ่องกง 15 ก.ค. 2026',
+    ref:'Thai Jintan (Chumseang) นับสต็อกจริง — งานฮ่องกง 15 ก.ค. 2026',
     items:[
       {flavor:'Peppermint',ku:637},
       {flavor:'Raspberry',ku:3613},
@@ -558,12 +558,12 @@ const STOCK_RECOUNTS = [
       {flavor:'Hongkong edition',ku:0},
     ]
   },
-  // Ji correction 16 ก.ค. 2026: ยอด Hongkong edition ที่กู๋ตัวจริงคือ 6,986
+  // Ji correction 16 ก.ค. 2026: ยอด Hongkong edition ที่Thai Jintanตัวจริงคือ 6,986
   // (ไม่ใช่ 0 อย่างที่อ่านจากตารางรอบก่อน — ดู hk_ku_recount_0715 ด้านบน)
   {
     id:'hk_ku_correction_hkedition_0716',
     market:'hk', kind:'inner',
-    ref:'กู๋ (Chumseang) แก้ไขตัวเลข Hongkong edition — 16 ก.ค. 2026',
+    ref:'Thai Jintan (Chumseang) แก้ไขตัวเลข Hongkong edition — 16 ก.ค. 2026',
     items:[
       {flavor:'Hongkong edition',ku:6986},
     ]
@@ -630,8 +630,8 @@ const STOCK_RECOUNTS = [
   }
 ];
 // item schema: {flavor, apex?, ku?, type? (kr only)} — apex/ku are each optional
-// so one entry can set just one side (e.g. a กู๋-only recount that doesn't
-// touch apex, or the original APEX-only recounts that don't touch กู๋)
+// so one entry can set just one side (e.g. a Thai Jintan-only recount that doesn't
+// touch apex, or the original APEX-only recounts that don't touch Thai Jintan)
 function applyStockRecount(r){
   r.items.forEach(it=>{
     let arr, item;
@@ -649,14 +649,14 @@ function applyStockRecount(r){
       item.apex = it.apex;
       const diff = it.apex - (before||0);
       const deltaStr = diff===0 ? '' : (diff>0?`+${f(diff)}`:`${f(diff)}`);
-      logAudit('stock_update', it.flavor, r.ref, deltaStr, before, it.apex, 'นับสต็อกจริงที่ APEX — แทนที่ค่าเดิมด้วยตัวเลขนับจริง (ไม่แตะ กู๋)', scope);
+      logAudit('stock_update', it.flavor, r.ref, deltaStr, before, it.apex, 'นับสต็อกจริงที่ APEX — แทนที่ค่าเดิมด้วยตัวเลขนับจริง (ไม่แตะ Thai Jintan)', scope);
     }
     if(it.ku!==undefined){
       const before = item.ku;
       item.ku = it.ku;
       const diff = it.ku - (before||0);
       const deltaStr = diff===0 ? '' : (diff>0?`+${f(diff)}`:`${f(diff)}`);
-      logAudit('stock_update', it.flavor, r.ref, deltaStr, before, it.ku, 'นับสต็อกจริงที่กู๋ — แทนที่ค่าเดิมด้วยตัวเลขนับจริง (ไม่แตะ APEX)', scope);
+      logAudit('stock_update', it.flavor, r.ref, deltaStr, before, it.ku, 'นับสต็อกจริงที่Thai Jintan — แทนที่ค่าเดิมด้วยตัวเลขนับจริง (ไม่แตะ APEX)', scope);
     }
   });
 }
@@ -667,7 +667,7 @@ const DEF_POS = [
   {id:'s4',vendor:'JRS',nat:'KR',product:'Inner box',po:'01INT-JP26/003',sentMs:xlMs(46177),sent:xl(46177),expMs:xlMs(46199),exp:xl(46199),actMs:xlMs(46204),act:xl(46204),dest:'Apex',items:[{f:'Peppermint',q:20800}],remark:'งาน Anpanman · กล่อง Duo Burster + Pertition ด้านใน Peppermint 20,800 ชิ้น · 81,120.00 บาท (exc.Vat) · PIC: Jidapa P.'},
   {id:'s5',vendor:'JRS',nat:'KR',product:'Inner box',po:'01INT-JP26/004',sentMs:xlMs(46195),sent:xl(46195),expMs:xlMs(46209),exp:xl(46209),actMs:xlMs(46205),act:xl(46205),dest:'Apex',items:[{f:'Spearmint',q:20800}],remark:'งาน Spearmint · รับจริง 20,800 ชิ้น (คาด 20,900 ขาด 100)'},
   {id:'s6',vendor:'PPP',nat:'KR',product:'Carton',po:'01INT-PPP26/004R1',sentMs:xlMs(46175),sent:xl(46175),expMs:xlMs(46202),exp:xl(46202),actMs:xlMs(46198),act:xl(46198),dest:'APEX',items:[],remark:'งาน Anpanman · 100KG+500KG Normal Capsule'},
-  {id:'s7',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/005',sentMs:xlMs(46191),sent:xl(46191),expMs:xlMs(46226),exp:xl(46226),actMs:Date.UTC(2026,6,17),act:'17 Jul 2026',dest:'Thai Jintan',items:[{f:'Peppermint',q:300},{f:'Spearmint',q:500},{f:'Berries',q:100},{f:'Fusion',q:200},{f:'Honey lemon',q:200},{f:'Melon',q:100}],remark:'ส่งเม็ด 24/6/2026 · รับแล้ว 17 Jul 2026 (เร็วกว่ากำหนด 23 Jul 2026) · USA ไม่มีตารางสต็อกแยกในแดชบอร์ด (Ji ยืนยัน 20 Jul 2026) — มาร์คสถานะ + รายละเอียดไว้ใน Remark เท่านั้น ไม่กระทบตัวเลข apex/กู๋ ของตลาดไหนเลย'},
+  {id:'s7',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/005',sentMs:xlMs(46191),sent:xl(46191),expMs:xlMs(46226),exp:xl(46226),actMs:Date.UTC(2026,6,17),act:'17 Jul 2026',dest:'Thai Jintan',items:[{f:'Peppermint',q:300},{f:'Spearmint',q:500},{f:'Berries',q:100},{f:'Fusion',q:200},{f:'Honey lemon',q:200},{f:'Melon',q:100}],remark:'ส่งเม็ด 24/6/2026 · รับแล้ว 17 Jul 2026 (เร็วกว่ากำหนด 23 Jul 2026) · USA ไม่มีตารางสต็อกแยกในแดชบอร์ด (Ji ยืนยัน 20 Jul 2026) — มาร์คสถานะ + รายละเอียดไว้ใน Remark เท่านั้น ไม่กระทบตัวเลข apex/Thai Jintan ของตลาดไหนเลย'},
   {id:'s8',vendor:'PPP',nat:'KR',product:'Carton',po:'01INT-PPP26/006',sentMs:xlMs(46195),sent:xl(46195),expMs:xlMs(46212),exp:xl(46212),actMs:xlMs(46209),act:xl(46209),dest:'APEX',items:[{f:'Spearmint',q:2005}],remark:'งาน Spearmint · รับจริง 2,005 ใบ (คาด 2,000 เกิน 5) · มาก่อนกำหนด 3 วัน'},
   {id:'s9',vendor:'TBB',nat:'Philippines',product:'Himalaya Lemon',po:'03INT-TBB26/010',sentMs:null,sent:null,expMs:Date.UTC(2026,6,6),exp:'06 Jul 2026',actMs:null,act:'รับแล้ว (Ji ยืนยัน 17 Jul 2026, ไม่ทราบวันที่รับจริง)',dest:'Customer',items:[],remark:'1,000 ctn'},
   {id:'s10',vendor:'SJR',nat:'HK',product:'Inner box',po:'01INT-SJR26/004',sentMs:xlMs(46205),sent:xl(46205),expMs:Date.UTC(2026,6,18),exp:'18 Jul 2026',actMs:Date.UTC(2026,6,18),act:'18 Jul 2026',dest:'Apex',items:[{f:'Peppermint',q:4050},{f:'Honey lemon',q:3050},{f:'Donki',q:3050}],remark:'NUDE Inner box · Donki ใช้ Artwork ใหม่ ต้องส่งไฟล์ยืนยันก่อนพิมพ์ · ปลายทางส่งที่ APEX · ค่าเพลท Donki 2,500 บาท (แยกจากยอดกล่องใน) · มูลค่ารวม 98,440 บาท (รวม VAT) · ✓ ถึง APEX ครบ 18 Jul 2026 — ยอดรับจริง Peppermint 4,050/Honey lemon 3,050/Donki 3,050 (สั่งไว้ 4,000/3,000/3,000 เดิม เกินมารสละ 50 ตามที่ Ji แจ้ง 20 Jul 2026)'},
@@ -680,7 +680,7 @@ const DEF_POS = [
   // ชีตจริง ("Peppermint 1000 Spearmint 500") ยืนยันแล้วว่าตรงกับชีต ตอนนี้ที่
   // ใส่ items ให้แล้ว รายการนี้จะกลายเป็น "PO ที่มีอยู่แล้ว" — sync ครั้งต่อไปจะ
   // อัปเดตแค่วันที่/สถานะ ไม่แตะ items นี้อีก (เหมือน PO อื่นๆ ทั้งหมด)
-  {id:'s14',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/007',sentMs:null,sent:null,expMs:Date.UTC(2026,6,23),exp:'23 Jul 2026',actMs:Date.UTC(2026,6,17),act:'17 Jul 2026',dest:'Thai Jintan',items:[{f:'Peppermint',q:1000},{f:'Spearmint',q:500}],remark:'กล่องลัง USA; Peppermint 1000 Spearmint 500 · รับแล้ว 17 Jul 2026 (เร็วกว่ากำหนด 23 Jul 2026) · USA ไม่มีตารางสต็อกแยกในแดชบอร์ด (Ji ยืนยัน 20 Jul 2026) — มาร์คสถานะ + รายละเอียดไว้ใน Remark เท่านั้น ไม่กระทบตัวเลข apex/กู๋ ของตลาดไหนเลย'},
+  {id:'s14',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/007',sentMs:null,sent:null,expMs:Date.UTC(2026,6,23),exp:'23 Jul 2026',actMs:Date.UTC(2026,6,17),act:'17 Jul 2026',dest:'Thai Jintan',items:[{f:'Peppermint',q:1000},{f:'Spearmint',q:500}],remark:'กล่องลัง USA; Peppermint 1000 Spearmint 500 · รับแล้ว 17 Jul 2026 (เร็วกว่ากำหนด 23 Jul 2026) · USA ไม่มีตารางสต็อกแยกในแดชบอร์ด (Ji ยืนยัน 20 Jul 2026) — มาร์คสถานะ + รายละเอียดไว้ใน Remark เท่านั้น ไม่กระทบตัวเลข apex/Thai Jintan ของตลาดไหนเลย'},
 ];
 // Each APEX PO row stores raw Excel-serial day numbers (…D) for clean single dates,
 // plus free-text fallbacks (…Text) for cells that contain multiple/irregular dates
@@ -1388,7 +1388,7 @@ function stockStatus(v){
 // matching the official Supplier PO code format (01INT-{vendor}26/{digits};
 // TBB's 03INT- exception matches too) — blank when no such code appears
 // (e.g. APEX PO refs like "APEX PO 043" don't follow this format). The
-// Deducted cell now also shows a small "จาก APEX"/"จาก กู๋"/"จาก APEX+กู๋"
+// Deducted cell now also shows a small "จาก APEX"/"จาก Thai Jintan"/"จาก APEX+Thai Jintan"
 // label under the number when `performApexDraw()`'s breakdown note (see
 // round 3) tells us which bucket(s) it came from — parsed from a.note via
 // `deductSourceLabel()`. Entries without that breakdown (old PATCHES,
@@ -1402,8 +1402,8 @@ function extractPoCode(a){
 function deductSourceLabel(note){
   if(!note) return '';
   if(/หักจาก APEX ทั้งหมด/.test(note)) return 'จาก APEX';
-  if(/หักจาก กู๋ทั้งหมด/.test(note)) return 'จาก กู๋';
-  if(/หักจาก APEX[^+]*\+\s*กู๋/.test(note)) return 'จาก APEX+กู๋';
+  if(/หักจาก Thai Jintanทั้งหมด/.test(note)) return 'จาก Thai Jintan';
+  if(/หักจาก APEX[^+]*\+\s*Thai Jintan/.test(note)) return 'จาก APEX+Thai Jintan';
   return '';
 }
 function renderHistoryTable(logs, limit){
@@ -1455,8 +1455,8 @@ function renderMain(){
 function pageStock(){
   const subnav = `<div class="subnav">${STOCK_SUBS.map(s=>`<div class="sub-tab ${STOCK_SUB===s.id?'active':''}" onclick="setStockSub('${s.id}')">${s.label}</div>`).join('')}</div>`;
   let body='';
-  if(STOCK_SUB==='hk') body = pageMarket('hk','🇭🇰 ฮ่องกง — Nude','Inner box · 9 รสชาติ · APEX + กู๋',D.hk,'HK') + pageOuterBox(D.hkOuter,'HK');
-  if(STOCK_SUB==='sg') body = pageMarket('sg','🇸🇬 สิงคโปร์ — Nuke','Inner box · APEX + กู๋ <span class="badge" style="font-size:10px;background:#eef1f5;color:#5a6b78">📝 อัปเดตผ่านแชทเท่านั้น (ไม่ sync อัตโนมัติ)</span>',D.sg,'SG') + pageOuterBox(D.sgOuter,'SG');
+  if(STOCK_SUB==='hk') body = pageMarket('hk','🇭🇰 ฮ่องกง — Nude','Inner box · 9 รสชาติ · APEX + Thai Jintan',D.hk,'HK') + pageOuterBox(D.hkOuter,'HK');
+  if(STOCK_SUB==='sg') body = pageMarket('sg','🇸🇬 สิงคโปร์ — Nuke','Inner box · APEX + Thai Jintan <span class="badge" style="font-size:10px;background:#eef1f5;color:#5a6b78">📝 อัปเดตผ่านแชทเท่านั้น (ไม่ sync อัตโนมัติ)</span>',D.sg,'SG') + pageOuterBox(D.sgOuter,'SG');
   if(STOCK_SUB==='kr') body = pageKR();
   return subnav + body;
 }
@@ -1532,9 +1532,9 @@ function performApexDraw(market, flavor, unit, qty, poRef){
     const innerArr = market==='hk'?D.hk:D.sg;
     const outerArr = market==='hk'?D.hkOuter:D.sgOuter;
     const mktKey = market.toUpperCase();
-    // spend() — หักจาก "ที่ APEX" ก่อนเสมอ ถ้าไม่พอค่อยไหลไปหักต่อที่ "กู๋" (ติดลบได้)
+    // spend() — หักจาก "ที่ APEX" ก่อนเสมอ ถ้าไม่พอค่อยไหลไปหักต่อที่ "Thai Jintan" (ติดลบได้)
     // แล้วคืนข้อความสรุปว่าหักจากที่ไหนไปเท่าไหร่ ก่อน→หลัง ให้เห็นชัดเจน ไม่ใช่แค่
-    // ยอดรวม (Ji ขอ 10 ก.ค. 2026: "หักจาก APEX หรือ กู๋ ตอนนี้รวมเหลือเท่าไหร่")
+    // ยอดรวม (Ji ขอ 10 ก.ค. 2026: "หักจาก APEX หรือ Thai Jintan ตอนนี้รวมเหลือเท่าไหร่")
     const spend=(arr,delta)=>{
       const row=arr.find(x=>x.flavor===flavor);
       if(!row) return null;
@@ -1545,9 +1545,9 @@ function performApexDraw(market, flavor, unit, qty, poRef){
       row.apex=newApex; row.ku=newKu;
       const apexUsed=beforeApex-newApex, kuUsed=beforeKu-newKu;
       let breakdown;
-      if(apexUsed>0 && kuUsed>0) breakdown=`หักจาก APEX ${f(apexUsed)} (${f(beforeApex)}→${f(newApex)}) + กู๋ ${f(kuUsed)} (${f(beforeKu)}→${f(newKu)}) เพราะ APEX ไม่พอ`;
-      else if(apexUsed>0) breakdown=`หักจาก APEX ทั้งหมด (${f(beforeApex)}→${f(newApex)}) · กู๋ไม่กระทบ (${f(newKu)})`;
-      else breakdown=`หักจาก กู๋ทั้งหมด เพราะ APEX ไม่พอ/หมด (${f(beforeApex)}→${f(newApex)}) · กู๋ (${f(beforeKu)}→${f(newKu)})`;
+      if(apexUsed>0 && kuUsed>0) breakdown=`หักจาก APEX ${f(apexUsed)} (${f(beforeApex)}→${f(newApex)}) + Thai Jintan ${f(kuUsed)} (${f(beforeKu)}→${f(newKu)}) เพราะ APEX ไม่พอ`;
+      else if(apexUsed>0) breakdown=`หักจาก APEX ทั้งหมด (${f(beforeApex)}→${f(newApex)}) · Thai Jintanไม่กระทบ (${f(newKu)})`;
+      else breakdown=`หักจาก Thai Jintanทั้งหมด เพราะ APEX ไม่พอ/หมด (${f(beforeApex)}→${f(newApex)}) · Thai Jintan (${f(beforeKu)}→${f(newKu)})`;
       return {beforeTotal, afterTotal:newApex+newKu, breakdown};
     };
     if(cartonQty>0){
@@ -1589,14 +1589,14 @@ function applyApexDraw(d){
 }
 // (10 ก.ค. 2026 ตามที่ Ji ขอ: "@Chumseang I will tell you later but please
 // show it's in the tap on the screen" — ตัวเลขฝั่ง APEX เพิ่งอัปเดตจากการนับ
-// สต็อกจริง แต่ฝั่ง กู๋ (Chumseang) ยังไม่มีตัวเลขใหม่ Ji บอกว่าจะแจ้งทีหลัง —
-// แสดงแบนเนอร์เตือนไว้บนหน้า Stock ของ HK/SG กันสับสนว่าตัวเลข กู๋ ที่เห็นยัง
+// สต็อกจริง แต่ฝั่ง Thai Jintan (Chumseang) ยังไม่มีตัวเลขใหม่ Ji บอกว่าจะแจ้งทีหลัง —
+// แสดงแบนเนอร์เตือนไว้บนหน้า Stock ของ HK/SG กันสับสนว่าตัวเลข Thai Jintan ที่เห็นยัง
 // เป็นค่าเดิม ไม่ใช่ตัวเลขที่นับพร้อมกับ APEX รอบนี้ — ลบ key ออกจาก object นี้
-// เมื่อ Ji ให้ตัวเลข กู๋ ใหม่มาแล้ว (แล้วอัปเดตผ่าน STOCK_RECOUNTS เหมือนกัน)
+// เมื่อ Ji ให้ตัวเลข Thai Jintan ใหม่มาแล้ว (แล้วอัปเดตผ่าน STOCK_RECOUNTS เหมือนกัน)
 const KU_PENDING = {
-  // HK cleared 15 Jul 2026 — Ji sent the real กู๋ headcount for HK (see
+  // HK cleared 15 Jul 2026 — Ji sent the real Thai Jintan headcount for HK (see
   // hk_ku_recount_0715 above), so the pending-banner no longer applies here.
-  SG: 'ตัวเลขฝั่ง APEX เพิ่งอัปเดตจากการนับสต็อกจริง (10 Jul 2026) — ตัวเลขฝั่ง กู๋ ยังเป็นค่าเดิม รอ Ji แจ้งอัปเดตอีกที',
+  SG: 'ตัวเลขฝั่ง APEX เพิ่งอัปเดตจากการนับสต็อกจริง (10 Jul 2026) — ตัวเลขฝั่ง Thai Jintan ยังเป็นค่าเดิม รอ Ji แจ้งอัปเดตอีกที',
 };
 // ─── HK / SG PAGE ────────────────────────────────────────────────────────
 // รวมจำนวนที่ "กำลังจะมา" ต่อรสชาติ จาก Supplier PO tracker (`D.pos`) — เฉพาะ PO
@@ -1629,7 +1629,7 @@ function pageMarket(mktId, title, sub, data, key){
       <span class="cht">📦 Inner box (กล่องใน)<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
       <span class="chm">${data.length} รสชาติ<span class="chev">▾</span></span></div>
     <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด · "กำลังจะมา" คือยอดจาก Supplier PO ที่สั่งแล้วแต่ยังไม่ได้รับ (ไม่รวมในคงเหลือรวมจนกว่าจะยืนยันรับของจริง)</div>
-    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>กู๋</th><th>คงเหลือรวม</th><th>กำลังจะมา</th><th>รวมคาดการณ์</th><th>สถานะ</th></tr></thead><tbody>`;
+    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>Thai Jintan</th><th>คงเหลือรวม</th><th>กำลังจะมา</th><th>รวมคาดการณ์</th><th>สถานะ</th></tr></thead><tbody>`;
   data.forEach(r=>{
     const total = (r.apex||0)+(r.ku||0);
     const inc = incoming[r.flavor]||0;
@@ -2030,7 +2030,7 @@ function showMktSheet(row, r){
       <div style="font-size:11px;color:#8fa3b0;margin-bottom:6px">สถานะสต็อก</div>
       ${stockStatus(total)}</div>
     <div class="s2col">
-      <div class="s2ch"><div>🏭 ที่ APEX</div><div>🏪 ที่ กู๋</div></div>
+      <div class="s2ch"><div>🏭 ที่ APEX</div><div>🏪 ที่ Thai Jintan</div></div>
       <div class="s2row">
         <div class="scol">
           <div class="sr"><span class="srl">สต็อก</span><span class="n ${(r.apex||0)>0?'np':'nz'}">${fD(r.apex)}</span></div>
@@ -2041,7 +2041,7 @@ function showMktSheet(row, r){
       </div>
     </div>
     <div class="stot">
-      <span style="font-size:13px;font-weight:700">คงเหลือรวม (APEX + กู๋)</span>
+      <span style="font-size:13px;font-weight:700">คงเหลือรวม (APEX + Thai Jintan)</span>
       <span class="n ${total>0?'np':total<0?'nn':'nz'}" style="font-size:18px">${f(total)}</span>
     </div>
     <div class="ssect">
@@ -2057,7 +2057,7 @@ function saveStock(mktId, flavor, field, val){
   const old = item[field]||0;
   const newV = parseInt(val)||0;
   item[field]=newV;
-  logAudit('stock_update', flavor, `แก้ไขมือ (${field==='apex'?'ที่ APEX':'ที่ กู๋'})`, newV>old?`+${f(newV-old)}`:`${f(newV-old)}`, old, newV, null, mktId.toUpperCase());
+  logAudit('stock_update', flavor, `แก้ไขมือ (${field==='apex'?'ที่ APEX':'ที่ Thai Jintan'})`, newV>old?`+${f(newV-old)}`:`${f(newV-old)}`, old, newV, null, mktId.toUpperCase());
   saveAll();
   renderMain();
   closeSheet();
@@ -2069,7 +2069,7 @@ function pageOuterBox(data, mktKey){
       <span class="cht">📦 Outer box (ลังนอก)<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
       <span class="chm">${withStock}/${data.length} มีสต็อก<span class="chev">▾</span></span></div>
     <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด/แก้ไข · กรอกเอง ไม่ sync อัตโนมัติ</div>
-    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>กู๋</th><th>คงเหลือรวม</th></tr></thead><tbody>`;
+    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>Thai Jintan</th><th>คงเหลือรวม</th></tr></thead><tbody>`;
   data.forEach(r=>{
     const total=(r.apex||0)+(r.ku||0);
     const nc=total>0?'np':total<0?'nn':'nz';
@@ -2087,7 +2087,7 @@ function showOuterSheet(row, r){
   const total=(r.apex||0)+(r.ku||0);
   const html=`
     <div class="s2col">
-      <div class="s2ch"><div>🏭 ที่ APEX</div><div>🏪 ที่ กู๋</div></div>
+      <div class="s2ch"><div>🏭 ที่ APEX</div><div>🏪 ที่ Thai Jintan</div></div>
       <div class="s2row">
         <div class="scol">
           <div class="sr"><span class="srl">สต็อก</span><span class="n ${(r.apex||0)>0?'np':'nz'}">${fD(r.apex)}</span></div>
@@ -2097,7 +2097,7 @@ function showOuterSheet(row, r){
         </div>
       </div>
     </div>
-    <div class="stot"><span style="font-size:13px;font-weight:700">คงเหลือรวม (APEX + กู๋)</span><span class="n ${total>0?'np':total<0?'nn':'nz'}" style="font-size:18px">${f(total)}</span></div>`;
+    <div class="stot"><span style="font-size:13px;font-weight:700">คงเหลือรวม (APEX + Thai Jintan)</span><span class="n ${total>0?'np':total<0?'nn':'nz'}" style="font-size:18px">${f(total)}</span></div>`;
   openSheet(`${r.flavor} · Outer box · ${r.mktKey}`, html, row);
 }
 function saveOuterStock(mktKey, flavor, field, val){
@@ -2107,7 +2107,7 @@ function saveOuterStock(mktKey, flavor, field, val){
   const old=item[field]||0;
   const newV=parseInt(val)||0;
   item[field]=newV;
-  logAudit('stock_update', flavor, `แก้ไขมือ (${field==='apex'?'ที่ APEX':'ที่ กู๋'})`, newV>old?`+${f(newV-old)}`:`${f(newV-old)}`, old, newV, null, mktKey+'-Outer');
+  logAudit('stock_update', flavor, `แก้ไขมือ (${field==='apex'?'ที่ APEX':'ที่ Thai Jintan'})`, newV>old?`+${f(newV-old)}`:`${f(newV-old)}`, old, newV, null, mktKey+'-Outer');
   saveAll();
   renderMain();
   closeSheet();
