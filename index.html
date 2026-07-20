@@ -1664,10 +1664,16 @@ function pagePO(){
       const nc={KR:'nkr',HK:'nhk',USA:'nusa',SG:'nsg',Philippines:'nph',France:'nfr',Italy:'nit'}[p.nat]||'';
       const actRaw = isDone?(D.received[p.id]?.date||p.act||'—'):'—';
       // ข้อความยาว/มีหมายเหตุ (เช่น "รับแล้ว (Ji ยืนยัน 17 Jul 2026, ไม่ทราบวันที่รับจริง)")
-      // ให้โชว์แค่ label สั้นๆ + ไอคอน 📝 บอกว่ามีรายละเอียดเพิ่ม กดแถวเพื่อดูเต็มๆ ในชีต
+      // ให้ดึงแค่วันที่ (ตัวที่ Ji ยืนยัน) ออกมาโชว์โดดๆ + ไอคอน 📝 ต่อท้ายบอกว่ามีหมายเหตุเพิ่ม
+      // (ไม่โชว์คำว่า "รับแล้ว" ซ้ำ เพราะคอลัมน์ Status มีอยู่แล้ว) กดแถวเพื่อดูรายละเอียดเต็มในชีต
       // — ส่วนวันที่ล้วนๆ (ไม่มีวงเล็บ) โชว์ตรงๆ ได้เลย ไม่ต้องมีไอคอน
       const hasNote = actRaw.includes('(');
-      const actShown = hasNote ? `✓ รับแล้ว <span title="มีหมายเหตุเพิ่มเติม — คลิกแถวเพื่อดู" style="cursor:help">📝</span>` : actRaw;
+      let actShown = actRaw;
+      if(hasNote){
+        const dm = actRaw.match(/\d{1,2}\s+[A-Za-z]{3}\s+\d{4}/);
+        const dateOnly = dm ? dm[0] : actRaw;
+        actShown = `${dateOnly} <span title="มีหมายเหตุเพิ่มเติม — คลิกแถวเพื่อดู" style="cursor:help">📝</span>`;
+      }
       html+=`<tr onclick="showPOSheet(this,${JSON.stringify(p).replace(/"/g,'&quot;')})">
         <td style="font-weight:600;white-space:nowrap">${p.po}</td><td style="white-space:nowrap">${p.product}</td>
         <td style="white-space:nowrap"><span class="nat ${nc}">${p.nat}</span></td>
