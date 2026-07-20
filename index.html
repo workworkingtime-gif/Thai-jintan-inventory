@@ -613,6 +613,20 @@ const STOCK_RECOUNTS = [
       {flavor:'Honey lemon',apex:1102},
       {flavor:'Donki',apex:-432},
     ]
+  },
+  // ✅ Ji ยืนยัน 20 Jul 2026 — ของถึง APEX จริงแล้ว 18 Jul 2026 ยอดรับจริงมากกว่าที่
+  // สั่งไว้ทุกรสชาติ (สั่ง 4,000/3,000/3,000 → รับจริง 4,050/3,050/3,050 เกินมารสละ
+  // 50) entry นี้เครดิตยอดสุดท้ายกลับเข้า APEX ตามที่ Ji คำนวณเอง:
+  // 274+4,050=4,324 / 1,102+3,050=4,152 / -432+3,050=2,618
+  {
+    id:'hk_apex_sjr_po04_final_credit_0720',
+    market:'hk', kind:'inner',
+    ref:'SJR PO 04 (01INT-SJR26/004) — เครดิตยอดรับจริงสุดท้าย (Peppermint/Honey lemon/Donki เกินสั่งรสละ 50) ยืนยันโดย Ji 20 Jul 2026',
+    items:[
+      {flavor:'Peppermint',apex:4324},
+      {flavor:'Honey lemon',apex:4152},
+      {flavor:'Donki',apex:2618},
+    ]
   }
 ];
 // item schema: {flavor, apex?, ku?, type? (kr only)} — apex/ku are each optional
@@ -653,10 +667,10 @@ const DEF_POS = [
   {id:'s4',vendor:'JRS',nat:'KR',product:'Inner box',po:'01INT-JP26/003',sentMs:xlMs(46177),sent:xl(46177),expMs:xlMs(46199),exp:xl(46199),actMs:xlMs(46204),act:xl(46204),dest:'Apex',items:[{f:'Peppermint',q:20800}],remark:'งาน Anpanman · กล่อง Duo Burster + Pertition ด้านใน Peppermint 20,800 ชิ้น · 81,120.00 บาท (exc.Vat) · PIC: Jidapa P.'},
   {id:'s5',vendor:'JRS',nat:'KR',product:'Inner box',po:'01INT-JP26/004',sentMs:xlMs(46195),sent:xl(46195),expMs:xlMs(46209),exp:xl(46209),actMs:xlMs(46205),act:xl(46205),dest:'Apex',items:[{f:'Spearmint',q:20800}],remark:'งาน Spearmint · รับจริง 20,800 ชิ้น (คาด 20,900 ขาด 100)'},
   {id:'s6',vendor:'PPP',nat:'KR',product:'Carton',po:'01INT-PPP26/004R1',sentMs:xlMs(46175),sent:xl(46175),expMs:xlMs(46202),exp:xl(46202),actMs:xlMs(46198),act:xl(46198),dest:'APEX',items:[],remark:'งาน Anpanman · 100KG+500KG Normal Capsule'},
-  {id:'s7',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/005',sentMs:xlMs(46191),sent:xl(46191),expMs:xlMs(46226),exp:xl(46226),actMs:null,act:null,dest:'Thai Jintan',items:[{f:'Peppermint',q:300},{f:'Spearmint',q:500},{f:'Berries',q:100},{f:'Fusion',q:200},{f:'Honey lemon',q:200},{f:'Melon',q:100}],remark:'ส่งเม็ด 24/6/2026'},
+  {id:'s7',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/005',sentMs:xlMs(46191),sent:xl(46191),expMs:xlMs(46226),exp:xl(46226),actMs:Date.UTC(2026,6,17),act:'17 Jul 2026',dest:'Thai Jintan',items:[{f:'Peppermint',q:300},{f:'Spearmint',q:500},{f:'Berries',q:100},{f:'Fusion',q:200},{f:'Honey lemon',q:200},{f:'Melon',q:100}],remark:'ส่งเม็ด 24/6/2026 · รับแล้ว 17 Jul 2026 (เร็วกว่ากำหนด 23 Jul 2026) · USA ไม่มีตารางสต็อกแยกในแดชบอร์ด (Ji ยืนยัน 20 Jul 2026) — มาร์คสถานะ + รายละเอียดไว้ใน Remark เท่านั้น ไม่กระทบตัวเลข apex/กู๋ ของตลาดไหนเลย'},
   {id:'s8',vendor:'PPP',nat:'KR',product:'Carton',po:'01INT-PPP26/006',sentMs:xlMs(46195),sent:xl(46195),expMs:xlMs(46212),exp:xl(46212),actMs:xlMs(46209),act:xl(46209),dest:'APEX',items:[{f:'Spearmint',q:2005}],remark:'งาน Spearmint · รับจริง 2,005 ใบ (คาด 2,000 เกิน 5) · มาก่อนกำหนด 3 วัน'},
   {id:'s9',vendor:'TBB',nat:'Philippines',product:'Himalaya Lemon',po:'03INT-TBB26/010',sentMs:null,sent:null,expMs:Date.UTC(2026,6,6),exp:'06 Jul 2026',actMs:null,act:'รับแล้ว (Ji ยืนยัน 17 Jul 2026, ไม่ทราบวันที่รับจริง)',dest:'Customer',items:[],remark:'1,000 ctn'},
-  {id:'s10',vendor:'SJR',nat:'HK',product:'Inner box',po:'01INT-SJR26/004',sentMs:xlMs(46205),sent:xl(46205),expMs:Date.UTC(2026,6,18),exp:'18 Jul 2026',actMs:null,act:null,dest:'Apex',items:[{f:'Peppermint',q:4000},{f:'Honey lemon',q:3000},{f:'Donki',q:3000}],remark:'NUDE Inner box · Donki ใช้ Artwork ใหม่ ต้องส่งไฟล์ยืนยันก่อนพิมพ์ · ปลายทางส่งที่ APEX · ค่าเพลท Donki 2,500 บาท (แยกจากยอดกล่องใน) · มูลค่ารวม 98,440 บาท (รวม VAT) · นัดส่งถึง APEX 18 Jul 2026 (ยังไม่ถึง ณ 17 Jul 2026 — รอ Ji ยืนยันของจริง)'},
+  {id:'s10',vendor:'SJR',nat:'HK',product:'Inner box',po:'01INT-SJR26/004',sentMs:xlMs(46205),sent:xl(46205),expMs:Date.UTC(2026,6,18),exp:'18 Jul 2026',actMs:Date.UTC(2026,6,18),act:'18 Jul 2026',dest:'Apex',items:[{f:'Peppermint',q:4050},{f:'Honey lemon',q:3050},{f:'Donki',q:3050}],remark:'NUDE Inner box · Donki ใช้ Artwork ใหม่ ต้องส่งไฟล์ยืนยันก่อนพิมพ์ · ปลายทางส่งที่ APEX · ค่าเพลท Donki 2,500 บาท (แยกจากยอดกล่องใน) · มูลค่ารวม 98,440 บาท (รวม VAT) · ✓ ถึง APEX ครบ 18 Jul 2026 — ยอดรับจริง Peppermint 4,050/Honey lemon 3,050/Donki 3,050 (สั่งไว้ 4,000/3,000/3,000 เดิม เกินมารสละ 50 ตามที่ Ji แจ้ง 20 Jul 2026)'},
   {id:'s11',vendor:'YJ',nat:'France',product:'สติ๊กเกอร์ฮาลาล',po:'01INT-YJ26/001',sentMs:xlMs(46104),sent:xl(46104),expMs:null,exp:null,actMs:null,act:'รับแล้ว (Ji ยืนยัน 17 Jul 2026, ไม่ทราบวันที่รับจริง)',dest:'Thai Jintan',items:[],remark:'Sticker Halal · 960.00 บาท (exc.Vat) · PIC: Jidapa P.'},
   {id:'s12',vendor:'YJ',nat:'Italy',product:'สติ๊กเกอร์ฮาลาล',po:'01INT-YJ26/002',sentMs:xlMs(46191),sent:xl(46191),expMs:null,exp:null,actMs:null,act:'รับแล้ว (Ji ยืนยัน 17 Jul 2026, ไม่ทราบวันที่รับจริง)',dest:'Thai Jintan',items:[],remark:'Sticker Halal · 960.00 บาท (exc.Vat) · PIC: Amonrat S.'},
   {id:'s13',vendor:'JRS',nat:'KR',product:'Inner box',po:'01INT-JP26/002',sentMs:xlMs(46071),sent:xl(46071),expMs:null,exp:null,actMs:null,act:'รับแล้ว (Ji ยืนยัน 17 Jul 2026, ไม่ทราบวันที่รับจริง)',dest:'Apex',items:[{f:'Peppermint',q:33600}],remark:'กล่อง Duo Burster + Pertition ด้านใน Peppermint 33,600 ชิ้น · 134,400.00 บาท (exc.Vat) · PIC: Jidapa P.'},
@@ -666,7 +680,7 @@ const DEF_POS = [
   // ชีตจริง ("Peppermint 1000 Spearmint 500") ยืนยันแล้วว่าตรงกับชีต ตอนนี้ที่
   // ใส่ items ให้แล้ว รายการนี้จะกลายเป็น "PO ที่มีอยู่แล้ว" — sync ครั้งต่อไปจะ
   // อัปเดตแค่วันที่/สถานะ ไม่แตะ items นี้อีก (เหมือน PO อื่นๆ ทั้งหมด)
-  {id:'s14',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/007',sentMs:null,sent:null,expMs:Date.UTC(2026,6,23),exp:'23 Jul 2026',actMs:Date.UTC(2026,6,23),act:'23 Jul 2026',dest:'Thai Jintan',items:[{f:'Peppermint',q:1000},{f:'Spearmint',q:500}],remark:'กล่องลัง USA; Peppermint 1000 Spearmint 500'},
+  {id:'s14',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/007',sentMs:null,sent:null,expMs:Date.UTC(2026,6,23),exp:'23 Jul 2026',actMs:Date.UTC(2026,6,17),act:'17 Jul 2026',dest:'Thai Jintan',items:[{f:'Peppermint',q:1000},{f:'Spearmint',q:500}],remark:'กล่องลัง USA; Peppermint 1000 Spearmint 500 · รับแล้ว 17 Jul 2026 (เร็วกว่ากำหนด 23 Jul 2026) · USA ไม่มีตารางสต็อกแยกในแดชบอร์ด (Ji ยืนยัน 20 Jul 2026) — มาร์คสถานะ + รายละเอียดไว้ใน Remark เท่านั้น ไม่กระทบตัวเลข apex/กู๋ ของตลาดไหนเลย'},
 ];
 // Each APEX PO row stores raw Excel-serial day numbers (…D) for clean single dates,
 // plus free-text fallbacks (…Text) for cells that contain multiple/irregular dates
