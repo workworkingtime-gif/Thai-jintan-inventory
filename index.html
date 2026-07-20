@@ -1731,19 +1731,43 @@ function apexPoSortKey(p){
   const m = /PO\s*(\d+)/.exec(p.apexPO||'');
   return m ? parseInt(m[1]) : -1;
 }
+// ดึงวันที่แบบ "D Mon YYYY" (เช่น "16 July 2026", "9 Sep 2026") ออกมาทุกตัวที่
+// เจอในข้อความอิสระ (actText อาจมีหลายวันปนกัน คั่นด้วย comma/newline/"-->") —
+// ใช้เช็คว่า Actual Date ที่มี "ยังไม่ครบ" จริงไหม (20 Jul 2026, ตามที่ Ji ขอ)
+const MONTH_IDX={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+function parseFreeDates(str){
+  const out=[]; const re=/(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})/g; let m;
+  while((m=re.exec(String(str||'')))){
+    const mon=MONTH_IDX[m[2].slice(0,3)];
+    if(mon!=null) out.push(Date.UTC(parseInt(m[3]),mon,parseInt(m[1])));
+  }
+  return out;
+}
+// สถานะ PO — เดิมเช็คแค่ "มี Actual Date ไหม" พอ แต่ถ้า Actual Date เป็นข้อความ
+// รวมหลายรอบส่ง (เช่น PO 016R01 ที่ส่ง Spearmint ไปแล้วแต่ Peppermint ยังไม่ถึง
+// จนกว่าจะ 7-9 Sep) การมีข้อความอยู่ไม่ได้แปลว่า "มาครบแล้ว" จริง — เช็คเพิ่มว่า
+// วันที่ทุกตัวที่ parse ได้ผ่านมาแล้วจริงหรือยัง ถ้ายังมีวันในอนาคตค้างอยู่ ให้
+// ถือว่า "มาบางส่วน" ไม่ใช่ "มาแล้ว" เต็มรูปแบบ (Ji เจอ 20 Jul 2026)
+function apexStatus(p){
+  const actStr=apexDate(p,'act');
+  if(!actStr) return {done:false,partial:false,label:'⏳ รออยู่',cls:'bb'};
+  const dates=parseFreeDates(actStr);
+  if(dates.length && !dates.every(d=>d<=Date.now())) return {done:false,partial:true,label:'🔶 มาบางส่วน',cls:'ba'};
+  return {done:true,partial:false,label:'✓ มาแล้ว',cls:'bg'};
+}
 // สร้างแถวเดียวของตาราง APEX PO Order Log — ใช้ร่วมกันทั้ง 2 ส่วน (ยังไม่มา/มาแล้ว)
 function apexRow(p){
   const actStr=apexDate(p,'act');
-  const done=!!actStr;
+  const st=apexStatus(p);
   const nc={KR:'nkr',HK:'nhk',USA:'nusa'}[p.nat]||'';
-  const statusBadge = done?'<span class="badge bg">✓ มาแล้ว</span>':'<span class="badge bb">⏳ รออยู่</span>';
+  const statusBadge = `<span class="badge ${st.cls}">${st.label}</span>`;
   return `<tr onclick="showAPEXSheet(this,${JSON.stringify(p).replace(/"/g,'&quot;')})">
       <td><span class="nat ${nc}">${p.nat}</span></td>
       <td style="font-weight:600">${p.apexPO}</td>
       <td style="font-size:12px">${p.custPO||'—'}<br><span style="color:#8fa3b0">${p.inv||''}</span></td>
       <td style="font-size:12px">${nl2br(apexDate(p,'sent'))||'—'}</td>
       <td style="font-size:12px">${nl2br(apexDate(p,'exp'))||'—'}</td>
-      <td style="font-size:12px;font-weight:${done?600:400};color:${done?'#155724':'inherit'}">${nl2br(actStr)||'—'}</td>
+      <td style="font-size:12px;font-weight:${st.done?600:400};color:${st.done?'#155724':st.partial?'#856404':'inherit'}">${nl2br(actStr)||'—'}</td>
       <td style="white-space:nowrap">${statusBadge}</td>
       <td style="white-space:nowrap">${p.remark?`<span title="${String(p.remark).replace(/"/g,'&quot;')}" style="cursor:help">📝</span>`:''}</td>
     </tr>`;
@@ -1757,8 +1781,9 @@ function pageAPEX(){
     <th>Nat.</th><th>APEX PO</th><th>Customer PO / INV</th><th>ส่ง PO</th><th>Expected</th><th>Actual</th><th>Status</th><th>Remark</th>
   </tr></thead>`;
   const sortedApexPos = [...APEX_POS].sort((a,b)=>apexPoSortKey(b)-apexPoSortKey(a));
-  const pending = sortedApexPos.filter(p=>!apexDate(p,'act'));
-  const arrived = sortedApexPos.filter(p=>!!apexDate(p,'act'));
+  // "ยังไม่มา" รวมทั้งที่ยังไม่มีวันที่รับเลย และที่มาบางส่วน (ยังมีรอบส่งค้างในอนาคต)
+  const pending = sortedApexPos.filter(p=>!apexStatus(p).done);
+  const arrived = sortedApexPos.filter(p=>apexStatus(p).done);
   let html=`<div class="pt">APEX PO Order Log</div><div class="ps">ประวัติ Order ทั้งหมดที่ส่งให้ APEX (เรียงเลข PO ใหม่สุด→เก่าสุด) ${liveBadge('apex')}</div>
   <div class="card">
     <div class="card-head" onclick="toggleCard(this)">
@@ -2143,7 +2168,7 @@ function confirmReceive(id, vendor, po){
 }
 function showAPEXSheet(row, p){
   const actStr=apexDate(p,'act');
-  const done=!!actStr;
+  const st=apexStatus(p);
   const html=`
     <div class="sbox">
       <div class="row"><span>APEX PO</span><span style="font-weight:700">${p.apexPO}</span></div>
@@ -2151,7 +2176,8 @@ function showAPEXSheet(row, p){
       <div class="row"><span>INV/PI</span><span>${p.inv||'—'}</span></div>
       <div class="row"><span>วันที่ส่ง PO</span><span style="text-align:right">${nl2br(apexDate(p,'sent'))||'—'}</span></div>
       <div class="row"><span>Expected</span><span style="text-align:right">${nl2br(apexDate(p,'exp'))||'—'}</span></div>
-      <div class="row"><span>Actual Date</span><span style="color:${done?'#155724':'#856404'};font-weight:${done?700:400};text-align:right">${nl2br(actStr)||'⏳ รออยู่'}</span></div>
+      <div class="row"><span>Actual Date</span><span style="color:${st.done?'#155724':st.partial?'#856404':'#856404'};font-weight:${st.done?700:400};text-align:right">${nl2br(actStr)||'⏳ รออยู่'}</span></div>
+      <div class="row"><span>สถานะ</span><span style="text-align:right"><span class="badge ${st.cls}">${st.label}</span></span></div>
       <div class="row"><span>ส่ง Customer</span><span style="text-align:right">${nl2br(apexDate(p,'toCust'))||'—'}</span></div>
     </div>
     ${p.remark?`<div style="margin:12px 16px;padding:10px;background:#f4f6f9;border-radius:6px;font-size:12px;color:#5b6b76">${nl2br(p.remark)}</div>`:''}`;
