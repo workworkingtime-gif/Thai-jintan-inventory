@@ -693,6 +693,10 @@ function apexDate(p, field){
   return p[field+'Text'] || '';
 }
 function apexDateD(p, field){ return p[field+'D'] || null; }
+// แปลง \n ในข้อความ (เช่น expText/actText ที่มีหลายวันที่ เช่น "4 Aug 2026\n7
+// Aug 2026") ให้เป็น <br> จริงๆ ในตาราง — เดิม \n เฉยๆ ใน <td> เบราว์เซอร์จะยุบ
+// รวมเป็นบรรทัดเดียว อ่านยาก (Ji ขอ 20 Jul 2026)
+function nl2br(s){ return String(s||'').split('\n').filter(x=>x.trim()).join('<br>'); }
 // APEX_OVERRIDES — ค่าที่ Ji ยืนยันในแชท (20 Jul 2026) ให้ใช้แทนค่าจากชีต "APX
 // Tracking" เสมอ เผื่อชีตยังไม่ได้อัปเดตตาม — จับคู่ด้วย apexPO เท่านั้น ทับ
 // เฉพาะ field ที่ระบุไว้ ไม่แตะ field อื่น (nat/custPO/inv/remark ฯลฯ ที่ไม่ได้
@@ -703,7 +707,8 @@ function apexDateD(p, field){ return p[field+'D'] || null; }
 const APEX_OVERRIDES = [
   {apexPO:'PO 016R01', actText:'Spearmint: 6, 7, 16 July 2026\nPeppermint: 7, 8, 9 Sep 2026', actD:null},
   {apexPO:'PO 031', expD:46227, expText:''},
-  {apexPO:'PO 037R01', expText:'Peppermint: 23 July 2026\nSpearmint: 23 July 2026', expD:null},
+  {apexPO:'PO 037R01', expD:46226, expText:'',
+    remark:'Anpanman · Peppermint: เลื่อนจาก 9→13 Jul เป็น 23 Jul 2026 / Spearmint: เลื่อนจาก 20→23 Jul เป็น 23 Jul 2026 (ทั้งสองรสมาบรรจบที่ 23 Jul 2026)'},
   {apexPO:'PO 042', expD:46234, expText:''},
   {apexPO:'PO 043', expD:46248, expText:''},
   {apexPO:'PO 044', expText:'4 Aug 2026\n7 Aug 2026', expD:null,
@@ -1743,9 +1748,9 @@ function pageAPEX(){
       <td><span class="nat ${nc}">${p.nat}</span></td>
       <td style="font-weight:600">${p.apexPO}</td>
       <td style="font-size:12px">${p.custPO||'—'}<br><span style="color:#8fa3b0">${p.inv||''}</span></td>
-      <td style="font-size:12px">${apexDate(p,'sent')||'—'}</td>
-      <td style="font-size:12px">${apexDate(p,'exp')||'—'}</td>
-      <td style="font-size:12px;font-weight:${done?600:400};color:${done?'#155724':'inherit'}">${actStr||'—'}</td>
+      <td style="font-size:12px">${nl2br(apexDate(p,'sent'))||'—'}</td>
+      <td style="font-size:12px">${nl2br(apexDate(p,'exp'))||'—'}</td>
+      <td style="font-size:12px;font-weight:${done?600:400};color:${done?'#155724':'inherit'}">${nl2br(actStr)||'—'}</td>
       <td style="white-space:nowrap">${statusBadge}</td>
       <td style="white-space:nowrap">${p.remark?`<span title="${String(p.remark).replace(/"/g,'&quot;')}" style="cursor:help">📝</span>`:''}</td>
     </tr>`;
@@ -2122,12 +2127,12 @@ function showAPEXSheet(row, p){
       <div class="row"><span>APEX PO</span><span style="font-weight:700">${p.apexPO}</span></div>
       <div class="row"><span>Customer PO</span><span>${p.custPO||'—'}</span></div>
       <div class="row"><span>INV/PI</span><span>${p.inv||'—'}</span></div>
-      <div class="row"><span>วันที่ส่ง PO</span><span>${apexDate(p,'sent')||'—'}</span></div>
-      <div class="row"><span>Expected</span><span>${apexDate(p,'exp')||'—'}</span></div>
-      <div class="row"><span>Actual Date</span><span style="color:${done?'#155724':'#856404'};font-weight:${done?700:400}">${actStr||'⏳ รออยู่'}</span></div>
-      <div class="row"><span>ส่ง Customer</span><span>${apexDate(p,'toCust')||'—'}</span></div>
+      <div class="row"><span>วันที่ส่ง PO</span><span style="text-align:right">${nl2br(apexDate(p,'sent'))||'—'}</span></div>
+      <div class="row"><span>Expected</span><span style="text-align:right">${nl2br(apexDate(p,'exp'))||'—'}</span></div>
+      <div class="row"><span>Actual Date</span><span style="color:${done?'#155724':'#856404'};font-weight:${done?700:400};text-align:right">${nl2br(actStr)||'⏳ รออยู่'}</span></div>
+      <div class="row"><span>ส่ง Customer</span><span style="text-align:right">${nl2br(apexDate(p,'toCust'))||'—'}</span></div>
     </div>
-    ${p.remark?`<div style="margin:12px 16px;padding:10px;background:#f4f6f9;border-radius:6px;font-size:12px;color:#5b6b76">${p.remark}</div>`:''}`;
+    ${p.remark?`<div style="margin:12px 16px;padding:10px;background:#f4f6f9;border-radius:6px;font-size:12px;color:#5b6b76">${nl2br(p.remark)}</div>`:''}`;
   openSheet(`${p.nat} · ${p.apexPO}`, html, row);
 }
 // ─── INCOMING ─────────────────────────────────────────────────────────────
