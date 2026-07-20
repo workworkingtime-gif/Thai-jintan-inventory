@@ -1662,11 +1662,14 @@ function pagePO(){
       const isDone=p.act||(D.received[p.id] && D.received[p.id].date);
       const badge=isDone?'<span class="badge bg">✓ มาแล้ว</span>':'<span class="badge bb">⏳ รออยู่</span>';
       const nc={KR:'nkr',HK:'nhk',USA:'nusa',SG:'nsg',Philippines:'nph',France:'nfr',Italy:'nit'}[p.nat]||'';
+      const actShown = isDone?(D.received[p.id]?.date||p.act||'—'):'—';
       html+=`<tr onclick="showPOSheet(this,${JSON.stringify(p).replace(/"/g,'&quot;')})">
-        <td style="font-weight:600">${p.po}</td><td>${p.product}</td>
-        <td><span class="nat ${nc}">${p.nat}</span></td>
-        <td style="${p.sent?'':'color:#c0392b;font-weight:600'}">${p.sent||'ยังไม่มี'}</td>
-        <td>${p.exp||'—'}</td><td>${isDone?(D.received[p.id]?.date||p.act||'—'):'—'}</td><td>${badge}</td>
+        <td style="font-weight:600;white-space:nowrap">${p.po}</td><td style="white-space:nowrap">${p.product}</td>
+        <td style="white-space:nowrap"><span class="nat ${nc}">${p.nat}</span></td>
+        <td style="white-space:nowrap;${p.sent?'':'color:#c0392b;font-weight:600'}">${p.sent||'ยังไม่มี'}</td>
+        <td style="white-space:nowrap">${p.exp||'—'}</td>
+        <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px" title="${actShown.replace(/"/g,'&quot;')}">${actShown}</td>
+        <td style="white-space:nowrap">${badge}</td>
       </tr>`;
     });
     html+=`</tbody></table></div></div></div>`;
@@ -2050,6 +2053,7 @@ function showPOSheet(row, p){
       <div class="row"><span>ส่ง PO</span><span style="${p.sent?'':'color:#c0392b;font-weight:600'}">${p.sent||'ยังไม่มีข้อมูล'}</span></div>
       <div class="row"><span>Expected</span><span>${p.exp||'—'}</span></div>
       <div class="row"><span>สถานะ</span><span style="color:${isDone?'#155724':'#856404'};font-weight:700">${isDone?'✓ รับแล้ว':'⏳ รออยู่'}</span></div>
+      ${(!recInfo && p.act)?`<div class="row"><span>รับจริง</span><span style="font-size:12px;text-align:right;max-width:220px">${p.act}</span></div>`:''}
       ${recInfo?`<div class="row"><span>รับเมื่อ</span><span style="font-size:12px">${recInfo.date}</span></div>`:''}
       ${recInfo?.remark?`<div class="row"><span>Remark</span><span style="font-size:12px">${recInfo.remark}</span></div>`:''}
     </div>
