@@ -1704,13 +1704,16 @@ function apexPoSortKey(p){
 function pageAPEX(){
   let html=`<div class="pt">APEX PO Order Log</div><div class="ps">ประวัติ Order ทั้งหมดที่ส่งให้ APEX (เรียงเลข PO ใหม่สุด→เก่าสุด) ${liveBadge('apex')}</div>
   <div class="card"><div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด</div><div class="tw"><table><thead><tr>
-    <th>Nat.</th><th>APEX PO</th><th>Customer PO / INV</th><th>ส่ง PO</th><th>Expected</th><th>Actual</th><th>Remark</th>
+    <th>Nat.</th><th>APEX PO</th><th>Customer PO / INV</th><th>ส่ง PO</th><th>Expected</th><th>Actual</th><th>Status</th><th>Remark</th>
   </tr></thead><tbody>`;
   const sortedApexPos = [...APEX_POS].sort((a,b)=>apexPoSortKey(b)-apexPoSortKey(a));
   sortedApexPos.forEach(p=>{
     const actStr=apexDate(p,'act');
     const done=!!actStr;
     const nc={KR:'nkr',HK:'nhk',USA:'nusa'}[p.nat]||'';
+    // Status badge เหมือนหน้า Supplier PO — บอกชัดๆ ว่ามาถึงแล้วหรือยังรออยู่
+    // (Ji ขอ 20 Jul 2026 เพราะหน้านี้เดิมดูออกยากว่ารับแล้วรึยัง)
+    const statusBadge = done?'<span class="badge bg">✓ มาแล้ว</span>':'<span class="badge bb">⏳ รออยู่</span>';
     html+=`<tr onclick="showAPEXSheet(this,${JSON.stringify(p).replace(/"/g,'&quot;')})">
       <td><span class="nat ${nc}">${p.nat}</span></td>
       <td style="font-weight:600">${p.apexPO}</td>
@@ -1718,6 +1721,7 @@ function pageAPEX(){
       <td style="font-size:12px">${apexDate(p,'sent')||'—'}</td>
       <td style="font-size:12px">${apexDate(p,'exp')||'—'}</td>
       <td style="font-size:12px;font-weight:${done?600:400};color:${done?'#155724':'inherit'}">${actStr||'—'}</td>
+      <td style="white-space:nowrap">${statusBadge}</td>
       <td style="font-size:12px;color:#5b6b76;max-width:180px">${p.remark||''}</td>
     </tr>`;
   });
