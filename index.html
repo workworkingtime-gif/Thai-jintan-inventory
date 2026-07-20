@@ -693,6 +693,29 @@ function apexDate(p, field){
   return p[field+'Text'] || '';
 }
 function apexDateD(p, field){ return p[field+'D'] || null; }
+// APEX_OVERRIDES — ค่าที่ Ji ยืนยันในแชท (20 Jul 2026) ให้ใช้แทนค่าจากชีต "APX
+// Tracking" เสมอ เผื่อชีตยังไม่ได้อัปเดตตาม — จับคู่ด้วย apexPO เท่านั้น ทับ
+// เฉพาะ field ที่ระบุไว้ ไม่แตะ field อื่น (nat/custPO/inv/remark ฯลฯ ที่ไม่ได้
+// ระบุจะคงค่าจากชีตเดิมไว้ ยกเว้น PO 044 ที่ระบุ remark ใหม่ด้วย) — เรียกใช้ทั้ง
+// ตอนโหลดหน้าแรก (คุมค่า fallback ก่อน sync) และหลัง syncApex() สำเร็จทุกครั้ง
+// (เพราะ syncApex() ล้าง APEX_POS ทั้งอาเรย์แล้วดึงจากชีตใหม่ทุก 3 นาที ถ้าไม่
+// apply ซ้ำทุกรอบ ค่าที่ override ไว้จะหายไปตอน sync รอบถัดไป)
+const APEX_OVERRIDES = [
+  {apexPO:'PO 016R01', actText:'Spearmint: 6, 7, 16 July 2026\nPeppermint: 7, 8, 9 Sep 2026', actD:null},
+  {apexPO:'PO 031', expD:46227, expText:''},
+  {apexPO:'PO 037R01', expText:'Peppermint: 23 July 2026\nSpearmint: 23 July 2026', expD:null},
+  {apexPO:'PO 042', expD:46234, expText:''},
+  {apexPO:'PO 043', expD:46248, expText:''},
+  {apexPO:'PO 044', expText:'4 Aug 2026\n7 Aug 2026', expD:null,
+    remark:'4 Aug: Peppermint 50,000 + Spearmint 50,000\n7 Aug: Peppermint 70,000 + Spearmint 40,000'},
+];
+function applyApexOverrides(){
+  APEX_OVERRIDES.forEach(ov=>{
+    APEX_POS.filter(p=>p.apexPO===ov.apexPO).forEach(p=>{
+      Object.keys(ov).forEach(k=>{ if(k!=='apexPO') p[k]=ov[k]; });
+    });
+  });
+}
 const APEX_POS = [
   {nat:'KR',custPO:'PO 26032172',inv:'INV 0036/26',apexPO:'PO 013',sentD:46145,expD:46116,actD:null,toCustD:46121,remark:'PKM 62,400 C62'},
   {nat:'KR',custPO:'PO 26032172',inv:'INV 0034/26',apexPO:'PO 013',sentD:46145,expD:46109,actD:null,toCustD:46120,remark:'PKM 60,000 C62'},
@@ -709,6 +732,7 @@ const APEX_POS = [
   {nat:'HK',custPO:'PO2606240001',inv:'PI 0059/26',apexPO:'PO 043',sentD:46204,expD:46233,actD:46253,toCustD:null,remark:'Peppermint 6,720 · HL 9,120 · Melon 3,820 · Donki 8,640 · HK Edition 15,360'},
   {nat:'KR',custPO:'PO 25083260',inv:'INV 0026/26',apexPO:'',sentD:null,expD:null,actD:null,toCustD:46100,remark:'25,200 C62 → 105 ลัง (งานเก่า ปิดแล้ว)'},
 ];
+applyApexOverrides(); // ครอบค่า fallback ตั้งแต่ตอน parse หน้าเว็บครั้งแรก ก่อน live sync จะทำงาน
 // ─── STATE ────────────────────────────────────────────────────────────────
 let D = { hk:[], hkOuter:[], sg:[], sgOuter:[], kr:[], pos:[], audit:[], received:{}, patches_applied:[] };
 let TAB = 'stock';
@@ -1122,6 +1146,7 @@ async function syncApex(){
     });
     if(!rows.length) throw new Error('no rows parsed');
     APEX_POS.length=0; APEX_POS.push(...rows);
+    applyApexOverrides(); // ทับด้วยค่าที่ Ji ยืนยันในแชท ทุกครั้งที่ sync สด (กันชีตทับกลับ)
     LIVE.apex={status:'ok',ts:Date.now()};
   }catch(e){
     console.warn('APEX live sync failed, keeping last known data:', e);
