@@ -1646,11 +1646,18 @@ function pageKR(){
   return html;
 }
 // ─── PO PAGE ─────────────────────────────────────────────────────────────
+// ดึงเลข PO ท้ายสุดออกมาจาก po (เช่น "01INT-JP26/003"→3, "01INT-PPP26/004R1"→4)
+// เพื่อเรียงแถวในตาราง Supplier PO Status ตามลำดับเลขจากน้อยไปมาก (Ji ขอ 20 Jul 2026)
+// — parse ไม่ได้ ให้ค่าใหญ่มากตกไปท้ายสุดเสมอ
+function supplierPoSortKey(p){
+  const m = /(\d+)(?:R\d+)?\s*$/.exec(String(p.po||''));
+  return m ? parseInt(m[1]) : Infinity;
+}
 function pagePO(){
   const vendors=[...new Set(D.pos.map(p=>p.vendor))];
   let html=`<div class="pt">Supplier PO Status</div><div class="ps">SJR (แสงเจริญ) · JRS (จรัสแสง) · PPP (PaperPack) · TBB · YJ (วายเจ) ${liveBadge('supplier')}</div>`;
   vendors.forEach(v=>{
-    const rows=D.pos.filter(p=>p.vendor===v);
+    const rows=D.pos.filter(p=>p.vendor===v).sort((a,b)=>supplierPoSortKey(a)-supplierPoSortKey(b));
     const done=rows.filter(p=>p.act||D.received[p.id]).length;
     html+=`<div class="card"><div class="card-head" onclick="toggleCard(this)">
       <span class="cht"><span class="vtag v-${v.toLowerCase()}">${v}</span>&nbsp;&nbsp;${vname(v)}<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
