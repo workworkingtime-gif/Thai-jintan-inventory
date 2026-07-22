@@ -238,6 +238,9 @@ function f(n){ return (Number(n)||0).toLocaleString(); }
 // Like f(), but shows a dash for null/undefined ("ยังไม่มีข้อมูล") instead of
 // rendering it as the number 0 — used for fields not yet manually filled in.
 function fD(n){ return n==null ? '<span style="color:#b7c0c7">—</span>' : f(n); }
+// Like f(), but allows up to 2 decimal places — for "เตรียมตัดออก" carton
+// figures which can come out fractional (e.g. pcs ÷ IPU ÷ IPC not always whole).
+function fc(n){ return (Number(n)||0).toLocaleString(undefined,{maximumFractionDigits:2}); }
 function daysFrom(ms){ return ms?Math.round((ms-Date.now())/86400000):null; }
 function tsNow(){ return new Date().toLocaleString('en-GB'); }
 function serialToMs(n){ return n?Date.UTC(1899,11,30)+n*86400000:null; }
@@ -1587,6 +1590,36 @@ const APEX_DRAWS = [
 function applyApexDraw(d){
   performApexDraw(d.market, d.flavor, d.unit, d.qty, d.poRef);
 }
+// ─── APEX_PENDING_DRAWS — "เตรียมตัดออก" (พรีวิว) ──────────────────────────
+// Ji ขอ 22 ก.ค. 2026: อยากเห็นล่วงหน้าว่าถ้า APEX PO ที่กำลังจะส่งถูกตัดสต็อกจริง
+// จะเหลือกล่องใน/ลังเท่าไหร่ ก่อนที่จะยืนยันตัดจริง — ต่างจาก APEX_DRAWS ด้านบน
+// (ตัดสต็อกจริงทันทีที่โหลดหน้า) ตรงที่ตรงนี้เป็นแค่ตัวเลขคาดการณ์ที่โชว์ในตาราง
+// Stock เฉยๆ (ไม่แตะ D.hk/D.sg/D.kr เลย) พอ Ji ยืนยันว่าส่งจริงแล้ว ค่อยย้าย entry
+// จากตรงนี้ไปเป็น APEX_DRAWS ด้านบน (ตัดสต็อกจริง + สร้างประวัติอัตโนมัติ)
+// แพทเทิร์น: {id, market:'hk'|'sg'|'kr', apexPO, jobName, flavor, pcs}
+// — pcs = จำนวนชิ้นที่ Ji บอกทางแชทตรงๆ (หน่วยที่เธอคุ้นเคย) แปลงเป็นกล่องใน/ลัง
+// อัตโนมัติด้วย IPU (20 ชิ้น/กล่องใน) และ IPC (12 กล่องใน/ลัง) — Ji ยืนยัน 22 ก.ค. 2026
+// ว่าอัตราส่วนนี้ใช้เหมือนกันหมดทั้ง 3 ตลาด (Nude=HK / Nuke=SG / Duo Burster=KR)
+const APEX_PENDING_DRAWS = [
+  {id:'apex_po047_hk_peppermint', market:'hk', apexPO:'PO 047', jobName:'Nude', flavor:'Peppermint', pcs:8400},
+  {id:'apex_po047_hk_honeylemon', market:'hk', apexPO:'PO 047', jobName:'Nude', flavor:'Honey lemon', pcs:8400},
+];
+function pendingInner(pcs){ return (pcs||0)/IPU; }
+function pendingCartons(pcs){ return pendingInner(pcs)/IPC; }
+function pendingDrawsFor(market, flavor){
+  return APEX_PENDING_DRAWS.filter(d=>d.market===market && d.flavor===flavor);
+}
+function pendingInnerTotal(market, flavor){
+  return pendingDrawsFor(market,flavor).reduce((s,d)=>s+pendingInner(d.pcs),0);
+}
+function pendingCartonTotal(market, flavor){
+  return pendingDrawsFor(market,flavor).reduce((s,d)=>s+pendingCartons(d.pcs),0);
+}
+function pendingTooltip(market, flavor){
+  return pendingDrawsFor(market,flavor)
+    .map(d=>`${d.apexPO} (${d.jobName}): ${f(d.pcs)} ชิ้น = -${f(pendingInner(d.pcs))} กล่องใน / -${fc(pendingCartons(d.pcs))} ลัง`)
+    .join('\n');
+}
 // (10 ก.ค. 2026 ตามที่ Ji ขอ: "@Chumseang I will tell you later but please
 // show it's in the tap on the screen" — ตัวเลขฝั่ง APEX เพิ่งอัปเดตจากการนับ
 // สต็อกจริง แต่ฝั่ง Thai Jintan (Chumseang) ยังไม่มีตัวเลขใหม่ Ji บอกว่าจะแจ้งทีหลัง —
@@ -1628,14 +1661,18 @@ function pageMarket(mktId, title, sub, data, key){
   html+=`<div class="card"><div class="card-head" onclick="toggleCard(this)">
       <span class="cht">📦 Inner box (กล่องใน)<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
       <span class="chm">${data.length} รสชาติ<span class="chev">▾</span></span></div>
-    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด · "กำลังจะมา" คือยอดจาก Supplier PO ที่สั่งแล้วแต่ยังไม่ได้รับ (ไม่รวมในคงเหลือรวมจนกว่าจะยืนยันรับของจริง)</div>
-    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>Thai Jintan</th><th>คงเหลือรวม</th><th>กำลังจะมา</th><th>รวมคาดการณ์</th><th>สถานะ</th></tr></thead><tbody>`;
+    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด · "กำลังจะมา" คือยอดจาก Supplier PO ที่สั่งแล้วแต่ยังไม่ได้รับ (ไม่รวมในคงเหลือรวมจนกว่าจะยืนยันรับของจริง) · "เตรียมตัดออก" คือ APEX PO ที่ Ji แจ้งว่ากำลังจะส่ง แต่ยังไม่ยืนยันว่าส่งจริง (พรีวิว ยังไม่ตัดสต็อกจริง)</div>
+    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>Thai Jintan</th><th>คงเหลือรวม</th><th>กำลังจะมา</th><th>รวมคาดการณ์</th><th>เตรียมตัดออก</th><th>คาดว่าจะเหลือ</th><th>สถานะ</th></tr></thead><tbody>`;
   data.forEach(r=>{
     const total = (r.apex||0)+(r.ku||0);
     const inc = incoming[r.flavor]||0;
     const projected = total+inc;
+    const pend = pendingInnerTotal(key.toLowerCase(), r.flavor);
+    const afterDraw = projected - pend;
+    const tip = pendingTooltip(key.toLowerCase(), r.flavor);
     const nc = total>0?'np':total<0?'nn':'nz';
     const pnc = projected>0?'np':projected<0?'nn':'nz';
+    const anc = afterDraw>0?'np':afterDraw<0?'nn':'nz';
     html+=`<tr onclick="showMktSheet(this,${JSON.stringify({...r,mktId,key}).replace(/"/g,'&quot;')})">
       <td><strong>${r.flavor}</strong></td>
       <td class="n">${fD(r.apex)}</td>
@@ -1643,6 +1680,8 @@ function pageMarket(mktId, title, sub, data, key){
       <td class="n ${nc}">${f(total)}</td>
       <td class="n" style="${inc?'color:#0d6efd;font-weight:600':'color:#b7c0c8'}">${inc?'+'+f(inc):'—'}</td>
       <td class="n ${pnc}" style="${inc?'font-weight:700':''}">${f(projected)}</td>
+      <td class="n" style="${pend?'color:#721c24;font-weight:600;cursor:help':'color:#b7c0c8'}"${pend?` title="${tip.replace(/"/g,'&quot;')}"`:''}>${pend?'-'+f(pend):'—'}</td>
+      <td class="n ${anc}" style="${pend?'font-weight:700':''}">${f(afterDraw)}</td>
       <td>${stockStatus(total)}</td>
     </tr>`;
   });
@@ -1657,17 +1696,24 @@ function pageKR(){
   types.forEach(type=>{
     const rows=D.kr.filter(r=>r.type===type);
     html+=`<div class="card"><div class="card-head" onclick="toggleCard(this)"><span class="cht">${type}<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span><span class="chm">${rows.length} รสชาติ<span class="chev">▾</span></span></div>
-    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด</div>
-    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>สต็อก APEX</th><th>New Order</th><th>PO</th><th>คงเหลือรวม</th><th>สถานะ</th></tr></thead><tbody>`;
+    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด · "เตรียมตัดออก" คือ APEX PO ที่ Ji แจ้งว่ากำลังจะส่ง แต่ยังไม่ยืนยันว่าส่งจริง (พรีวิว ยังไม่ตัดสต็อกจริง)</div>
+    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>สต็อก APEX</th><th>New Order</th><th>PO</th><th>คงเหลือรวม</th><th>เตรียมตัดออก</th><th>คาดว่าจะเหลือ</th><th>สถานะ</th></tr></thead><tbody>`;
     rows.forEach(r=>{
       const total=(r.apex||0)+(r.newQty||0);
       const nc=total>0?'np':total<0?'nn':'nz';
+      const isCarton = type==='Carton';
+      const pend = isCarton ? pendingCartonTotal('kr', r.flavor) : pendingInnerTotal('kr', r.flavor);
+      const afterDraw = total - pend;
+      const anc = afterDraw>0?'np':afterDraw<0?'nn':'nz';
+      const tip = pendingTooltip('kr', r.flavor);
       html+=`<tr onclick="showKRSheet(this,${JSON.stringify(r).replace(/"/g,'&quot;')},'${type}')">
         <td><strong>${r.flavor}</strong></td>
         <td class="n ${(r.apex||0)<0?'nn':'np'}">${f(r.apex)}</td>
         <td class="n np">+${f(r.newQty)}</td>
         <td><span style="font-size:11px;background:#e8edf5;color:#3a5a8c;padding:1px 7px;border-radius:3px;font-weight:600">${r.newPO}</span></td>
         <td class="n ${nc}">${f(total)}</td>
+        <td class="n" style="${pend?'color:#721c24;font-weight:600;cursor:help':'color:#b7c0c8'}"${pend?` title="${tip.replace(/"/g,'&quot;')}"`:''}>${pend?'-'+(isCarton?fc(pend):f(pend)):'—'}</td>
+        <td class="n ${anc}" style="${pend?'font-weight:700':''}">${isCarton?fc(afterDraw):f(afterDraw)}</td>
         <td>${stockStatus(total)}</td>
       </tr>`;
     });
@@ -2025,6 +2071,8 @@ function closeSheet(){
 function showMktSheet(row, r){
   const total=(r.apex||0)+(r.ku||0);
   const logs=D.audit.filter(a=>a.title===r.flavor && (a.scope ? a.scope===r.key : a.detail?.includes(r.key)));
+  const pendList = pendingDrawsFor(r.key.toLowerCase(), r.flavor);
+  const pendTotal = pendingInnerTotal(r.key.toLowerCase(), r.flavor);
   const html=`
     <div style="padding:14px 16px 4px">
       <div style="font-size:11px;color:#8fa3b0;margin-bottom:6px">สถานะสต็อก</div>
@@ -2044,6 +2092,15 @@ function showMktSheet(row, r){
       <span style="font-size:13px;font-weight:700">คงเหลือรวม (APEX + Thai Jintan)</span>
       <span class="n ${total>0?'np':total<0?'nn':'nz'}" style="font-size:18px">${f(total)}</span>
     </div>
+    ${pendList.length?`
+    <div class="ssect">
+      <div class="ssect-t">🔻 เตรียมตัดออก (พรีวิว — ยังไม่ตัดสต็อกจริง)</div>
+      ${pendList.map(d=>`<div class="srow"><div>${d.apexPO} (${d.jobName}) · ${f(d.pcs)} ชิ้น</div><span class="sq out">-${f(pendingInner(d.pcs))} กล่องใน</span></div>`).join('')}
+      <div class="stot" style="margin-top:8px">
+        <span style="font-size:13px;font-weight:700">คาดว่าจะเหลือหลังตัด</span>
+        <span class="n ${(total-pendTotal)>0?'np':(total-pendTotal)<0?'nn':'nz'}" style="font-size:18px">${f(total-pendTotal)}</span>
+      </div>
+    </div>`:''}
     <div class="ssect">
       <div class="ssect-t">ประวัติการเปลี่ยนแปลง</div>
       ${renderHistoryTable(logs)}
@@ -2068,16 +2125,22 @@ function pageOuterBox(data, mktKey){
   let html=`<div class="card"><div class="card-head" onclick="toggleCard(this)">
       <span class="cht">📦 Outer box (ลังนอก)<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
       <span class="chm">${withStock}/${data.length} มีสต็อก<span class="chev">▾</span></span></div>
-    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด/แก้ไข · กรอกเอง ไม่ sync อัตโนมัติ</div>
-    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>Thai Jintan</th><th>คงเหลือรวม</th></tr></thead><tbody>`;
+    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด/แก้ไข · กรอกเอง ไม่ sync อัตโนมัติ · "เตรียมตัดออก" คือ APEX PO ที่ Ji แจ้งว่ากำลังจะส่ง แต่ยังไม่ยืนยันว่าส่งจริง (พรีวิว ยังไม่ตัดสต็อกจริง)</div>
+    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>Thai Jintan</th><th>คงเหลือรวม</th><th>เตรียมตัดออก</th><th>คาดว่าจะเหลือ</th></tr></thead><tbody>`;
   data.forEach(r=>{
     const total=(r.apex||0)+(r.ku||0);
     const nc=total>0?'np':total<0?'nn':'nz';
+    const pend = pendingCartonTotal(mktKey.toLowerCase(), r.flavor);
+    const afterDraw = total - pend;
+    const anc = afterDraw>0?'np':afterDraw<0?'nn':'nz';
+    const tip = pendingTooltip(mktKey.toLowerCase(), r.flavor);
     html+=`<tr onclick="showOuterSheet(this,${JSON.stringify({...r,mktKey}).replace(/"/g,'&quot;')})">
       <td><strong>${r.flavor}</strong></td>
       <td class="n">${fD(r.apex)}</td>
       <td class="n">${fD(r.ku)}</td>
       <td class="n ${nc}">${f(total)}</td>
+      <td class="n" style="${pend?'color:#721c24;font-weight:600;cursor:help':'color:#b7c0c8'}"${pend?` title="${tip.replace(/"/g,'&quot;')}"`:''}>${pend?'-'+fc(pend):'—'}</td>
+      <td class="n ${anc}" style="${pend?'font-weight:700':''}">${fc(afterDraw)}</td>
     </tr>`;
   });
   html+=`</tbody></table></div></div></div>`;
@@ -2085,6 +2148,8 @@ function pageOuterBox(data, mktKey){
 }
 function showOuterSheet(row, r){
   const total=(r.apex||0)+(r.ku||0);
+  const pendList = pendingDrawsFor(r.mktKey.toLowerCase(), r.flavor);
+  const pendTotal = pendingCartonTotal(r.mktKey.toLowerCase(), r.flavor);
   const html=`
     <div class="s2col">
       <div class="s2ch"><div>🏭 ที่ APEX</div><div>🏪 ที่ Thai Jintan</div></div>
@@ -2097,7 +2162,16 @@ function showOuterSheet(row, r){
         </div>
       </div>
     </div>
-    <div class="stot"><span style="font-size:13px;font-weight:700">คงเหลือรวม (APEX + Thai Jintan)</span><span class="n ${total>0?'np':total<0?'nn':'nz'}" style="font-size:18px">${f(total)}</span></div>`;
+    <div class="stot"><span style="font-size:13px;font-weight:700">คงเหลือรวม (APEX + Thai Jintan)</span><span class="n ${total>0?'np':total<0?'nn':'nz'}" style="font-size:18px">${f(total)}</span></div>
+    ${pendList.length?`
+    <div class="ssect">
+      <div class="ssect-t">🔻 เตรียมตัดออก (พรีวิว — ยังไม่ตัดสต็อกจริง)</div>
+      ${pendList.map(d=>`<div class="srow"><div>${d.apexPO} (${d.jobName}) · ${f(d.pcs)} ชิ้น</div><span class="sq out">-${fc(pendingCartons(d.pcs))} ลัง</span></div>`).join('')}
+      <div class="stot" style="margin-top:8px">
+        <span style="font-size:13px;font-weight:700">คาดว่าจะเหลือหลังตัด</span>
+        <span class="n ${(total-pendTotal)>0?'np':(total-pendTotal)<0?'nn':'nz'}" style="font-size:18px">${fc(total-pendTotal)}</span>
+      </div>
+    </div>`:''}`;
   openSheet(`${r.flavor} · Outer box · ${r.mktKey}`, html, row);
 }
 function saveOuterStock(mktKey, flavor, field, val){
@@ -2115,6 +2189,9 @@ function saveOuterStock(mktKey, flavor, field, val){
 function showKRSheet(row, r, type){
   const total=(r.apex||0)+(r.newQty||0);
   const logs=D.audit.filter(a=>a.title===r.flavor && (a.scope ? a.scope===('KR-'+type) : (a.detail?.includes('KR')&&a.detail?.includes(type))));
+  const isCarton = type==='Carton';
+  const pendList = pendingDrawsFor('kr', r.flavor);
+  const pendTotal = isCarton ? pendingCartonTotal('kr', r.flavor) : pendingInnerTotal('kr', r.flavor);
   const html=`
     <div style="padding:14px 16px 4px">
       <div style="font-size:11px;color:#8fa3b0;margin-bottom:6px">สถานะสต็อก</div>
@@ -2124,6 +2201,15 @@ function showKRSheet(row, r, type){
       <div class="row"><span>New Order (${r.newPO})</span><span class="n np">+${f(r.newQty)}</span></div>
       <div class="row"><span style="font-weight:700">คงเหลือรวม</span><span class="n np" style="font-size:15px">${f(total)}</span></div>
     </div>
+    ${pendList.length?`
+    <div class="ssect">
+      <div class="ssect-t">🔻 เตรียมตัดออก (พรีวิว — ยังไม่ตัดสต็อกจริง)</div>
+      ${pendList.map(d=>`<div class="srow"><div>${d.apexPO} (${d.jobName}) · ${f(d.pcs)} ชิ้น</div><span class="sq out">-${isCarton?fc(pendingCartons(d.pcs)):f(pendingInner(d.pcs))} ${isCarton?'ลัง':'กล่องใน'}</span></div>`).join('')}
+      <div class="stot" style="margin-top:8px">
+        <span style="font-size:13px;font-weight:700">คาดว่าจะเหลือหลังตัด</span>
+        <span class="n ${(total-pendTotal)>0?'np':(total-pendTotal)<0?'nn':'nz'}" style="font-size:18px">${isCarton?fc(total-pendTotal):f(total-pendTotal)}</span>
+      </div>
+    </div>`:''}
     <div class="ssect">
       <div class="ssect-t">ประวัติการเปลี่ยนแปลง (เติม/หักใช้)</div>
       ${renderHistoryTable(logs)}
