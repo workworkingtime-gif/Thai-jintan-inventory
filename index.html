@@ -711,7 +711,8 @@ const APEX_OVERRIDES = [
   {apexPO:'PO 016R01', actText:'Spearmint: 6, 7, 16 July 2026\nPeppermint: 7, 8, 9 Sep 2026', actD:null},
   {apexPO:'PO 031', expD:46227, expText:''},
   {apexPO:'PO 037R01', expD:46226, expText:'',
-    remark:'Anpanman · Peppermint: เลื่อนจาก 9→13 Jul เป็น 23 Jul 2026 / Spearmint: เลื่อนจาก 20→23 Jul เป็น 23 Jul 2026 (ทั้งสองรสมาบรรจบที่ 23 Jul 2026)'},
+    remark:'Anpanman · Peppermint: เลื่อนจาก 9→13 Jul เป็น 23 Jul 2026 / Spearmint: เลื่อนจาก 20→23 Jul เป็น 23 Jul 2026 (ทั้งสองรสมาบรรจบที่ 23 Jul 2026)',
+    actText:'Ji ยืนยัน 23 Jul 2026 (ไม่ทราบวันที่รับจริง)', actD:null},
   {apexPO:'PO 042', expD:46234, expText:''},
   {apexPO:'PO 043', expD:46248, expText:''},
   {apexPO:'PO 044', expText:'4 Aug 2026\n7 Aug 2026', expD:null,
@@ -1586,6 +1587,12 @@ function drawToApex(market){
 // กรอกฟอร์มเอง แค่พิมพ์บอกในแชทก็พอ แพทเทิร์น: {id, market:'hk'|'sg'|'kr', flavor,
 // unit:'carton'|'inner', qty, poRef}
 const APEX_DRAWS = [
+  // 23 Jul 2026: Ji ยืนยัน "PO 047 — Sent to APEX · HK" — โปรโมทจากพรีวิวใน
+  // APEX_PENDING_DRAWS (ด้านล่าง) มาตัดสต็อกจริงแล้ว ตัดจาก APEX ก่อน ไม่พอค่อย
+  // ไหลไปตัด Thai Jintan ต่อ (ผ่าน performApexDraw) — 420 กล่องใน/รส = 8,400
+  // ชิ้น ÷ 20 ชิ้นต่อกล่องใน (อัตราที่ Ji ยืนยัน 22 Jul 2026)
+  {id:'apex_po047_hk_peppermint_draw', market:'hk', flavor:'Peppermint', unit:'inner', qty:420, poRef:'APEX PO 047 (Nude)'},
+  {id:'apex_po047_hk_honeylemon_draw', market:'hk', flavor:'Honey lemon', unit:'inner', qty:420, poRef:'APEX PO 047 (Nude)'},
 ];
 function applyApexDraw(d){
   performApexDraw(d.market, d.flavor, d.unit, d.qty, d.poRef);
@@ -1601,8 +1608,9 @@ function applyApexDraw(d){
 // อัตโนมัติด้วย IPU (20 ชิ้น/กล่องใน) และ IPC (12 กล่องใน/ลัง) — Ji ยืนยัน 22 ก.ค. 2026
 // ว่าอัตราส่วนนี้ใช้เหมือนกันหมดทั้ง 3 ตลาด (Nude=HK / Nuke=SG / Duo Burster=KR)
 const APEX_PENDING_DRAWS = [
-  {id:'apex_po047_hk_peppermint', market:'hk', apexPO:'PO 047', jobName:'Nude', flavor:'Peppermint', pcs:8400},
-  {id:'apex_po047_hk_honeylemon', market:'hk', apexPO:'PO 047', jobName:'Nude', flavor:'Honey lemon', pcs:8400},
+  // PO 047 (Nude/HK) ย้ายไปตัดสต็อกจริงแล้ว (ดู APEX_DRAWS ด้านบน) — 23 Jul 2026
+  // Ji ยืนยัน "PO 047 — Sent to APEX · HK" จึงลบออกจากพรีวิวตรงนี้ ไม่งั้นจะโดน
+  // หักซ้ำสองครั้งในช่อง "คาดว่าจะเหลือ" (ทั้งจากการตัดจริงและจากพรีวิวพร้อมกัน)
 ];
 function pendingInner(pcs){ return (pcs||0)/IPU; }
 function pendingCartons(pcs){ return pendingInner(pcs)/IPC; }
