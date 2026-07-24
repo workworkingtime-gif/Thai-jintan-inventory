@@ -709,11 +709,12 @@ function nl2br(s){ return String(s||'').split('\n').filter(x=>x.trim()).join('<b
 // apply ซ้ำทุกรอบ ค่าที่ override ไว้จะหายไปตอน sync รอบถัดไป)
 const APEX_OVERRIDES = [
   {apexPO:'PO 016R01', actText:'Spearmint: 6, 7, 16 July 2026\nPeppermint: 7, 8, 9 Sep 2026', actD:null},
-  {apexPO:'PO 031', expD:46227, expText:''},
+  {apexPO:'PO 031', expD:46227, expText:'', actD:46227, actText:''},
   {apexPO:'PO 037R01', expD:46226, expText:'',
     remark:'Anpanman · Peppermint: เลื่อนจาก 9→13 Jul เป็น 23 Jul 2026 / Spearmint: เลื่อนจาก 20→23 Jul เป็น 23 Jul 2026 (ทั้งสองรสมาบรรจบที่ 23 Jul 2026) · รับแล้วครบ 23 Jul 2026 ตาม Packing List: Dong-A Duo Burster Anpanman Peppermint 33,120 ชิ้น + Spearmint 33,120 ชิ้น',
     actD:46226, actText:''},
-  {apexPO:'PO 042', expD:46234, expText:''},
+  {apexPO:'PO 042', expD:46234, expText:'', actD:46227, actText:'',
+    remark:'Peppermint 60,000 / Spearmint 20,000 / Fusion 20,000 · รับแล้ว 24 Jul 2026 (เร็วกว่ากำหนดที่เลื่อนไว้ 31 Jul 2026)'},
   {apexPO:'PO 043', expD:46248, expText:''},
   {apexPO:'PO 044', expText:'4 Aug 2026\n7 Aug 2026', expD:null,
     remark:'4 Aug: Peppermint 50,000 + Spearmint 50,000\n7 Aug: Peppermint 70,000 + Spearmint 40,000'},
