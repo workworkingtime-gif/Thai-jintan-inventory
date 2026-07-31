@@ -713,8 +713,13 @@ const APEX_OVERRIDES = [
   {apexPO:'PO 037R01', expD:46226, expText:'',
     remark:'Anpanman · Peppermint: เลื่อนจาก 9→13 Jul เป็น 23 Jul 2026 / Spearmint: เลื่อนจาก 20→23 Jul เป็น 23 Jul 2026 (ทั้งสองรสมาบรรจบที่ 23 Jul 2026) · รับแล้วครบ 23 Jul 2026 ตาม Packing List: Dong-A Duo Burster Anpanman Peppermint 33,120 ชิ้น + Spearmint 33,120 ชิ้น',
     actD:46226, actText:''},
-  {apexPO:'PO 042', expD:46234, expText:'', actD:46227, actText:'',
-    remark:'Peppermint 60,000 / Spearmint 20,000 / Fusion 20,000 · รับแล้ว 24 Jul 2026 (เร็วกว่ากำหนดที่เลื่อนไว้ 31 Jul 2026)'},
+  // 31 Jul 2026: Ji แจ้งรายละเอียดว่ารับของจริงเป็น 2 รอบ ไม่ใช่มาครบทีเดียววันที่
+  // 24 Jul อย่างที่เคยบันทึกไว้ก่อนหน้า — แก้จาก actD เดี่ยวเป็น actText 2 บรรทัด
+  // (24 Jul + 31 Jul) ให้ตรงความจริง: รอบแรก Peppermint 25,000 + Spearmint 20,000,
+  // รอบสอง Peppermint 35,000 + Fusion 20,000 — รวมแล้ว Peppermint 60,000 /
+  // Spearmint 20,000 / Fusion 20,000 ตรงกับยอดสั่งเป๊ะ ("ครบ PO พอดี" ตามที่ Ji ว่า)
+  {apexPO:'PO 042', expD:46234, expText:'', actD:null, actText:'24 Jul 2026\n31 Jul 2026',
+    remark:'Peppermint 60,000 / Spearmint 20,000 / Fusion 20,000 · รับ 2 รอบ: 24 Jul 2026 (Peppermint 25,000 + Spearmint 20,000) และ 31 Jul 2026 (Peppermint 35,000 + Fusion 20,000) · รวมครบตามยอดสั่ง PO พอดี'},
   {apexPO:'PO 043', expD:46248, expText:''},
   {apexPO:'PO 044', expText:'4 Aug 2026\n7 Aug 2026', expD:null,
     remark:'4 Aug: Peppermint 50,000 + Spearmint 50,000\n7 Aug: Peppermint 70,000 + Spearmint 40,000'},
