@@ -721,7 +721,8 @@ const APEX_OVERRIDES = [
   // 31 Jul 2026: Ji ยืนยัน "SG · PO 26R01 มาแล้วนะ" — PO นี้อยู่ในชีตอยู่แล้ว (SG,
   // ส่ง PO 7 April 2026, ไม่มี Expected/Actual Date ในชีตเลย) sync สดมาแสดงอัตโนมัติ
   // อยู่ก่อนแล้ว แค่ยังไม่มี Actual Date — เพิ่ม override ตรงนี้แค่ actD (วันนี้)
-  {apexPO:'PO 26R01', actD:46234, actText:''},
+  {apexPO:'PO 26R01', actD:46234, actText:'',
+    remark:'INV 0042/26 - Pep 2,000 + Melon 1,000 · INV 0046/26 - Pep 8,000 + Melon 3,000 + Rasp 4,000 · หมายเหตุ: วันที่บันทึกรับของ (31 Jul 2026) อาจไม่ตรงกับวันที่ของมาถึงจริง แต่ Ji ยืนยันว่าของมาแล้ว (31 Jul 2026)'},
 ];
 function applyApexOverrides(){
   APEX_OVERRIDES.forEach(ov=>{
