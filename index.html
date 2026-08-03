@@ -723,6 +723,15 @@ const APEX_OVERRIDES = [
   {apexPO:'PO 043', expD:46248, expText:''},
   {apexPO:'PO 044', expText:'4 Aug 2026\n7 Aug 2026', expD:null,
     remark:'4 Aug: Peppermint 50,000 + Spearmint 50,000\n7 Aug: Peppermint 70,000 + Spearmint 40,000'},
+  // 31 Jul 2026: ชีตอัปเดต Expected Date ของ PO 046 จากวันเดียว (25 Aug 2026) เป็น
+  // 2 วัน ("8/19/2026 8/25/2026" ในชีต — รูปแบบ M/D/YYYY ติดกัน ไม่ใช่ D Mon YYYY จึง
+  // parse เป็นวันเดียวไม่ได้ และไม่ได้บอกว่าวันไหนของรสไหนด้วย) Ji ให้รายละเอียดยืนยัน
+  // ทางแชท 31 Jul 2026: 19 Aug = Spearmint 166 ลัง (39,840 ชิ้น) เต็มจำนวน + Peppermint
+  // 84 ลัง (20,160 ชิ้น) บางส่วน, 25 Aug = Peppermint 291 ลัง (69,840 ชิ้น) ที่เหลือ —
+  // รวม Peppermint 84+291=375 ลัง (90,000 ชิ้น) และ Spearmint 166 ลัง (39,840 ชิ้น)
+  // ตรงกับยอดสั่งเดิมเป๊ะ (240 ชิ้น/ลัง ทั้ง 2 รส)
+  {apexPO:'PO 046', expText:'19 Aug 2026\n25 Aug 2026', expD:null,
+    remark:'full service · 19 Aug: Spearmint 166 ลัง (39,840 ชิ้น) เต็มจำนวน + Peppermint 84 ลัง (20,160 ชิ้น) · 25 Aug: Peppermint 291 ลัง (69,840 ชิ้น) · รวม Peppermint 375 ลัง (90,000 ชิ้น) / Spearmint 166 ลัง (39,840 ชิ้น) ตรงยอดสั่งเดิม'},
   // 31 Jul 2026: Ji ยืนยัน "SG · PO 26R01 มาแล้วนะ" — PO นี้อยู่ในชีตอยู่แล้ว (SG,
   // ส่ง PO 7 April 2026, ไม่มี Expected/Actual Date ในชีตเลย) sync สดมาแสดงอัตโนมัติ
   // อยู่ก่อนแล้ว แค่ยังไม่มี Actual Date — เพิ่ม override ตรงนี้แค่ actD (วันนี้)
