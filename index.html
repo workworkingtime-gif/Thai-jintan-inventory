@@ -1631,6 +1631,11 @@ const APEX_PENDING_DRAWS = [
   // PO 047 (Nude/HK) ย้ายไปตัดสต็อกจริงแล้ว (ดู APEX_DRAWS ด้านบน) — 23 Jul 2026
   // Ji ยืนยัน "PO 047 — Sent to APEX · HK" จึงลบออกจากพรีวิวตรงนี้ ไม่งั้นจะโดน
   // หักซ้ำสองครั้งในช่อง "คาดว่าจะเหลือ" (ทั้งจากการตัดจริงและจากพรีวิวพร้อมกัน)
+  // 31 Jul 2026: Ji ขอเตรียมตัดสต็อก APEX PO 049 งาน "Duo Burster เกาหลี" (Ji ยืนยัน
+  // ตลาด KR ชัดเจนแล้ว — ก่อนหน้านี้พิมพ์ผิดเป็น "Nude เกาหลี" ถามกลับไปแล้วแก้ให้ถูก)
+  // Spearmint 1,355 ลัง — พรีวิวเท่านั้น ยังไม่ตัดสต็อกจริง
+  // 1,355 ลัง × 12 กล่องใน/ลัง × 20 ชิ้น/กล่องใน = 325,200 ชิ้น
+  {id:'apex_po049_kr_spearmint', market:'kr', apexPO:'PO 049', jobName:'Duo Burster (เกาหลี)', flavor:'Spearmint', pcs:325200},
 ];
 function pendingInner(pcs){ return (pcs||0)/IPU; }
 function pendingCartons(pcs){ return pendingInner(pcs)/IPC; }
