@@ -1821,12 +1821,21 @@ function apexPoSortKey(p){
 // ดึงวันที่แบบ "D Mon YYYY" (เช่น "16 July 2026", "9 Sep 2026") ออกมาทุกตัวที่
 // เจอในข้อความอิสระ (actText อาจมีหลายวันปนกัน คั่นด้วย comma/newline/"-->") —
 // ใช้เช็คว่า Actual Date ที่มี "ยังไม่ครบ" จริงไหม (20 Jul 2026, ตามที่ Ji ขอ)
+// 7 Aug 2026 (Ji ขอ "ทุกวันที่ที่มีบันทึกว่าของจะเข้า ก็แจ้งไว้บนปฏิทินเลยสิ"): เพิ่ม
+// การจับกลุ่มวันที่แบบ "6, 7, 16 July 2026" (หลายวันคั่น comma ใช้เดือน/ปีร่วมกันตัวเดียว
+// ท้ายกลุ่ม) ให้แตกออกมาเป็นวันที่แยกทั้งหมด แทนที่จะจับได้แค่ตัวสุดท้ายของกลุ่มเหมือนเดิม
+// — ทำให้ entry แบบ PO 016R01 ("6, 7, 16 July 2026") ก็ plot ขึ้นปฏิทินได้ครบทุกวันจริง
 const MONTH_IDX={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
 function parseFreeDates(str){
-  const out=[]; const re=/(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})/g; let m;
+  const out=[]; const re=/((?:\d{1,2}\s*,\s*)*\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})/g; let m;
   while((m=re.exec(String(str||'')))){
     const mon=MONTH_IDX[m[2].slice(0,3)];
-    if(mon!=null) out.push(Date.UTC(parseInt(m[3]),mon,parseInt(m[1])));
+    if(mon==null) continue;
+    const year=parseInt(m[3]);
+    m[1].split(',').forEach(dStr=>{
+      const day=parseInt(dStr.trim());
+      if(!isNaN(day)) out.push(Date.UTC(year,mon,day));
+    });
   }
   return out;
 }
@@ -1908,16 +1917,27 @@ function dayKey(ms){ const d=new Date(ms); return `${d.getFullYear()}-${d.getMon
 function calEvents(){
   const evs=[];
   const push=(ms,cat,label,sub)=>{ if(!ms) return; evs.push({ms,cat,label,sub}); };
+  // 7 Aug 2026 (Ji ขอ "ทุกวันที่ที่มีบันทึกว่าของจะเข้า ก็แจ้งไว้บนปฏิทินเลยสิ"): ถ้า field
+  // นั้นไม่มีวันที่เดี่ยว (…D) แต่มีข้อความอิสระ (…Text เช่น "24 Jul 2026\n31 Jul 2026" หรือ
+  // "6, 7, 16 July 2026") ให้ดึงวันที่ทุกตัวที่ parse ได้ออกมาแปะเป็นจุดบนปฏิทินให้ครบ แทนที่
+  // จะโดนดีดไปอยู่แค่ในลิสต์ "หลายวันที่ปนกันในช่องเดียว" ด้านล่างเฉยๆ เหมือนก่อนหน้านี้
+  const pushMulti=(text,cat,label,sub)=>{
+    parseFreeDates(text).forEach(ms=>push(ms,cat,label,sub));
+  };
   D.pos.forEach(p=>{
     push(p.expMs,'po-exp', `${p.vendor} ${p.po} — Expected`, p.product);
     push(p.actMs,'po-act', `${p.vendor} ${p.po} — Received`, p.product);
   });
   APEX_POS.forEach(p=>{
     const label = p.apexPO || p.custPO || 'APEX';
-    push(serialToMs(apexDateD(p,'sent')),'apex-sent', `${label} — Sent to APEX`, p.nat);
-    push(serialToMs(apexDateD(p,'exp')),'apex-exp', `${label} — Expected from APEX`, p.nat);
-    push(serialToMs(apexDateD(p,'act')),'apex-act', `${label} — Received from APEX`, p.nat);
-    push(serialToMs(apexDateD(p,'toCust')),'apex-cust', `${label} — Sent to Customer`, p.nat);
+    if(apexDateD(p,'sent')) push(serialToMs(apexDateD(p,'sent')),'apex-sent', `${label} — Sent to APEX`, p.nat);
+    else pushMulti(p.sentText,'apex-sent', `${label} — Sent to APEX`, p.nat);
+    if(apexDateD(p,'exp')) push(serialToMs(apexDateD(p,'exp')),'apex-exp', `${label} — Expected from APEX`, p.nat);
+    else pushMulti(p.expText,'apex-exp', `${label} — Expected from APEX`, p.nat);
+    if(apexDateD(p,'act')) push(serialToMs(apexDateD(p,'act')),'apex-act', `${label} — Received from APEX`, p.nat);
+    else pushMulti(p.actText,'apex-act', `${label} — Received from APEX`, p.nat);
+    if(apexDateD(p,'toCust')) push(serialToMs(apexDateD(p,'toCust')),'apex-cust', `${label} — Sent to Customer`, p.nat);
+    else pushMulti(p.toCustText,'apex-cust', `${label} — Sent to Customer`, p.nat);
   });
   evs.sort((a,b)=>a.ms-b.ms);
   return evs;
@@ -1925,9 +1945,12 @@ function calEvents(){
 function pageCalendar(){
   const evs=calEvents();
   const unscheduled=[];
+  // 7 Aug 2026: ตอนนี้ pushMulti() ใน calEvents() ดึงวันที่ที่ parse ได้จาก …Text ไปแปะ
+  // บนปฏิทินให้แล้ว เหลือแค่เคสที่ parse ไม่ได้เลยจริงๆ (เช่น "Jul + Oct" ที่ไม่มีรูปแบบ
+  // "D Month Year" ให้จับ) เท่านั้นที่ยังต้องมาอยู่ในลิสต์นี้ — ใช้ parseFreeDates() เช็คซ้ำ
   APEX_POS.forEach(p=>{
     ['sent','exp','act','toCust'].forEach(fld=>{
-      if(!p[fld+'D'] && p[fld+'Text']) unscheduled.push(`${p.apexPO||p.custPO||'APEX'} — ${fld}: ${p[fld+'Text']}`);
+      if(!p[fld+'D'] && p[fld+'Text'] && parseFreeDates(p[fld+'Text']).length===0) unscheduled.push(`${p.apexPO||p.custPO||'APEX'} — ${fld}: ${p[fld+'Text']}`);
     });
   });
   const now=new Date();
