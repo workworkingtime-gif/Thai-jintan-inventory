@@ -737,6 +737,14 @@ const APEX_OVERRIDES = [
   // อยู่ก่อนแล้ว แค่ยังไม่มี Actual Date — เพิ่ม override ตรงนี้แค่ actD (วันนี้)
   {apexPO:'PO 26R01', actD:46234, actText:'',
     remark:'INV 0042/26 - Pep 2,000 + Melon 1,000 · INV 0046/26 - Pep 8,000 + Melon 3,000 + Rasp 4,000 · หมายเหตุ: วันที่บันทึกรับของ (31 Jul 2026) อาจไม่ตรงกับวันที่ของมาถึงจริง แต่ Ji ยืนยันว่าของมาแล้ว (31 Jul 2026)'},
+  // 7 Aug 2026: Ji แจ้งว่าหน้าเว็บ APEX PO Order Log ของ PO 049 (KR, Duo Burster
+  // Spearmint) คอลัมน์ Expected ขึ้น "—" ทั้งที่ Ji เห็นวันที่คาดว่าจะได้ของอยู่แล้ว —
+  // เช็คชีต "APX Tracking" สดพบว่าเซลล์ Expected Date ของแถวนี้เป็นข้อความ
+  // "15, 16, 19 August 2026" (พิมพ์ตรงๆ ไม่ใช่วันที่จริงทีเดียว 3 วันในเซลล์เดียว) —
+  // คอลัมน์นี้ในชีตถูกตั้งฟอร์แมตเป็น Date กับแถวส่วนใหญ่ ทำให้ gviz คืนค่า v เป็น
+  // null สำหรับเซลล์ที่พิมพ์ข้อความไม่ตรงรูปแบบวันที่แบบนี้ (เจอปัญหาเดียวกันมาก่อน
+  // กับ PO 044/046 ที่ต้องใช้ override เหมือนกัน) — ใส่ override ตรงนี้ให้ขึ้นถูกต้อง
+  {apexPO:'PO 049', expText:'15 Aug 2026\n16 Aug 2026\n19 Aug 2026', expD:null},
 ];
 function applyApexOverrides(){
   APEX_OVERRIDES.forEach(ov=>{
