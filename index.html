@@ -708,7 +708,13 @@ function nl2br(s){ return String(s||'').split('\n').filter(x=>x.trim()).join('<b
 // (เพราะ syncApex() ล้าง APEX_POS ทั้งอาเรย์แล้วดึงจากชีตใหม่ทุก 3 นาที ถ้าไม่
 // apply ซ้ำทุกรอบ ค่าที่ override ไว้จะหายไปตอน sync รอบถัดไป)
 const APEX_OVERRIDES = [
-  {apexPO:'PO 016R01', actText:'Spearmint: 6, 7, 16 July 2026\nPeppermint: 7, 8, 9 Sep 2026', actD:null},
+  // 19 Aug 2026: remark ในชีตเขียน "7, 8, 9 --> 24 Sep 2026 (Peppermint)" — ตัว gviz
+  // API อ่านได้แค่ข้อความล้วน อ่านสีตัวอักษร/ขีดฆ่าในเซลล์ไม่ได้ (ดู LIMITATION ที่
+  // gvizLoadFetch ด้านล่าง) จึงบอกไม่ได้เองว่าเลขไหนในชุด "7, 8, 9" ถูกขีดฆ่าเปลี่ยน
+  // เป็น 24 บ้าง — Ji ยืนยันทางแชทว่าที่จริงคือแค่วันที่ 9 ก.ย. เปลี่ยนเป็น 24 ก.ย.
+  // ส่วน 7 และ 8 ก.ย. ยังเหมือนเดิม ("now it's become 7,8,24 sep")
+  {apexPO:'PO 016R01', actText:'Spearmint: 6, 7, 16 July 2026\nPeppermint: 7, 8, 24 Sep 2026', actD:null,
+    remark:'Spearmint: 6, 7, 16 Jul 2026 (แบ่งส่ง 1,200 ลัง) · Peppermint: 7, 8 Sep 2026 + 24 Sep 2026 (เดิม 9 Sep เลื่อนเป็น 24 Sep — Ji ยืนยัน 19 Aug 2026)'},
   {apexPO:'PO 031', expD:46227, expText:'', actD:46227, actText:''},
   {apexPO:'PO 037R01', expD:46226, expText:'',
     remark:'Anpanman · Peppermint: เลื่อนจาก 9→13 Jul เป็น 23 Jul 2026 / Spearmint: เลื่อนจาก 20→23 Jul เป็น 23 Jul 2026 (ทั้งสองรสมาบรรจบที่ 23 Jul 2026) · รับแล้วครบ 23 Jul 2026 ตาม Packing List: Dong-A Duo Burster Anpanman Peppermint 33,120 ชิ้น + Spearmint 33,120 ชิ้น',
@@ -765,7 +771,10 @@ function applyApexOverrides(){
 const APEX_POS = [
   {nat:'KR',custPO:'PO 26032172',inv:'INV 0036/26',apexPO:'PO 013',sentD:46145,expD:46116,actD:null,toCustD:46121,remark:'PKM 62,400 C62'},
   {nat:'KR',custPO:'PO 26032172',inv:'INV 0034/26',apexPO:'PO 013',sentD:46145,expD:46109,actD:null,toCustD:46120,remark:'PKM 60,000 C62'},
-  {nat:'KR',custPO:'PO 25102183',inv:'',apexPO:'PO 016R01',sentD:46160,expText:'Jul + Oct',actText:'6,8,16 Jul/5,6,7 Sep',toCustText:'8,9 Jul/10 Sep',remark:'แบ่งส่ง 1,200 ลัง · เพิ่มรอบส่ง 7,8,9 ก.ย. 69 (Peppermint)'},
+  // หมายเหตุ: entry นี้เป็นแค่ค่า fallback ก่อน live sync เสร็จ ไม่ใช่ค่าจริงล่าสุด —
+  // 19 Aug 2026 แก้ remark ให้ตรงกับชีตจริง (เดิมเขียนผิดว่า "7,8,9 ก.ย." ทั้งที่จริง
+  // Ji ยืนยันแล้วว่าคือ 7,8,24 ก.ย. — ดู APEX_OVERRIDES ด้านบนสำหรับค่าที่ใช้จริง)
+  {nat:'KR',custPO:'PO 25102183',inv:'',apexPO:'PO 016R01',sentD:46160,expText:'Jul + Oct',actText:'6,7,16 Jul/7,8,24 Sep',toCustText:'8,9 Jul/10 Sep',remark:'แบ่งส่ง 1,200 ลัง · Peppermint 7,8,24 ก.ย. 69 (เดิม 9 ก.ย. เลื่อนเป็น 24 ก.ย.)'},
   {nat:'HK',custPO:'PO 260407003',inv:'PI 0024/26',apexPO:'PO 027R01',sentD:46119,expD:46142,actD:46148,toCustD:46148,remark:'PI TJ 0010 + PI 0024'},
   {nat:'HK',custPO:'PO 260416001',inv:'PI 0039/26',apexPO:'PO 030R01',sentD:46147,expD:46170,actD:46170,toCustD:46171,remark:''},
   {nat:'KR',custPO:'',inv:'INV 0045/26',apexPO:'PO 031',sentD:46141,expD:46219,actD:46228,toCustD:null,remark:'Sampling 300,000 C62'},
@@ -1874,20 +1883,25 @@ function parseNumericDates(str){
 function msToDateStr(ms){ return new Date(ms).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
 // Ji ขอ (19 Aug 2026): "ทำแบบนั้นตลอดเลยได้มั้ย ... คุณไม่สามารถจดจำแล้วทำกับทุกๆอันได้
 // หรอ" — แทนที่จะรอ Ji ทักทีละ PO ที่ Expected Date ว่างแต่ Remark มีวันที่ซ่อนอยู่ ให้ดึง
-// วันที่จาก Remark มาโชว์เป็น Expected อัตโนมัติทุกครั้งที่เจอรูปแบบนี้ — ใช้เฉพาะตอนที่
-// ไม่มี expD/expText อยู่แล้วเท่านั้น (ถ้ามีค่าจริง/ค่าที่ยืนยันแล้วอยู่แล้ว ไม่แตะ ไม่เดาทับ)
+// วันที่จาก Remark มาโชว์เป็น Expected อัตโนมัติทุกครั้งที่เจอรูปแบบนี้ — ใช้ตอนที่ไม่มี
+// expD และ expText ไม่มีวันที่จริงที่ parse ได้เลย (ครอบคลุมทั้งกรณีว่างเปล่าสนิท และ
+// กรณีเป็นข้อความ placeholder ที่ไม่มีวันที่จริงอยู่ เช่น "July + Oct" ของ PO 016R01 —
+// 19 Aug 2026 Ji ทักว่าทำไม PO 016R01 ไม่ได้ auto-fallback เหมือน PO 053/054 สาเหตุคือ
+// expText มีข้อความอยู่แล้ว (แค่ไม่ใช่วันที่จริง) เงื่อนไขเดิมเลยข้ามไป — แก้ให้เช็ค "มีวันที่
+// จริงในนั้นไหม" แทน "มีข้อความอยู่ไหม") — ถ้ามีวันที่จริง/ที่ Ji ยืนยันแล้วอยู่แล้ว ไม่แตะ ไม่เดาทับ
 function expTextFallback(p){
-  if(p.expD || p.expText) return null;
+  if(p.expD) return null;
+  if(p.expText && parseFreeDates(p.expText).length) return null;
   const dates=[...new Set(parseNumericDates(p.remark))].sort((a,b)=>a-b);
   return dates.length ? dates.map(msToDateStr).join('\n') : null;
 }
 // คืนค่าที่ใช้แสดงจริงของ Expected พร้อมบอกว่าเป็นค่าที่ดึงจาก Remark อัตโนมัติหรือไม่
 // (auto:true จะโชว์ไอคอน 🔎 กำกับไว้ ให้รู้ว่ายังไม่ใช่ Expected Date ที่ยืนยันจาก APEX ตรงๆ)
 function apexExpDisplay(p){
+  const fb=expTextFallback(p); // ไม่ว่าง = ไม่มีวันที่จริงอยู่แล้ว (ทั้งกรณีว่างเปล่า/placeholder) แต่ Remark มีวันที่จริงให้ใช้แทน
+  if(fb) return {text:fb, auto:true};
   const direct=apexDate(p,'exp');
-  if(direct) return {text:direct, auto:false};
-  const fb=expTextFallback(p);
-  return fb ? {text:fb, auto:true} : {text:'', auto:false};
+  return {text:direct||'', auto:false};
 }
 // สถานะ PO — เดิมเช็คแค่ "มี Actual Date ไหม" พอ แต่ถ้า Actual Date เป็นข้อความ
 // รวมหลายรอบส่ง (เช่น PO 016R01 ที่ส่ง Spearmint ไปแล้วแต่ Peppermint ยังไม่ถึง
@@ -1987,7 +2001,7 @@ function calEvents(){
     if(apexDateD(p,'sent')) push(serialToMs(apexDateD(p,'sent')),'apex-sent', `${label} — Sent to APEX`, p.nat);
     else pushMulti(p.sentText,'apex-sent', `${label} — Sent to APEX`, p.nat);
     if(apexDateD(p,'exp')) push(serialToMs(apexDateD(p,'exp')),'apex-exp', `${label} — Expected from APEX`, p.nat);
-    else pushMulti(p.expText||expTextFallback(p),'apex-exp', `${label} — Expected from APEX`, p.nat);
+    else pushMulti(expTextFallback(p)||p.expText,'apex-exp', `${label} — Expected from APEX`, p.nat);
     if(apexDateD(p,'act')) push(serialToMs(apexDateD(p,'act')),'apex-act', `${label} — Received from APEX`, p.nat);
     else pushMulti(p.actText,'apex-act', `${label} — Received from APEX`, p.nat);
     if(apexDateD(p,'toCust')) push(serialToMs(apexDateD(p,'toCust')),'apex-cust', `${label} — Sent to Customer`, p.nat);
