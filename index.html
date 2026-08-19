@@ -1172,7 +1172,19 @@ async function syncApex(){
     const rows=[];
     resp.table.rows.forEach(r=>{
       const c=r.c||[];
-      const val=i=> i<0||!c[i] ? null : c[i].v;
+      // 14 Aug 2026: เจอปัญหาซ้ำหลายรอบ (PO 044/046/049/016R01/053/054 ฯลฯ) — คอลัมน์
+      // "Expected Date"/"Actual Date" ในชีตถูกตั้งฟอร์แมตเป็น Date กับแถวส่วนใหญ่ ทำให้
+      // เซลล์ไหนที่พิมพ์ข้อความอิสระ (เช่นหลายวันในเซลล์เดียว "30/9/2026 29/9/2026") ไม่
+      // เข้ารูปแบบ Date จริง gviz จะคืนค่า v เป็น null (มีแค่ f ที่เป็นข้อความที่แสดงจริง)
+      // — เดิม val() อ่านแค่ .v เลยได้ null แล้วกลายเป็น "—" บนหน้าเว็บทั้งที่ชีตมีข้อมูลอยู่
+      // แก้ตรงนี้ทีเดียวให้ fallback ไปอ่าน .f แทนเมื่อ .v เป็น null แต่ .f มีค่า — ครอบคลุม
+      // ทุก PO ในอนาคตที่มีรูปแบบเดียวกัน ไม่ต้องมาเพิ่ม APEX_OVERRIDES ทีละตัวอีกเรื่อยๆ
+      const val=i=>{
+        if(i<0||!c[i]) return null;
+        const cell=c[i];
+        if(cell.v!=null) return cell.v;
+        return (cell.f!=null && cell.f!=='') ? cell.f : null;
+      };
       const nat=val(iNat);
       if(!nat) return; // skip blank rows
       const pick=i=>{
