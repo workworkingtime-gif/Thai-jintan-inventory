@@ -1657,6 +1657,10 @@ const APEX_DRAWS = [
   // ชิ้น ÷ 20 ชิ้นต่อกล่องใน (อัตราที่ Ji ยืนยัน 22 Jul 2026)
   {id:'apex_po047_hk_peppermint_draw', market:'hk', flavor:'Peppermint', unit:'inner', qty:420, poRef:'APEX PO 047 (Nude)'},
   {id:'apex_po047_hk_honeylemon_draw', market:'hk', flavor:'Honey lemon', unit:'inner', qty:420, poRef:'APEX PO 047 (Nude)'},
+  // 21 Aug 2026: Ji ยืนยัน "PO 49 update status from เตรียมตัดออกเป็น ตัดออกไปได้เลย
+  // เพราะตัดเรียบร้อยแล้ว" — โปรโมทจากพรีวิวใน APEX_PENDING_DRAWS (ด้านล่าง) มาตัดสต็อก
+  // จริงแล้ว (ลบ entry เดิมออกจาก pending ด้วย กันตัดซ้ำสองครั้ง) — 1,355 ลัง Spearmint
+  {id:'apex_po049_kr_spearmint_draw', market:'kr', flavor:'Spearmint', unit:'carton', qty:1355, poRef:'APEX PO 049 (Duo Burster เกาหลี)'},
 ];
 function applyApexDraw(d){
   performApexDraw(d.market, d.flavor, d.unit, d.qty, d.poRef);
@@ -1679,7 +1683,9 @@ const APEX_PENDING_DRAWS = [
   // ตลาด KR ชัดเจนแล้ว — ก่อนหน้านี้พิมพ์ผิดเป็น "Nude เกาหลี" ถามกลับไปแล้วแก้ให้ถูก)
   // Spearmint 1,355 ลัง — พรีวิวเท่านั้น ยังไม่ตัดสต็อกจริง
   // 1,355 ลัง × 12 กล่องใน/ลัง × 20 ชิ้น/กล่องใน = 325,200 ชิ้น
-  {id:'apex_po049_kr_spearmint', market:'kr', apexPO:'PO 049', jobName:'Duo Burster (เกาหลี)', flavor:'Spearmint', pcs:325200},
+  // 21 Aug 2026: Ji ยืนยันตัดจริงแล้ว ("ตัดออกไปได้เลย เพราะตัดเรียบร้อยแล้ว") — ย้าย
+  // entry นี้ไปเป็น APEX_DRAWS (ตัดสต็อกจริง) ด้านบนแล้ว ลบออกจาก pending preview
+  // ตรงนี้ กันไม่ให้โดนหักซ้ำสองครั้งทั้งจากพรีวิวและของจริงพร้อมกัน
 ];
 function pendingInner(pcs){ return (pcs||0)/IPU; }
 function pendingCartons(pcs){ return pendingInner(pcs)/IPC; }
