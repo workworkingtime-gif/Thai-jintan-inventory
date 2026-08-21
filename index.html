@@ -1686,6 +1686,14 @@ const APEX_PENDING_DRAWS = [
   // 21 Aug 2026: Ji ยืนยันตัดจริงแล้ว ("ตัดออกไปได้เลย เพราะตัดเรียบร้อยแล้ว") — ย้าย
   // entry นี้ไปเป็น APEX_DRAWS (ตัดสต็อกจริง) ด้านบนแล้ว ลบออกจาก pending preview
   // ตรงนี้ กันไม่ให้โดนหักซ้ำสองครั้งทั้งจากพรีวิวและของจริงพร้อมกัน
+  // 21 Aug 2026: Ji ขอเตรียมตัดสต็อก APEX PO 056 งานเกาหลี — ตอนแรกเช็คทั้ง gviz API สด
+  // (raw JSON, ลอง cache-bust ด้วยแล้ว) และชีต Supplier/Singapore ก็ยังไม่เจอแถวนี้เลย —
+  // Ji ส่งสกรีนช็อตจากชีตจริงมายืนยันโดยตรง: KR, PO 056, Expected 20 Aug 2026, remark
+  // "Dong-A Peppermint Anpanman จำนวน 60,000 units (250 cartons)" (แถวเดียวกับ PO 055
+  // ที่ Actual Date เขียนว่า "cancel" ตรงกับที่มาร์คไว้เป็นยกเลิกแล้วพอดี) — เชื่อสกรีนช็อต
+  // ของจริงเป็นหลัก (เหมือนกรณี PO 049 ก่อนหน้านี้) พรีวิวเท่านั้น ยังไม่ตัดสต็อกจริง
+  // 60,000 ชิ้น ÷ 20 ชิ้น/กล่องใน ÷ 12 กล่องใน/ลัง = 250 ลัง ตรงกับ remark เป๊ะ
+  {id:'apex_po056_kr_peppermint', market:'kr', apexPO:'PO 056', jobName:'Dong-A Peppermint Anpanman (เกาหลี)', flavor:'Peppermint', pcs:60000},
 ];
 function pendingInner(pcs){ return (pcs||0)/IPU; }
 function pendingCartons(pcs){ return pendingInner(pcs)/IPC; }
