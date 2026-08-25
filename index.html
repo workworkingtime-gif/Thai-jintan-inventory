@@ -684,7 +684,16 @@ const DEF_POS = [
   // ชีตจริง ("Peppermint 1000 Spearmint 500") ยืนยันแล้วว่าตรงกับชีต ตอนนี้ที่
   // ใส่ items ให้แล้ว รายการนี้จะกลายเป็น "PO ที่มีอยู่แล้ว" — sync ครั้งต่อไปจะ
   // อัปเดตแค่วันที่/สถานะ ไม่แตะ items นี้อีก (เหมือน PO อื่นๆ ทั้งหมด)
-  {id:'s14',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/007',sentMs:null,sent:null,expMs:Date.UTC(2026,6,23),exp:'23 Jul 2026',actMs:Date.UTC(2026,6,17),act:'17 Jul 2026',dest:'Thai Jintan',items:[{f:'Peppermint',q:1000},{f:'Spearmint',q:500}],remark:'กล่องลัง USA; Peppermint 1000 Spearmint 500 · รับแล้ว 17 Jul 2026 (เร็วกว่ากำหนด 23 Jul 2026) · USA ไม่มีตารางสต็อกแยกในแดชบอร์ด (Ji ยืนยัน 20 Jul 2026) — มาร์คสถานะ + รายละเอียดไว้ใน Remark เท่านั้น ไม่กระทบตัวเลข apex/Thai Jintan ของตลาดไหนเลย'},
+  // 25 Aug 2026: Ji แจ้งวันที่ส่ง PO ให้เองทางแชท ("007 9 july 2026") — เติมให้ตรงนี้
+  {id:'s14',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/007',sentMs:Date.UTC(2026,6,9),sent:'09 Jul 2026',expMs:Date.UTC(2026,6,23),exp:'23 Jul 2026',actMs:Date.UTC(2026,6,17),act:'17 Jul 2026',dest:'Thai Jintan',items:[{f:'Peppermint',q:1000},{f:'Spearmint',q:500}],remark:'กล่องลัง USA; Peppermint 1000 Spearmint 500 · รับแล้ว 17 Jul 2026 (เร็วกว่ากำหนด 23 Jul 2026) · USA ไม่มีตารางสต็อกแยกในแดชบอร์ด (Ji ยืนยัน 20 Jul 2026) — มาร์คสถานะ + รายละเอียดไว้ใน Remark เท่านั้น ไม่กระทบตัวเลข apex/Thai Jintan ของตลาดไหนเลย'},
+  // 25 Aug 2026: PO 008 เดิมเป็น entry ที่ live sync สร้างขึ้นเองอัตโนมัติ (ไม่มีอยู่ใน
+  // DEF_POS มาก่อน เพราะ Ji เพิ่งเจอบั๊กสถานะ "มาแล้ว" ทั้งที่ Actual Date ยังไม่ถึงของ PO
+  // นี้เมื่อกี้) ตอนนี้ Ji แจ้งวันที่ส่ง PO มาทางแชท ("008R1 11 august 2026") — เช็คชีตสด
+  // แล้วคอลัมน์ PO No. ยังเขียนว่า "01INT-PPP26/008" เฉยๆ ไม่มี "R1" ต่อท้าย จึงยังคงเลข PO
+  // เดิมไว้ก่อน (ไม่เปลี่ยนชื่อ PO เอง กันชนกับที่ sync จับคู่ด้วย po string เป๊ะๆ) — ถ้า Ji
+  // ยืนยันว่าจริงๆ ต้องเป็น "008R1" จะแก้ให้ทันที รายการ/จำนวนสินค้าดึงจาก remark ของชีตจริง
+  // ตรงๆ (Peppermint 1000, Spearmint 200, Berries 200, Honey Lemon 200, Melon 200, Fusion 200)
+  {id:'s15',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/008',sentMs:Date.UTC(2026,7,11),sent:'11 Aug 2026',expMs:Date.UTC(2026,7,28),exp:'28 Aug 2026',actMs:Date.UTC(2026,7,28),act:'28 Aug 2026',dest:'Thai Jintan',items:[{f:'Peppermint',q:1000},{f:'Spearmint',q:200},{f:'Berries',q:200},{f:'Honey lemon',q:200},{f:'Melon',q:200},{f:'Fusion',q:200}],remark:'กล่องลัง USA; Peppermint 1000 Spearmint 200 Berries 200 Honey Lemon 200 Melon 200 Fusion 200 · Ji แจ้งวันที่ส่ง PO 11 Aug 2026 (25 Aug 2026) · USA ไม่มีตารางสต็อกแยกในแดชบอร์ด — มาร์คสถานะ + รายละเอียดไว้ใน Remark เท่านั้น ไม่กระทบตัวเลข apex/Thai Jintan ของตลาดไหนเลย'},
 ];
 // Each APEX PO row stores raw Excel-serial day numbers (…D) for clean single dates,
 // plus free-text fallbacks (…Text) for cells that contain multiple/irregular dates
@@ -795,7 +804,7 @@ const APEX_POS = [
 ];
 applyApexOverrides(); // ครอบค่า fallback ตั้งแต่ตอน parse หน้าเว็บครั้งแรก ก่อน live sync จะทำงาน
 // ─── STATE ────────────────────────────────────────────────────────────────
-let D = { hk:[], hkOuter:[], sg:[], sgOuter:[], kr:[], pos:[], audit:[], received:{}, patches_applied:[] };
+let D = { hk:[], hkOuter:[], sg:[], sgOuter:[], kr:[], pos:[], audit:[], received:{}, patches_applied:[], poOverrides:{} };
 let TAB = 'stock';
 let STOCK_SUB = 'hk'; // which country is shown inside the merged Stock tab: 'hk' | 'sg' | 'kr'
 let incOpen = false;
@@ -833,10 +842,10 @@ async function saveAll(opts){
   opts = opts || {};
   const interactive = opts.interactive !== false;
   try{
-    await storage.set('inv_v1', JSON.stringify({hk:D.hk,hkOuter:D.hkOuter,sg:D.sg,sgOuter:D.sgOuter,kr:D.kr,received:D.received,audit:D.audit,patches_applied:D.patches_applied||[]}));
+    await storage.set('inv_v1', JSON.stringify({hk:D.hk,hkOuter:D.hkOuter,sg:D.sg,sgOuter:D.sgOuter,kr:D.kr,received:D.received,audit:D.audit,patches_applied:D.patches_applied||[],poOverrides:D.poOverrides||{}}));
   }catch(e){ console.error('local save failed',e); }
   if(!LIVE_BACKEND_ENABLED) return;
-  const payload = {hk:D.hk,hkOuter:D.hkOuter,sg:D.sg,sgOuter:D.sgOuter,kr:D.kr,received:D.received,audit:D.audit,patches_applied:D.patches_applied||[]};
+  const payload = {hk:D.hk,hkOuter:D.hkOuter,sg:D.sg,sgOuter:D.sgOuter,kr:D.kr,received:D.received,audit:D.audit,patches_applied:D.patches_applied||[],poOverrides:D.poOverrides||{}};
   // If we give up on pushing an interactive (user-initiated) edit — wrong PIN
   // entered too many times, or the user cancels the PIN prompt — the local
   // screen already shows the edit applied (optimistic UI, same as before this
@@ -906,13 +915,19 @@ function applyLoadedState_(d){
     D.received = d.received || {};
     D.audit = d.audit || [];
     D.patches_applied = d.patches_applied || [];
+    // 25 Aug 2026: Ji ขอให้แก้ข้อมูล Supplier PO (เช่นวันที่ "ส่ง PO") ได้ตรงในหน้าเว็บเลย
+    // ("can't you just update in the program? Why i have to keep update in the code") —
+    // poOverrides เก็บค่าที่ Ji แก้เองผ่านฟอร์มในหน้าเว็บ (คีย์ด้วย po string ที่คงที่เสมอ
+    // ไม่ใช้ id เพราะ id ของ entry ที่มาจาก live sync เปลี่ยนได้ถ้าเลื่อนไปเป็น static entry
+    // ทีหลัง) sync ผ่าน backend เดียวกับสต็อก ใช้ได้ทุกคนที่เปิดลิงก์ ไม่ต้องแก้โค้ดอีกต่อไป
+    D.poOverrides = d.poOverrides || {};
   } else {
     D.hk = JSON.parse(JSON.stringify(DEF_HK));
     D.hkOuter = JSON.parse(JSON.stringify(DEF_HK_OUTER));
     D.sg = JSON.parse(JSON.stringify(DEF_SG));
     D.sgOuter = JSON.parse(JSON.stringify(DEF_SG_OUTER));
     D.kr = JSON.parse(JSON.stringify(DEF_KR));
-    D.received = {}; D.audit = []; D.patches_applied = [];
+    D.received = {}; D.audit = []; D.patches_applied = []; D.poOverrides = {};
   }
   // ensure Black Spearmint exists in HK stock (migration)
   if(!D.hk.find(x=>x.flavor==='Black Spearmint')){
@@ -991,6 +1006,7 @@ async function loadAll(){
       patched = true;
     }
   }
+  applyPOOverrides();
   if(patched) await saveAll({interactive:false});
   updateGasBadge();
   renderNav(); renderMain(); renderIncBar();
@@ -1426,6 +1442,7 @@ async function syncSupplierPOs(){
         }
       });
     });
+    applyPOOverrides(); // ทับด้วยค่าที่ Ji แก้เองผ่านหน้าเว็บ ทุกครั้งที่ sync สด (กันชีตทับกลับ)
     LIVE.supplier = {status:'ok', ts:Date.now()};
   }catch(e){
     console.warn('Supplier PO live sync failed, keeping last known data:', e);
@@ -1744,6 +1761,49 @@ function poArrived(p){
   if(!p.act) return false;
   return p.actMs==null || p.actMs<=Date.now();
 }
+// 25 Aug 2026: Ji ชี้แจงว่างาน USA ไม่จำเป็นต้องมีวันที่ "ส่ง PO" เลย — แค่มีบันทึกว่า
+// ของเข้ามาแล้วก็พอ ("เพราะงาน USA แค่ต้องมีบันทึกการมีอยู่ก็พอว่ามีของเข้าแล้วก็พอแล้ว")
+// สอดคล้องกับที่เช็คไปแล้วว่าบล็อก PPP ในชีต Supplier ไม่มีคอลัมน์ "วันที่ส่ง PO" อยู่เลย
+// (ต่างจาก SJR ที่มี sync สดได้จริง) — งาน USA จึงไม่ใช่ "ข้อมูลขาดหาย/ผิดปกติ" ที่ต้องเตือน
+// สีแดง แค่เป็นฟิลด์ที่ตลาดนี้ไม่ได้ติดตามตั้งแต่ต้น ต่างจาก KR/HK/SG ที่ยังต้องเตือนเหมือนเดิม
+// เพราะสำหรับตลาดเหล่านั้นวันที่นี้มีความหมายจริง (004R1/006 เป็นตัวอย่าง KR ที่มีวันที่)
+function sentCellHtml(p){
+  if(p.sent) return {text:p.sent, style:''};
+  if(p.nat==='USA') return {text:'—', style:'color:#b7c0c8'};
+  return {text:'ยังไม่มี', style:'color:#c0392b;font-weight:600'};
+}
+// 25 Aug 2026: ทับค่า D.pos ด้วยสิ่งที่ Ji แก้เองผ่านฟอร์มในหน้าเว็บ (D.poOverrides คีย์
+// ด้วย po string) — เรียกทั้งตอนโหลดหน้าแรก (หลัง D.pos + D.poOverrides พร้อมแล้ว) และ
+// หลัง syncSupplierPOs() สำเร็จทุกครั้ง (กันชีตสด/ค่า default ทับค่าที่ Ji แก้เองกลับ) —
+// แพทเทิร์นเดียวกับ applyApexOverrides() ที่ใช้กับหน้า APEX อยู่แล้ว
+function applyPOOverrides(){
+  if(!D.poOverrides) return;
+  Object.keys(D.poOverrides).forEach(po=>{
+    const entry = D.pos.find(p=>p.po===po);
+    if(!entry) return;
+    const ov = D.poOverrides[po];
+    Object.keys(ov).forEach(k=>{ entry[k]=ov[k]; });
+  });
+}
+// ฟิลด์ที่ Ji แก้เองได้ตรงในหน้าเว็บสำหรับ Supplier PO แต่ละใบ (ไม่ต้องแก้โค้ด/deploy อีก) —
+// จับคู่กับ input ในฟอร์มของ showPOSheet() ด้านล่าง
+function savePOField(po, field, dateStr){
+  if(!dateStr) return;
+  const ms = Date.parse(dateStr+'T00:00:00Z');
+  if(isNaN(ms)){ alert('รูปแบบวันที่ไม่ถูกต้อง'); return; }
+  const text = msToDateStr(ms);
+  D.poOverrides = D.poOverrides || {};
+  D.poOverrides[po] = D.poOverrides[po] || {};
+  D.poOverrides[po][field] = text;
+  D.poOverrides[po][field+'Ms'] = ms;
+  applyPOOverrides();
+  const entry = D.pos.find(p=>p.po===po);
+  const label = field==='sent'?'ส่ง PO':field==='exp'?'Expected':field;
+  logAudit('po_edit', po, `แก้ ${label} เป็น ${text} (แก้เองผ่านหน้าเว็บ)`, null, null, null, null, 'Supplier-PO');
+  saveAll();
+  renderMain();
+  closeSheet();
+}
 function incomingByFlavor(marketKey){
   const map = {};
   D.pos.forEach(p=>{
@@ -1861,10 +1921,11 @@ function pagePO(){
         const dateOnly = dm ? dm[0] : actRaw;
         actShown = `${dateOnly} <span title="มีหมายเหตุเพิ่มเติม — คลิกแถวเพื่อดู" style="cursor:help">📝</span>`;
       }
+      const sentCell = sentCellHtml(p);
       html+=`<tr onclick="showPOSheet(this,${JSON.stringify(p).replace(/"/g,'&quot;')})">
         <td style="font-weight:600;white-space:nowrap">${p.po}</td><td style="white-space:nowrap">${p.product}</td>
         <td style="white-space:nowrap"><span class="nat ${nc}">${p.nat}</span></td>
-        <td style="white-space:nowrap;${p.sent?'':'color:#c0392b;font-weight:600'}">${p.sent||'ยังไม่มี'}</td>
+        <td style="white-space:nowrap;${sentCell.style}">${sentCell.text}</td>
         <td style="white-space:nowrap">${p.exp||'—'}</td>
         <td style="white-space:nowrap">${actShown}</td>
         <td style="white-space:nowrap">${badge}</td>
@@ -1914,6 +1975,13 @@ function parseNumericDates(str){
   return out;
 }
 function msToDateStr(ms){ return new Date(ms).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+// yyyy-mm-dd — สำหรับ prefill ค่าใน <input type="date"> (25 Aug 2026, ฟีเจอร์แก้ Supplier PO ในหน้าเว็บ)
+function msToInputDate(ms){ if(ms==null) return ''; return new Date(ms).toISOString().slice(0,10); }
+function toggleEditPO(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.style.display = (el.style.display==='none'||!el.style.display) ? 'flex' : 'none';
+}
 // Ji ขอ (19 Aug 2026): "ทำแบบนั้นตลอดเลยได้มั้ย ... คุณไม่สามารถจดจำแล้วทำกับทุกๆอันได้
 // หรอ" — แทนที่จะรอ Ji ทักทีละ PO ที่ Expected Date ว่างแต่ Remark มีวันที่ซ่อนอยู่ ให้ดึง
 // วันที่จาก Remark มาโชว์เป็น Expected อัตโนมัติทุกครั้งที่เจอรูปแบบนี้ — ใช้ตอนที่ไม่มี
@@ -2412,13 +2480,22 @@ function showPOSheet(row, p){
     ?p.items.filter(i=>i.f).map(i=>`<div class="srow"><div>${i.f}</div><span class="sq in">${i.q?'+'+f(i.q):''}</span></div>`).join('')
     :'<div style="color:#8fa3b0;font-size:13px;padding:8px 0">ไม่ระบุรายละเอียด</div>';
   const recInfo=D.received[p.id];
+  const sentCell = sentCellHtml(p);
   const html=`
     <div class="sbox">
       <div class="row"><span>Vendor</span><span><span class="vtag v-${p.vendor.toLowerCase()}">${p.vendor}</span></span></div>
       <div class="row"><span>PO No.</span><span style="font-weight:600">${p.po}</span></div>
       <div class="row"><span>สินค้า</span><span>${p.product}</span></div>
-      <div class="row"><span>ส่ง PO</span><span style="${p.sent?'':'color:#c0392b;font-weight:600'}">${p.sent||'ยังไม่มีข้อมูล'}</span></div>
-      <div class="row"><span>Expected</span><span>${p.exp||'—'}</span></div>
+      <div class="row"><span>ส่ง PO</span><span style="${sentCell.style}">${p.sent?sentCell.text:(p.nat==='USA'?'ไม่ได้ติดตามฟิลด์นี้สำหรับงาน USA':'ยังไม่มีข้อมูล')} <button onclick="toggleEditPO('po_edit_sent')" style="border:none;background:none;cursor:pointer;font-size:12px;padding:0 2px" title="แก้ไขวันที่เอง ไม่ต้องแก้โค้ด">✏️</button></span></div>
+      <div id="po_edit_sent" style="display:none;padding:8px 16px;background:#f4f6f9;gap:6px;align-items:center">
+        <input type="date" id="po_edit_sent_input" value="${msToInputDate(p.sentMs)}" style="flex:1;padding:6px;border:1px solid #dde3ea;border-radius:6px;font-size:13px">
+        <button onclick="savePOField(${JSON.stringify(p.po)},'sent',document.getElementById('po_edit_sent_input').value)" style="padding:6px 12px;border-radius:6px;border:none;background:#2c6e9e;color:#fff;font-size:12px;font-weight:600;cursor:pointer">บันทึก</button>
+      </div>
+      <div class="row"><span>Expected</span><span>${p.exp||'—'} <button onclick="toggleEditPO('po_edit_exp')" style="border:none;background:none;cursor:pointer;font-size:12px;padding:0 2px" title="แก้ไขวันที่เอง ไม่ต้องแก้โค้ด">✏️</button></span></div>
+      <div id="po_edit_exp" style="display:none;padding:8px 16px;background:#f4f6f9;gap:6px;align-items:center">
+        <input type="date" id="po_edit_exp_input" value="${msToInputDate(p.expMs)}" style="flex:1;padding:6px;border:1px solid #dde3ea;border-radius:6px;font-size:13px">
+        <button onclick="savePOField(${JSON.stringify(p.po)},'exp',document.getElementById('po_edit_exp_input').value)" style="padding:6px 12px;border-radius:6px;border:none;background:#2c6e9e;color:#fff;font-size:12px;font-weight:600;cursor:pointer">บันทึก</button>
+      </div>
       <div class="row"><span>สถานะ</span><span style="color:${isDone?'#155724':'#856404'};font-weight:700">${isDone?'✓ รับแล้ว':'⏳ รออยู่'}</span></div>
       ${(!recInfo && p.act && isDone)?`<div class="row"><span>รับจริง</span><span style="font-size:12px;text-align:right;max-width:220px">${p.act}</span></div>`:''}
       ${recInfo?`<div class="row"><span>รับเมื่อ</span><span style="font-size:12px">${recInfo.date}</span></div>`:''}
