@@ -1731,12 +1731,25 @@ const KU_PENDING = {
 // that we order how much it will be" กรณี PO04 (ยังรออยู่หลังดึงเครดิตกลับ) จะขึ้น
 // เป็นตัวเลข "กำลังจะมา" ตรงนี้แทน ให้เห็นว่าถ้าของมาจริงจะรวมเป็นเท่าไหร่ โดยไม่ไป
 // แตะยอด apex ปัจจุบันเลย (แค่แสดงผลบวกล่วงหน้าเฉยๆ)
+// 25 Aug 2026: Ji เจอ Supplier PO ที่ "รับจริง" (Actual Date) ในชีตดันเป็นวันเดียวกับ
+// Expected Date ที่ยังไม่ถึง (ล่วงหน้าไปในอนาคต) แต่ระบบขึ้นสถานะ "✓ มาแล้ว" ทันทีแค่
+// เพราะมีค่าอยู่ในช่อง act โดยไม่เช็คว่าวันนั้นผ่านมาแล้วจริงหรือยัง — Ji ทักว่า "ทำไม
+// สถานะถึงมาแล้วในเมื่อยังไม่ถึงวัน ฉันบอกเธอหรอว่ามันมาแล้ว" ถูกต้องแล้ว เป็นบั๊กจริง —
+// แก้เป็นฟังก์ชันกลางถาวร ใช้แทนการเช็ค `p.act` ตรงๆ ทุกจุด: ถือว่า "รับแล้วจริง" ก็
+// ต่อเมื่อ (1) Ji กดยืนยันรับเองผ่านฟอร์ม (D.received) เชื่อถือได้เสมอไม่ต้องเช็ควัน หรือ
+// (2) วันที่ sync มาจากชีตต้องผ่านมาแล้วจริง ไม่ใช่วันในอนาคต — หลักการเดียวกับที่แก้ให้
+// apexStatus() ของหน้า APEX ไปแล้วก่อนหน้านี้ (20 Jul 2026)
+function poArrived(p){
+  if(D.received[p.id] && D.received[p.id].date) return true;
+  if(!p.act) return false;
+  return p.actMs==null || p.actMs<=Date.now();
+}
 function incomingByFlavor(marketKey){
   const map = {};
   D.pos.forEach(p=>{
     if(p.nat!==marketKey) return;
     if(String(p.dest||'').toUpperCase()!=='APEX') return;
-    if(p.act) return; // already received — already counted in current apex, not "incoming" anymore
+    if(poArrived(p)) return; // already received — already counted in current apex, not "incoming" anymore
     if(p.product && p.product!=='Inner box') return;
     (p.items||[]).forEach(it=>{ map[it.f] = (map[it.f]||0) + (it.q||0); });
   });
@@ -1825,7 +1838,7 @@ function pagePO(){
   let html=`<div class="pt">Supplier PO Status</div><div class="ps">SJR (แสงเจริญ) · JRS (จรัสแสง) · PPP (PaperPack) · TBB · YJ (วายเจ) ${liveBadge('supplier')}</div>`;
   vendors.forEach(v=>{
     const rows=D.pos.filter(p=>p.vendor===v).sort((a,b)=>supplierPoSortKey(a)-supplierPoSortKey(b));
-    const done=rows.filter(p=>p.act||D.received[p.id]).length;
+    const done=rows.filter(poArrived).length;
     html+=`<div class="card"><div class="card-head" onclick="toggleCard(this)">
       <span class="cht"><span class="vtag v-${v.toLowerCase()}">${v}</span>&nbsp;&nbsp;${vname(v)}<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
       <span class="chm">${done}/${rows.length} รับแล้ว<span class="chev">▾</span></span></div>
@@ -1833,7 +1846,7 @@ function pagePO(){
       <th>PO No.</th><th>สินค้า</th><th>Nat.</th><th>ส่ง PO</th><th>Expected</th><th>รับจริง</th><th>Status</th>
     </tr></thead><tbody>`;
     rows.forEach(p=>{
-      const isDone=p.act||(D.received[p.id] && D.received[p.id].date);
+      const isDone=poArrived(p);
       const badge=isDone?'<span class="badge bg">✓ มาแล้ว</span>':'<span class="badge bb">⏳ รออยู่</span>';
       const nc={KR:'nkr',HK:'nhk',USA:'nusa',SG:'nsg',Philippines:'nph',France:'nfr',Italy:'nit'}[p.nat]||'';
       const actRaw = isDone?(D.received[p.id]?.date||p.act||'—'):'—';
@@ -2394,7 +2407,7 @@ function saveKRStock(flavor, type, val){
   saveAll(); renderMain(); closeSheet();
 }
 function showPOSheet(row, p){
-  const isDone=p.act||(D.received[p.id]?.date);
+  const isDone=poArrived(p);
   const items=p.items&&p.items.filter(i=>i.f).length
     ?p.items.filter(i=>i.f).map(i=>`<div class="srow"><div>${i.f}</div><span class="sq in">${i.q?'+'+f(i.q):''}</span></div>`).join('')
     :'<div style="color:#8fa3b0;font-size:13px;padding:8px 0">ไม่ระบุรายละเอียด</div>';
@@ -2407,7 +2420,7 @@ function showPOSheet(row, p){
       <div class="row"><span>ส่ง PO</span><span style="${p.sent?'':'color:#c0392b;font-weight:600'}">${p.sent||'ยังไม่มีข้อมูล'}</span></div>
       <div class="row"><span>Expected</span><span>${p.exp||'—'}</span></div>
       <div class="row"><span>สถานะ</span><span style="color:${isDone?'#155724':'#856404'};font-weight:700">${isDone?'✓ รับแล้ว':'⏳ รออยู่'}</span></div>
-      ${(!recInfo && p.act)?`<div class="row"><span>รับจริง</span><span style="font-size:12px;text-align:right;max-width:220px">${p.act}</span></div>`:''}
+      ${(!recInfo && p.act && isDone)?`<div class="row"><span>รับจริง</span><span style="font-size:12px;text-align:right;max-width:220px">${p.act}</span></div>`:''}
       ${recInfo?`<div class="row"><span>รับเมื่อ</span><span style="font-size:12px">${recInfo.date}</span></div>`:''}
       ${recInfo?.remark?`<div class="row"><span>Remark</span><span style="font-size:12px">${recInfo.remark}</span></div>`:''}
     </div>
@@ -2444,7 +2457,7 @@ function showAPEXSheet(row, p){
 }
 // ─── INCOMING ─────────────────────────────────────────────────────────────
 function renderIncBar(){
-  const pending=D.pos.filter(p=>(!p.act)&&(!D.received[p.id]));
+  const pending=D.pos.filter(p=>!poArrived(p));
   const bar=document.getElementById('inc-bar');
   if(!pending.length){ bar.style.display='none'; return; }
   bar.style.display='block';
@@ -2462,7 +2475,7 @@ function toggleInc(){
   if(incOpen) renderIncList();
 }
 function renderIncList(){
-  const pending=D.pos.filter(p=>(!p.act)&&(!D.received[p.id]));
+  const pending=D.pos.filter(p=>!poArrived(p));
   const sort=document.getElementById('inc-sort')?.value||'asc';
   const sorted=[...pending].sort((a,b)=>{
     const da=a.expMs||(sort==='asc'?Infinity:-Infinity);
