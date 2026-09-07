@@ -723,8 +723,12 @@ const APEX_OVERRIDES = [
   // gvizLoadFetch ด้านล่าง) จึงบอกไม่ได้เองว่าเลขไหนในชุด "7, 8, 9" ถูกขีดฆ่าเปลี่ยน
   // เป็น 24 บ้าง — Ji ยืนยันทางแชทว่าที่จริงคือแค่วันที่ 9 ก.ย. เปลี่ยนเป็น 24 ก.ย.
   // ส่วน 7 และ 8 ก.ย. ยังเหมือนเดิม ("now it's become 7,8,24 sep")
-  {apexPO:'PO 016R01', actText:'Spearmint: 6, 7, 16 July 2026\nPeppermint: 7, 8, 24 Sep 2026', actD:null,
-    remark:'Spearmint: 6, 7, 16 Jul 2026 (แบ่งส่ง 1,200 ลัง) · Peppermint: 7, 8 Sep 2026 + 24 Sep 2026 (เดิม 9 Sep เลื่อนเป็น 24 Sep — Ji ยืนยัน 19 Aug 2026)'},
+  // 7 Sep 2026: Ji ยืนยันใหม่ทางแชทสั้นๆ "PO 016R01 Peppermint 7,8 Sep" — แทนที่คำตอบ
+  // เดิม (19 Aug 2026: "7,8,24 Sep") ตัด 24 Sep ออก เหลือแค่ 7,8 Sep เท่านั้น (คำตอบ
+  // ล่าสุดจาก Ji มีน้ำหนักกว่าคำตอบเก่าเสมอ) ส่วน Spearmint (6,7,16 July) และกลุ่ม
+  // "5, 6, 7 Sep 2026" ที่เจอในชีตยังไม่ได้ถูกพูดถึง/ยืนยันเพิ่มเติม — ไม่แตะ
+  {apexPO:'PO 016R01', actText:'Spearmint: 6, 7, 16 July 2026\nPeppermint: 7, 8 Sep 2026', actD:null,
+    remark:'Spearmint: 6, 7, 16 Jul 2026 (แบ่งส่ง 1,200 ลัง) · Peppermint: 7, 8 Sep 2026 (Ji ยืนยันล่าสุด 7 Sep 2026 — ก่อนหน้านี้เคยบอกว่าเลื่อนเป็น 24 Sep แต่ยืนยันใหม่แล้วว่าคือ 7,8 Sep)'},
   // 21 Aug 2026: Ji แจ้งสั้นๆ "PO 55 cancel" — PO 055 (KR, Dong-A Spearmint Anpanman
   // 63,600 units / 265 ลัง) ถูกยกเลิก ทำเครื่องหมายด้วย cancelled:true ให้ตัดออกจาก
   // ทั้งลิสต์ "ยังไม่มา" และปฏิทิน แยกไปอยู่การ์ด "ยกเลิก" ต่างหากแทน
@@ -783,6 +787,13 @@ const APEX_OVERRIDES = [
   // — แก้ให้ตรงเป็นตุลาคม
   {apexPO:'PO 049', expText:'15 Oct 2026\n16 Oct 2026\n19 Oct 2026', expD:null,
     remark:'Duo Burster KR Spearmint 1,355 ลัง (325,200 ชิ้น) · แบ่งส่ง 3 รอบ: 15 Oct 2026 (108,000 ชิ้น / 450 ลัง), 16 Oct 2026 (108,000 ชิ้น / 450 ลัง), 19 Oct 2026 (109,200 ชิ้น / 455 ลัง)'},
+  // 7 Sep 2026: Ji ยืนยันทางแชท "PO 054 - 28 nov 2026" — แทนที่ทั้งค่าที่ auto-extract
+  // จาก remark สด (ซึ่งตอนเช็คล่าสุดให้ "16 Sept 2026 / 05 Nov 2026") และค่าเก่าที่เคย
+  // เห็นในสกรีนช็อต ("28 Oct 2026") ทั้งคู่ — คำตอบล่าสุดจาก Ji คือ 28 Nov 2026 ถือเป็น
+  // ค่าที่ถูกต้องที่สุด ใส่เป็น override ตรงๆ แทนการพึ่ง auto-fallback จาก remark ที่อาจ
+  // ไม่ตรงกับสิ่งที่ Ji ยืนยันจริง (รอบแรก 16 Sept ไม่เปลี่ยน แค่รอบสองเปลี่ยนเป็น 28 Nov)
+  {apexPO:'PO 054', expText:'16 Sept 2026\n28 Nov 2026', expD:null,
+    remark:'PO Nude ตลับ USA: Peppermint 210,000 / Spearmint 120,000 / Fusion 20,000 / Honey Lemon 15,000 / Berries 15,000 / Melon Lemon 15,000 · ส่งรอบแรก 16 Sept 2026 (Peppermint 60,000 + Spearmint 30,000) · รอบสอง 28 Nov 2026 (ที่เหลือทั้งหมด) — Ji ยืนยัน 7 Sep 2026'},
 ];
 function applyApexOverrides(){
   APEX_OVERRIDES.forEach(ov=>{
