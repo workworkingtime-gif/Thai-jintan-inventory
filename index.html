@@ -739,9 +739,17 @@ const APEX_OVERRIDES = [
   // (24 Jul + 31 Jul) ให้ตรงความจริง: รอบแรก Peppermint 25,000 + Spearmint 20,000,
   // รอบสอง Peppermint 35,000 + Fusion 20,000 — รวมแล้ว Peppermint 60,000 /
   // Spearmint 20,000 / Fusion 20,000 ตรงกับยอดสั่งเป๊ะ ("ครบ PO พอดี" ตามที่ Ji ว่า)
-  {apexPO:'PO 042', expD:46234, expText:'', actD:null, actText:'24 Jul 2026\n31 Jul 2026',
+  // 7 Sep 2026: เจอว่า expD:46234 (31 Jul) เดิมตรงนี้ทับ Expected Date ที่ถูกต้องจากชีตสด
+  // (ชีตมีวันที่จริงเป็น Date object แล้วคือ 24 Jul 2026) ด้วยค่าผิด — 31 Jul คือวันที่รับ
+  // ของจริงรอบสอง (ใส่ผิดช่องตอนแก้ actText ไปแล้ว) ลบ expD/expText ออก ให้ Expected
+  // กลับไปใช้ค่าจริงจากชีตสด (24 Jul 2026) แทน — actText 2 รอบยังคงถูกต้องเหมือนเดิม
+  {apexPO:'PO 042', actD:null, actText:'24 Jul 2026\n31 Jul 2026',
     remark:'Peppermint 60,000 / Spearmint 20,000 / Fusion 20,000 · รับ 2 รอบ: 24 Jul 2026 (Peppermint 25,000 + Spearmint 20,000) และ 31 Jul 2026 (Peppermint 35,000 + Fusion 20,000) · รวมครบตามยอดสั่ง PO พอดี'},
-  {apexPO:'PO 043', expD:46248, expText:''},
+  // 7 Sep 2026: ลบ override นี้ทิ้ง — expD:46248 (14 Aug) เดิมตรงนี้คือวันที่ Actual Date
+  // จริงของ PO นี้ ไม่ใช่ Expected (ชีตสดมี Expected Date จริงเป็น 30 Jul 2026 อยู่แล้ว
+  // เป็น Date object ปกติ) ไม่มี comment อธิบายที่มาของ override นี้เลยตอนเจอ — สันนิษฐาน
+  // ว่าใส่ผิดคอลัมน์ตั้งแต่แรก ไม่มีเหตุผลให้ต้อง override เพราะ live sync อ่านค่าทั้ง
+  // Expected(30 Jul)/Actual(14 Aug) ถูกต้องอยู่แล้วโดยไม่ต้องมี override เลย
   // 10 Aug 2026: Ji ยืนยัน "PO 44 from APEX already come into the warehouse" — ถามย้ำ
   // วันที่/จำนวน Ji ตอบ "ตรงตามรอบเลย และใช้จำนวนถูกต้อง" คือรับครบตรงตาม Expected
   // เป๊ะทั้ง 2 รอบ ไม่มีขาด/เกิน (Peppermint รวม 120,000 + Spearmint รวม 90,000)
