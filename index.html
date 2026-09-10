@@ -2056,7 +2056,15 @@ function apexStatus(p){
   const actStr=apexDate(p,'act');
   if(!actStr) return {done:false,partial:false,label:'⏳ รออยู่',cls:'bb'};
   const dates=parseFreeDates(actStr);
-  if(dates.length && !dates.every(d=>d<=Date.now())) return {done:false,partial:true,label:'🔶 มาบางส่วน',cls:'ba'};
+  if(!dates.length) return {done:false,partial:false,label:'⏳ รออยู่',cls:'bb'};
+  // 10 Sep 2026: Ji ทัก "มันจะมาบางส่วนได้ไง ในเมื่อของยังไม่ถึงวันเลย" — เดิมโค้ดเช็คแค่
+  // "ไม่ใช่ทุกวันที่ผ่านมาแล้ว" ก็ขึ้น "มาบางส่วน" ทันที แม้ยังไม่มีวันไหนถึงเลยสักวัน (เช่น
+  // Actual Date ในชีตถูกกรอกไว้ล่วงหน้าตอนยืนยันรอบส่ง ไม่ใช่ตอนของมาถึงจริง) ต้องนับว่า
+  // มีอย่างน้อย 1 วันที่ผ่านมาแล้วจริงก่อน ถึงจะเรียกว่า "มาบางส่วน" ได้ ถ้ายังไม่ถึงสักวัน
+  // ต้องยังเป็น "รออยู่" เหมือนเดิม
+  const arrivedCount = dates.filter(d=>d<=Date.now()).length;
+  if(arrivedCount===0) return {done:false,partial:false,label:'⏳ รออยู่',cls:'bb'};
+  if(arrivedCount<dates.length) return {done:false,partial:true,label:'🔶 มาบางส่วน',cls:'ba'};
   return {done:true,partial:false,label:'✓ มาแล้ว',cls:'bg'};
 }
 // สร้างแถวเดียวของตาราง APEX PO Order Log — ใช้ร่วมกันทั้ง 2 ส่วน (ยังไม่มา/มาแล้ว)
