@@ -2088,46 +2088,43 @@ function apexRow(p){
       <td style="white-space:nowrap">${p.remark?`<span title="${String(p.remark).replace(/"/g,'&quot;')}" style="cursor:help">📝</span>`:''}</td>
     </tr>`;
 }
-// (20 Jul 2026, ตามที่ Ji ขอ) แยกตาราง APEX PO Order Log เป็น 2 ส่วนชัดเจน —
-// "ยังไม่มา" (rออยู่) กับ "มาแล้ว รับไปแล้ว" — แทนที่จะรวมกันเป็นตารางยาวเดียว
-// หาของที่ยังต้องติดตามยากเพราะปนกับของเก่าที่จบไปแล้ว ส่วน "มาแล้ว" พับเก็บ
-// ไว้ก่อนโดย default (ประวัติเก่า ไม่ต้องดูบ่อย) กดขยายดูได้
+// (20 Jul 2026, ตามที่ Ji ขอ) แยกตาราง APEX PO Order Log เป็นกลุ่มชัดเจน —
+// "ยังไม่มา" / "มาแล้ว รับไปแล้ว" / "ยกเลิก" — แทนที่จะรวมกันเป็นตารางยาวเดียว
+// (10 Sep 2026, ตามที่ Ji ขอ): เปลี่ยนจาก 3 การ์ด accordion ที่กางค้างไว้พร้อมกันทั้งหมด
+// เป็นปุ่มแท็บกดสลับได้ (subnav) แบบเดียวกับหน้า Stock ที่กด ฮ่องกง/สิงคโปร์/เกาหลี —
+// กดดูได้ทีละกลุ่ม แสดงตารางเดียว ไม่ต้องพับ/ขยายการ์ดซ้อนกันอีกต่อไป
+const APEX_SUBS = [
+  {id:'pending', label:'⏳ ยังไม่มา'},
+  {id:'arrived', label:'✓ มาแล้ว / รับไปแล้ว'},
+  {id:'cancelled', label:'✗ ยกเลิก'},
+];
+let APEX_SUB = 'pending';
+function setApexSub(id){ APEX_SUB=id; renderMain(); }
 function pageAPEX(){
   const THEAD = `<thead><tr>
     <th>Nat.</th><th>APEX PO</th><th>Customer PO / INV</th><th>ส่ง PO</th><th>Expected</th><th>Actual</th><th>Status</th><th>Remark</th>
   </tr></thead>`;
   const sortedApexPos = [...APEX_POS].sort((a,b)=>apexPoSortKey(b)-apexPoSortKey(a));
   // "ยังไม่มา" รวมทั้งที่ยังไม่มีวันที่รับเลย และที่มาบางส่วน (ยังมีรอบส่งค้างในอนาคต)
-  // — ไม่รวม PO ที่ถูกยกเลิก (cancelled) ซึ่งแยกไปอยู่การ์ดของตัวเองต่างหาก
+  // — ไม่รวม PO ที่ถูกยกเลิก (cancelled) ซึ่งแยกไปอยู่กลุ่มของตัวเองต่างหาก
   const pending = sortedApexPos.filter(p=>!apexStatus(p).done && !apexStatus(p).cancelled);
   const arrived = sortedApexPos.filter(p=>apexStatus(p).done);
   const cancelled = sortedApexPos.filter(p=>apexStatus(p).cancelled);
+  const counts = {pending:pending.length, arrived:arrived.length, cancelled:cancelled.length};
+  const lists = {pending, arrived, cancelled};
+  const emptyMsgs = {
+    pending:'ไม่มีรายการที่ยังไม่มา — ครบทุก PO แล้ว 🎉',
+    arrived:'ยังไม่มีรายการที่รับแล้ว',
+    cancelled:'ไม่มีรายการที่ถูกยกเลิก',
+  };
+  if(!APEX_SUBS.some(s=>s.id===APEX_SUB)) APEX_SUB='pending';
+  const list = lists[APEX_SUB];
+  const subnav = `<div class="subnav">${APEX_SUBS.map(s=>`<div class="sub-tab ${APEX_SUB===s.id?'active':''}" onclick="setApexSub('${s.id}')">${s.label} <span style="opacity:.65">(${counts[s.id]})</span></div>`).join('')}</div>`;
   let html=`<div class="pt">APEX PO Order Log</div><div class="ps">ประวัติ Order ทั้งหมดที่ส่งให้ APEX (เรียงเลข PO ใหม่สุด→เก่าสุด) ${liveBadge('apex')}</div>
+  ${subnav}
   <div class="card">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="cht">⏳&nbsp;&nbsp;ยังไม่มา<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
-      <span class="chm">${pending.length} รายการ<span class="chev">▾</span></span>
-    </div>
     <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด</div><div class="tw"><table>${THEAD}<tbody>
-      ${pending.length?pending.map(apexRow).join(''):'<tr><td colspan="8" style="text-align:center;color:#8fa3b0;padding:20px">ไม่มีรายการที่ยังไม่มา — ครบทุก PO แล้ว 🎉</td></tr>'}
-    </tbody></table></div></div>
-  </div>
-  <div class="card">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="cht">✓&nbsp;&nbsp;มาแล้ว / รับไปแล้ว<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
-      <span class="chm">${arrived.length} รายการ<span class="chev closed">▾</span></span>
-    </div>
-    <div class="card-body collapsed"><div class="hint">คลิกแถวเพื่อดูรายละเอียด</div><div class="tw"><table>${THEAD}<tbody>
-      ${arrived.length?arrived.map(apexRow).join(''):'<tr><td colspan="8" style="text-align:center;color:#8fa3b0;padding:20px">ยังไม่มีรายการที่รับแล้ว</td></tr>'}
-    </tbody></table></div></div>
-  </div>
-  <div class="card">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="cht">✗&nbsp;&nbsp;ยกเลิก<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
-      <span class="chm">${cancelled.length} รายการ<span class="chev closed">▾</span></span>
-    </div>
-    <div class="card-body collapsed"><div class="hint">คลิกแถวเพื่อดูรายละเอียด</div><div class="tw"><table>${THEAD}<tbody>
-      ${cancelled.length?cancelled.map(apexRow).join(''):'<tr><td colspan="8" style="text-align:center;color:#8fa3b0;padding:20px">ไม่มีรายการที่ถูกยกเลิก</td></tr>'}
+      ${list.length?list.map(apexRow).join(''):`<tr><td colspan="8" style="text-align:center;color:#8fa3b0;padding:20px">${emptyMsgs[APEX_SUB]}</td></tr>`}
     </tbody></table></div></div>
   </div>`;
   return html;
