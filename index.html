@@ -785,7 +785,13 @@ const APEX_OVERRIDES = [
   // กำหนดส่งแบ่ง 3 รอบอยู่แล้ว (15/10: 108,000 ชิ้น (450 ลัง), 16/10: 108,000 ชิ้น
   // (450 ลัง), 19/10: 109,200 ชิ้น (455 ลัง) รวม 325,200 ชิ้น (1,355 ลัง) ตรงยอดสั่งเป๊ะ)
   // — แก้ให้ตรงเป็นตุลาคม
+  // 10 Sep 2026: Ji flagged "actual date not show" for PO 049/053/054. Checked the live
+  // sheet (via WebFetch on the link Ji pasted, gid=974836234) — its own "Actual Date"
+  // column is now populated for all 3 with the same confirmed round dates as Expected
+  // (Ji's team appears to fill Actual Date once a round is confirmed, not only on arrival).
+  // Mirroring the sheet's literal values into actText below.
   {apexPO:'PO 049', expText:'15 Oct 2026\n16 Oct 2026\n19 Oct 2026', expD:null,
+    actText:'15 Oct 2026\n16 Oct 2026\n19 Oct 2026', actD:null,
     remark:'Duo Burster KR Spearmint 1,355 ลัง (325,200 ชิ้น) · แบ่งส่ง 3 รอบ: 15 Oct 2026 (108,000 ชิ้น / 450 ลัง), 16 Oct 2026 (108,000 ชิ้น / 450 ลัง), 19 Oct 2026 (109,200 ชิ้น / 455 ลัง)'},
   // 7 Sep 2026: Ji ยืนยันทางแชท "PO 054 - 28 nov 2026" — แทนที่ทั้งค่าที่ auto-extract
   // จาก remark สด (ซึ่งตอนเช็คล่าสุดให้ "16 Sept 2026 / 05 Nov 2026") และค่าเก่าที่เคย
@@ -798,14 +804,16 @@ const APEX_OVERRIDES = [
   // เพราะละเอียด/สดกว่า (มี remark อธิบายเหตุผลการเลื่อนวันชัดเจน) แต่ได้แจ้ง Ji ให้ยืนยันซ้ำ
   // อีกทีในแชทแล้วเนื่องจากขัดกับคำตอบก่อนหน้า
   {apexPO:'PO 054', expText:'14 Sept 2026\n28 Oct 2026', expD:null,
-    remark:'PO Nude ตลับ USA: Peppermint 210,000 / Spearmint 120,000 / Fusion 20,000 / Honey Lemon 15,000 / Berries 15,000 / Melon Lemon 15,000 · ส่งรอบแรก 14 Sept 2026 (Peppermint 60,000 + Spearmint 30,000 — ลูกค้าขอเลื่อนจาก 16 เป็น 14) · รอบสอง 28 Oct 2026 (ที่เหลือทั้งหมด) — จากชีต Customer requisition (10 Sep 2026), แทนที่ค่า 28 Nov ที่เคยยืนยันไว้ 7 Sep 2026 (รอ Ji ยืนยันซ้ำ)'},
+    actText:'14 Sept 2026\n28 Oct 2026', actD:null,
+    remark:'PO Nude ตลับ USA: Peppermint 210,000 / Spearmint 120,000 / Fusion 20,000 / Honey Lemon 15,000 / Berries 15,000 / Melon Lemon 15,000 · ส่งรอบแรก 14 Sept 2026 (Peppermint 60,000 + Spearmint 30,000 — ลูกค้าขอเลื่อนจาก 16 เป็น 14) · รอบสอง 28 Oct 2026 (ที่เหลือทั้งหมด) — จากชีต Customer requisition (10 Sep 2026), แทนที่ค่า 28 Nov ที่เคยยืนยันไว้ 7 Sep 2026 (รอ Ji ยืนยันซ้ำ) · 10 Sep 2026: sheet\'s own Actual Date column now shows same 2 dates — mirrored into actText'},
   // 10 Sep 2026: ชีต "Customer requisition" ละเอียดกว่าเผยว่า PO 053 จริงๆ มี 3 วันส่งของ
   // ไม่ใช่ 2 วัน (29/30 Sep) ที่เคย auto-extract จาก remark ของ APX Tracking ได้ — มีรอบ
   // 15 Sep เพิ่มอีกรอบสำหรับ Peppermint (10-pack) 54,720 ชิ้นแรก (ส่งถึงไทยยันต้นก่อนเที่ยง)
   // ก่อนอีก 52,560 ชิ้นที่เหลือจะตามไปวันที่ 30 Sep พร้อม Fusion — Variety Flavor แยกไปเดี่ยว
   // วันที่ 29 Sep — เลขจำนวนตรงกับที่เคยมี (352/79/447 ลัง × 240 ชิ้น/ลัง) ครบทุกตัว
   {apexPO:'PO 053', expText:'15 Sep 2026\n29 Sep 2026\n30 Sep 2026', expD:null,
-    remark:'PO Nude USA Full Service: Variety Flavor (5-pack) 84,480 ชิ้น (352 ลัง) ส่ง 29 Sep · Mint Peppermint (10-pack) 54,720 ชิ้น (228 ลัง) ส่ง 15 Sep (ถึงไทยยันต้นก่อนเที่ยง) + 52,560 ชิ้น (219 ลัง) ส่ง 30 Sep · Fusion (10-pack) 18,960 ชิ้น (79 ลัง) ส่ง 30 Sep — จากชีต Customer requisition (10 Sep 2026)'},
+    actText:'15 Sep 2026\n29 Sep 2026\n30 Sep 2026', actD:null,
+    remark:'PO Nude USA Full Service: Variety Flavor (5-pack) 84,480 ชิ้น (352 ลัง) ส่ง 29 Sep · Mint Peppermint (10-pack) 54,720 ชิ้น (228 ลัง) ส่ง 15 Sep (ถึงไทยยันต้นก่อนเที่ยง) + 52,560 ชิ้น (219 ลัง) ส่ง 30 Sep · Fusion (10-pack) 18,960 ชิ้น (79 ลัง) ส่ง 30 Sep — จากชีต Customer requisition (10 Sep 2026) · 10 Sep 2026: sheet\'s own Actual Date column shows all 3 dates too (Expected Date cell itself only had 29/30) — mirrored into actText'},
 ];
 function applyApexOverrides(){
   APEX_OVERRIDES.forEach(ov=>{
