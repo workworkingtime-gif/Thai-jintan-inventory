@@ -792,8 +792,20 @@ const APEX_OVERRIDES = [
   // เห็นในสกรีนช็อต ("28 Oct 2026") ทั้งคู่ — คำตอบล่าสุดจาก Ji คือ 28 Nov 2026 ถือเป็น
   // ค่าที่ถูกต้องที่สุด ใส่เป็น override ตรงๆ แทนการพึ่ง auto-fallback จาก remark ที่อาจ
   // ไม่ตรงกับสิ่งที่ Ji ยืนยันจริง (รอบแรก 16 Sept ไม่เปลี่ยน แค่รอบสองเปลี่ยนเป็น 28 Nov)
-  {apexPO:'PO 054', expText:'16 Sept 2026\n28 Nov 2026', expD:null,
-    remark:'PO Nude ตลับ USA: Peppermint 210,000 / Spearmint 120,000 / Fusion 20,000 / Honey Lemon 15,000 / Berries 15,000 / Melon Lemon 15,000 · ส่งรอบแรก 16 Sept 2026 (Peppermint 60,000 + Spearmint 30,000) · รอบสอง 28 Nov 2026 (ที่เหลือทั้งหมด) — Ji ยืนยัน 7 Sep 2026'},
+  // 10 Sep 2026: Ji ส่งสกรีนช็อตชีต "Customer requisition" ใหม่ (ละเอียดกว่า APX Tracking
+  // เป็นรายรส/รอบส่งจริง) พบว่าค่าที่แท้จริงคือรอบแรกเลื่อนจาก 16→14 Sep (ไม่ใช่ 16 เดิม)
+  // และรอบสองคือ 28 **Oct** 2026 ไม่ใช่ 28 Nov ที่เคยยืนยันไว้ 7 Sep — ใช้ค่าจากสกรีนช็อตนี้
+  // เพราะละเอียด/สดกว่า (มี remark อธิบายเหตุผลการเลื่อนวันชัดเจน) แต่ได้แจ้ง Ji ให้ยืนยันซ้ำ
+  // อีกทีในแชทแล้วเนื่องจากขัดกับคำตอบก่อนหน้า
+  {apexPO:'PO 054', expText:'14 Sept 2026\n28 Oct 2026', expD:null,
+    remark:'PO Nude ตลับ USA: Peppermint 210,000 / Spearmint 120,000 / Fusion 20,000 / Honey Lemon 15,000 / Berries 15,000 / Melon Lemon 15,000 · ส่งรอบแรก 14 Sept 2026 (Peppermint 60,000 + Spearmint 30,000 — ลูกค้าขอเลื่อนจาก 16 เป็น 14) · รอบสอง 28 Oct 2026 (ที่เหลือทั้งหมด) — จากชีต Customer requisition (10 Sep 2026), แทนที่ค่า 28 Nov ที่เคยยืนยันไว้ 7 Sep 2026 (รอ Ji ยืนยันซ้ำ)'},
+  // 10 Sep 2026: ชีต "Customer requisition" ละเอียดกว่าเผยว่า PO 053 จริงๆ มี 3 วันส่งของ
+  // ไม่ใช่ 2 วัน (29/30 Sep) ที่เคย auto-extract จาก remark ของ APX Tracking ได้ — มีรอบ
+  // 15 Sep เพิ่มอีกรอบสำหรับ Peppermint (10-pack) 54,720 ชิ้นแรก (ส่งถึงไทยยันต้นก่อนเที่ยง)
+  // ก่อนอีก 52,560 ชิ้นที่เหลือจะตามไปวันที่ 30 Sep พร้อม Fusion — Variety Flavor แยกไปเดี่ยว
+  // วันที่ 29 Sep — เลขจำนวนตรงกับที่เคยมี (352/79/447 ลัง × 240 ชิ้น/ลัง) ครบทุกตัว
+  {apexPO:'PO 053', expText:'15 Sep 2026\n29 Sep 2026\n30 Sep 2026', expD:null,
+    remark:'PO Nude USA Full Service: Variety Flavor (5-pack) 84,480 ชิ้น (352 ลัง) ส่ง 29 Sep · Mint Peppermint (10-pack) 54,720 ชิ้น (228 ลัง) ส่ง 15 Sep (ถึงไทยยันต้นก่อนเที่ยง) + 52,560 ชิ้น (219 ลัง) ส่ง 30 Sep · Fusion (10-pack) 18,960 ชิ้น (79 ลัง) ส่ง 30 Sep — จากชีต Customer requisition (10 Sep 2026)'},
 ];
 function applyApexOverrides(){
   APEX_OVERRIDES.forEach(ov=>{
