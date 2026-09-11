@@ -790,9 +790,17 @@ const APEX_OVERRIDES = [
   // column is now populated for all 3 with the same confirmed round dates as Expected
   // (Ji's team appears to fill Actual Date once a round is confirmed, not only on arrival).
   // Mirroring the sheet's literal values into actText below.
-  {apexPO:'PO 049', expText:'15 Oct 2026\n16 Oct 2026\n19 Oct 2026', expD:null,
-    actText:'15 Oct 2026\n16 Oct 2026\n19 Oct 2026', actD:null,
-    remark:'Duo Burster KR Spearmint 1,355 ลัง (325,200 ชิ้น) · แบ่งส่ง 3 รอบ: 15 Oct 2026 (108,000 ชิ้น / 450 ลัง), 16 Oct 2026 (108,000 ชิ้น / 450 ลัง), 19 Oct 2026 (109,200 ชิ้น / 455 ลัง)'},
+  // 11 Sep 2026: Ji sent a screenshot showing Expected/Actual/send->Customer all as "cancel"
+  // for PO 049 in the live sheet. Flagged this to Ji since a WebFetch cross-check came back
+  // with the old active Oct dates instead, and the remark cell in her screenshot looked like
+  // it had PO 054's text pasted into it — asked her to confirm before touching this override
+  // (which was otherwise unconditionally forcing the old Oct dates and hiding any sheet
+  // change, live-sync or not). Ji replied: "believe on the google sheet first and ask me if
+  // you have sth conflict" — i.e. trust her screenshot/the sheet over a secondary automated
+  // re-check, only escalate on a genuine unresolved conflict. Marking cancelled per the
+  // sheet's literal "cancel" value, same pattern as PO 055 above.
+  {apexPO:'PO 049', cancelled:true,
+    remark:'Duo Burster KR Spearmint 1,355 ลัง (325,200 ชิ้น) — เดิมกำหนดส่ง 3 รอบ (15/16/19 Oct 2026) · ยกเลิกแล้วตามชีตสด (Expected/Actual/send->Customer ทั้งหมดขึ้น "cancel" 11 Sep 2026)'},
   // 7 Sep 2026: Ji ยืนยันทางแชท "PO 054 - 28 nov 2026" — แทนที่ทั้งค่าที่ auto-extract
   // จาก remark สด (ซึ่งตอนเช็คล่าสุดให้ "16 Sept 2026 / 05 Nov 2026") และค่าเก่าที่เคย
   // เห็นในสกรีนช็อต ("28 Oct 2026") ทั้งคู่ — คำตอบล่าสุดจาก Ji คือ 28 Nov 2026 ถือเป็น
