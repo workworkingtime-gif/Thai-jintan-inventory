@@ -2096,6 +2096,38 @@ function apexStatus(p){
   if(arrivedCount<dates.length) return {done:false,partial:true,label:'🔶 มาบางส่วน',cls:'ba'};
   return {done:true,partial:false,label:'✓ มาแล้ว',cls:'bg'};
 }
+// 22 Sep 2026 (Ji ขอ "อ่านง่ายขึ้น" — งาน APEX บางใบมีวันส่งหลายรอบและขยับบ่อย ทำให้ตารางหลัก
+// รก): เดิม apexRow()/showAPEXSheet() โชว์ทุกวันที่ของ Expected/Actual แบบ nl2br เรียงยาวเต็มๆ
+// ในตารางหลักเลย (เช่น PO 053 ที่มี 3 รอบ ก็ยาว 3 บรรทัดในคอลัมน์เดียว ×2 คอลัมน์) — ตอนนี้
+// ตารางหลักจะย่อเหลือแค่ "รอบถัดไป/สรุปกี่รอบมาแล้ว" บรรทัดเดียว ส่วนรายละเอียดครบทุกรอบ
+// ย้ายไปอยู่ในหน้าคลิกดูรายละเอียด (showAPEXSheet) แทน — ใช้ helper กลาง 2 ตัวนี้ร่วมกัน
+function uniqSortedDates(text){ return [...new Set(parseFreeDates(text))].sort((a,b)=>a-b); }
+// สรุปย่อสำหรับตารางหลัก: ถ้ามีมากกว่า 1 รอบ คืน headline (รอบถัดไป/ครบแล้ว) + sub (กี่ใน
+// กี่รอบมาแล้ว) — ถ้ามี ≤1 วันที่ parse ได้ คืน null ให้ผู้เรียกใช้ fallback แสดงแบบเดิม
+function multiDateSummary(text){
+  const dates=uniqSortedDates(text);
+  if(dates.length<=1) return null;
+  const now=Date.now();
+  const arrived=dates.filter(d=>d<=now).length;
+  const next=dates.find(d=>d>now);
+  const headline = next!=null
+    ? `รอบถัดไป ${msToDateStr(next)}`
+    : `ครบ ${dates.length} รอบ (ล่าสุด ${msToDateStr(dates[dates.length-1])})`;
+  return {dates, total:dates.length, arrived, headline, sub:`${arrived}/${dates.length} รอบมาแล้ว`};
+}
+// รายละเอียดเต็มทุกรอบ — ใช้ในหน้าคลิกดูรายละเอียด (showAPEXSheet) เท่านั้น ไม่ใช้ในตารางหลัก
+function roundListHtml(text){
+  const dates=uniqSortedDates(text);
+  if(dates.length<=1) return null;
+  const now=Date.now();
+  return `<div style="margin-top:4px">${dates.map((d,i)=>{
+    const arrived=d<=now;
+    return `<div style="display:flex;justify-content:space-between;gap:10px;padding:2px 0;font-size:12px">
+      <span style="color:#8fa3b0">รอบ ${i+1}</span>
+      <span style="color:${arrived?'#155724':'#856404'};font-weight:${arrived?600:400}">${msToDateStr(d)} ${arrived?'✓':'⏳'}</span>
+    </div>`;
+  }).join('')}</div>`;
+}
 // สร้างแถวเดียวของตาราง APEX PO Order Log — ใช้ร่วมกันทั้ง 2 ส่วน (ยังไม่มา/มาแล้ว)
 function apexRow(p){
   const actStr=apexDate(p,'act');
@@ -2103,16 +2135,23 @@ function apexRow(p){
   const nc={KR:'nkr',HK:'nhk',USA:'nusa'}[p.nat]||'';
   const statusBadge = `<span class="badge ${st.cls}">${st.label}</span>`;
   const exp=apexExpDisplay(p);
-  const expCell = exp.text
-    ? `${nl2br(exp.text)}${exp.auto?` <span title="ดึงจากหมายเหตุ (Remark) อัตโนมัติ — ยังไม่ใช่ Expected Date ที่ยืนยันจาก APEX ตรงๆ คลิกแถวเพื่อดูรายละเอียดเต็ม" style="cursor:help">🔎</span>`:''}`
-    : '—';
+  const expSummary = exp.text ? multiDateSummary(exp.text) : null;
+  const expCell = expSummary
+    ? `${expSummary.headline}${exp.auto?' 🔎':''}<br><span style="font-size:11px;color:#8fa3b0">${expSummary.sub}</span>`
+    : (exp.text
+        ? `${nl2br(exp.text)}${exp.auto?` <span title="ดึงจากหมายเหตุ (Remark) อัตโนมัติ — ยังไม่ใช่ Expected Date ที่ยืนยันจาก APEX ตรงๆ คลิกแถวเพื่อดูรายละเอียดเต็ม" style="cursor:help">🔎</span>`:''}`
+        : '—');
+  const actSummary = actStr ? multiDateSummary(actStr) : null;
+  const actCell = actSummary
+    ? `${actSummary.headline}<br><span style="font-size:11px;color:#8fa3b0">${actSummary.sub}</span>`
+    : (nl2br(actStr) || '—');
   return `<tr onclick="showAPEXSheet(this,${JSON.stringify(p).replace(/"/g,'&quot;')})"${st.cancelled?' style="opacity:.55;text-decoration:line-through"':''}>
       <td><span class="nat ${nc}">${p.nat}</span></td>
       <td style="font-weight:600">${p.apexPO}</td>
       <td style="font-size:12px">${p.custPO||'—'}<br><span style="color:#8fa3b0">${p.inv||''}</span></td>
       <td style="font-size:12px">${nl2br(apexDate(p,'sent'))||'—'}</td>
       <td style="font-size:12px">${expCell}</td>
-      <td style="font-size:12px;font-weight:${st.done?600:400};color:${st.done?'#155724':st.partial?'#856404':'inherit'}">${nl2br(actStr)||'—'}</td>
+      <td style="font-size:12px;font-weight:${st.done?600:400};color:${st.done?'#155724':st.partial?'#856404':'inherit'}">${actCell}</td>
       <td style="white-space:nowrap">${statusBadge}</td>
       <td style="white-space:nowrap">${p.remark?`<span title="${String(p.remark).replace(/"/g,'&quot;')}" style="cursor:help">📝</span>`:''}</td>
     </tr>`;
@@ -2584,13 +2623,21 @@ function confirmReceive(id, vendor, po){
   logAudit('mark_recv',`${vendor} · ${po}`,`รับสินค้าแล้ว${rmk?' · Remark: '+rmk:''}`,'+1 PO');
   saveAll(); closeSheet(); renderMain(); renderIncBar();
 }
+// 22 Sep 2026: หน้ารายละเอียดนี้คือที่เดียวที่จะโชว์วันที่ครบทุกรอบแบบละเอียด (ตารางหลัก
+// ย่อไว้แค่สรุปแล้ว ตาม Ji ขอ "อ่านง่ายขึ้น") — ถ้า Expected/Actual มีมากกว่า 1 รอบ ให้ขึ้น
+// เป็นลิสต์ "รอบ 1/2/3 ..." พร้อมเครื่องหมาย ✓/⏳ ต่อรอบแทนการโชว์แค่วันที่ล่าสุดเฉยๆ
 function showAPEXSheet(row, p){
   const actStr=apexDate(p,'act');
   const st=apexStatus(p);
   const exp=apexExpDisplay(p);
-  const expHtml = exp.text
-    ? `${nl2br(exp.text)}${exp.auto?` <span title="ดึงจากหมายเหตุ (Remark) อัตโนมัติ — ยังไม่ใช่ Expected Date ที่ยืนยันจาก APEX ตรงๆ" style="cursor:help">🔎</span>`:''}`
-    : '—';
+  const expRounds = exp.text ? roundListHtml(exp.text) : null;
+  const expHtml = expRounds
+    ? `${expRounds}${exp.auto?`<div style="font-size:11px;color:#8fa3b0;margin-top:2px">🔎 ดึงจากหมายเหตุ (Remark) อัตโนมัติ — ยังไม่ใช่ Expected Date ที่ยืนยันจาก APEX ตรงๆ</div>`:''}`
+    : (exp.text
+        ? `${nl2br(exp.text)}${exp.auto?` <span title="ดึงจากหมายเหตุ (Remark) อัตโนมัติ — ยังไม่ใช่ Expected Date ที่ยืนยันจาก APEX ตรงๆ" style="cursor:help">🔎</span>`:''}`
+        : '—');
+  const actRounds = actStr ? roundListHtml(actStr) : null;
+  const actHtml = actRounds ? actRounds : (nl2br(actStr) || '⏳ รออยู่');
   const html=`
     <div class="sbox">
       <div class="row"><span>APEX PO</span><span style="font-weight:700">${p.apexPO}</span></div>
@@ -2598,7 +2645,7 @@ function showAPEXSheet(row, p){
       <div class="row"><span>INV/PI</span><span>${p.inv||'—'}</span></div>
       <div class="row"><span>วันที่ส่ง PO</span><span style="text-align:right">${nl2br(apexDate(p,'sent'))||'—'}</span></div>
       <div class="row"><span>Expected</span><span style="text-align:right">${expHtml}</span></div>
-      <div class="row"><span>Actual Date</span><span style="color:${st.done?'#155724':st.partial?'#856404':'#856404'};font-weight:${st.done?700:400};text-align:right">${nl2br(actStr)||'⏳ รออยู่'}</span></div>
+      <div class="row"><span>Actual Date</span><span style="color:${expRounds||actRounds?'inherit':(st.done?'#155724':'#856404')};font-weight:${st.done?700:400};text-align:right">${actHtml}</span></div>
       <div class="row"><span>สถานะ</span><span style="text-align:right"><span class="badge ${st.cls}">${st.label}</span></span></div>
       <div class="row"><span>ส่ง Customer</span><span style="text-align:right">${nl2br(apexDate(p,'toCust'))||'—'}</span></div>
     </div>
