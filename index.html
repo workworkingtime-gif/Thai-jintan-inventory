@@ -2207,22 +2207,51 @@ function apexMaterialsTableHtml(apexPO){
     ${noteLines}
     <div style="margin-top:8px;font-size:11px;color:#8fa3b0">มีตัวเลขใหม่ ส่งมาทางแชทได้เลย เดี๋ยวอัปเดตหน้านี้ให้</div>`;
 }
+// 23 Sep 2026 (Ji รอบสิบเอ็ด): "1. โชว์ตัวเลข PO พร้อมกับสถานะว่าส่งไปครบรึยัง 2. พอกดเข้าไปค่อย
+// เจอหน้านี้ เพื่อให้อ่านง่ายขึ้นเมื่อในอนาคตมีบันทึกการส่งที่เยอะกว่านี้น่าจะดีกว่า" — ของเดิม
+// (รอบสิบ) โชว์ตาราง apexMaterialsTableHtml() (รายการวัสดุละเอียดทุกชนิด) ของทุก PO เรียงต่อกัน
+// ยาวบนหน้าเดียวเลย — พอมี PO ที่ log วัสดุไว้เยอะขึ้นในอนาคต หน้าจะยาวมาก อ่านลำบาก — เปลี่ยนเป็น
+// pattern master/detail แบบเดียวกับตาราง APEX PO Order Log หลัก (ตาราง Nat./PO/Status คลิกแถว
+// เพื่อดูรายละเอียด): แท็บนี้ตอนนี้โชว์ตารางสรุป 1 แถวต่อ PO (หรือกลุ่ม PO ที่ log ร่วมกัน) พร้อม
+// ยอดรวมขอ/ส่งจริง + badge สถานะ (✓ ครบ / ⚠ ขาด) ให้เห็นภาพรวมทั้งหมดในสายตาเดียวไม่ต้องเลื่อนยาว
+// — กดแถวแล้วค่อยเปิด sheet รายละเอียดเต็ม (ตาราง apexMaterialsTableHtml เดิมจากรอบสิบ) แบบ
+// เดียวกับที่คลิกแถวตาราง Order log หลักเปิด showAPEXSheet
+function apexMaterialsSummaryRow(groupKeys){
+  const primary = groupKeys[0];
+  const sum = apexMaterialsSummary(primary);
+  const p = APEX_POS.find(x=>x.apexPO===primary);
+  const nc = p ? ({KR:'nkr',HK:'nhk',USA:'nusa',SG:'nsg',Philippines:'nph',France:'nfr',Italy:'nit'}[p.nat]||'') : '';
+  const label = groupKeys.join(' & ');
+  const matShort = sum ? Object.values(sum.byItem||{}).some(b=>b.remaining>0) : false;
+  const statusBadge = !sum ? '—' : (matShort
+    ? `<span class="badge br">⚠ ขาด</span>`
+    : `<span class="badge bg">✓ ครบ</span>`);
+  return `<tr onclick="showApexMaterialsSheet(this,${JSON.stringify(groupKeys).replace(/"/g,'&quot;')})">
+      <td>${p?`<span class="nat ${nc}">${p.nat}</span>`:''}</td>
+      <td style="font-weight:600">${label}</td>
+      <td class="n" style="text-align:right">${sum?f(sum.totalRequested):'—'}</td>
+      <td class="n" style="text-align:right">${sum?f(sum.totalSent):'—'}</td>
+      <td style="white-space:nowrap">${statusBadge}${sum&&sum.topups>0?` <span style="font-size:11px;color:#8fa3b0">(${sum.topups+1} รอบ)</span>`:''}</td>
+    </tr>`;
+}
+function showApexMaterialsSheet(row, groupKeys){
+  const primary = groupKeys[0];
+  const p = APEX_POS.find(x=>x.apexPO===primary);
+  const label = groupKeys.join(' & ');
+  const subtitle = p&&p.remark ? String(p.remark).split(' — ')[0].split(' · ')[0] : '';
+  const html = `${subtitle?`<div style="padding:14px 16px 0;font-size:12px;color:var(--muted)">${subtitle}</div>`:''}
+    <div style="padding:${subtitle?'8px':'14px'} 16px 16px">${apexMaterialsTableHtml(primary)}</div>`;
+  openSheet(`${p?p.nat+' · ':''}${label}`, html, row);
+}
 function apexMaterialsOverviewHtml(){
   const groups = apexMaterialsGroups();
   if(!groups.length) return `<div class="card"><div class="card-body" style="text-align:center;color:#8fa3b0;padding:20px">ยังไม่มีบันทึกการส่งวัสดุให้ APEX เลย — ส่งตัวเลขมาทางแชทได้เลย เดี๋ยวอัปเดตให้</div></div>`;
-  return groups.map(g=>{
-    const primary = g[0];
-    const p = APEX_POS.find(x=>x.apexPO===primary);
-    const nc = p ? ({KR:'nkr',HK:'nhk',USA:'nusa',SG:'nsg',Philippines:'nph',France:'nfr',Italy:'nit'}[p.nat]||'') : '';
-    const label = g.join(' &amp; ');
-    const subtitle = p&&p.remark ? String(p.remark).split(' — ')[0].split(' · ')[0] : '';
-    return `<div class="card">
-      <div class="card-head" style="cursor:default">
-        <div><div class="cht">${p?`<span class="nat ${nc}" style="margin-right:6px">${p.nat}</span>`:''}${label}</div>${subtitle?`<div class="chm">${subtitle}</div>`:''}</div>
-      </div>
-      <div class="card-body" style="padding:14px 16px 16px">${apexMaterialsTableHtml(primary)}</div>
-    </div>`;
-  }).join('');
+  const THEAD = `<thead><tr><th>Nat.</th><th>APEX PO</th><th style="text-align:right">ขอทั้งหมด</th><th style="text-align:right">ส่งจริงทั้งหมด</th><th>สถานะ</th></tr></thead>`;
+  return `<div class="card">
+    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียดวัสดุแต่ละชนิด</div><div class="tw"><table>${THEAD}<tbody>
+      ${groups.map(apexMaterialsSummaryRow).join('')}
+    </tbody></table></div></div>
+  </div>`;
 }
 function apexMaterialsSectionHtml(apexPO){
   const sum = apexMaterialsSummary(apexPO);
