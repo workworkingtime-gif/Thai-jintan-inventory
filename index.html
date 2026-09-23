@@ -2170,11 +2170,61 @@ function apexMaterialsRequirement(groupKeys){
     const packSize = apexPackSizeFromLabel(packType);
     return {
       packType, packSize, orderQty: qty,
+      // หลังเผื่อของเสีย 1% (ตัวเลขที่ใช้ตัดสิน ครบ/ขาด จริง)
       cartonReq: apexBufferCeil(qty/APEX_CARTON_CAPACITY),
       innerReq: packSize ? apexBufferCeil(qty/packSize) : null,
       sachetReq: apexBufferCeil(qty),
+      // (เพิ่ม 23 Sep 2026 รอบสิบหก) ก่อนเผื่อ 1% — ปัดขึ้นเป็นลัง/กล่องเต็มใบเหมือนกัน แค่ไม่คูณ
+      // buffer เอาไว้โชว์ให้ Ji เห็นความต่างระหว่าง "ยอดตามจำนวนสั่งล้วนๆ" กับ "ยอดที่ต้องส่งจริง
+      // รวมเผื่อของเสียแล้ว" เทียบกันชัดๆ
+      cartonReqNoBuf: Math.ceil(qty/APEX_CARTON_CAPACITY),
+      innerReqNoBuf: packSize ? Math.ceil(qty/packSize) : null,
+      sachetReqNoBuf: Math.ceil(qty),
     };
   });
+}
+// (เพิ่ม 23 Sep 2026 รอบสิบหก) Ji ทักว่ายอด "ขอ" ที่โชว์ในตาราง PO 060 (251/116 ลัง) ไม่ตรงกับที่
+// เธอคำนวณจากยอดสั่งของ PO 060 เองตัวเดียว (13,680÷240=57, 29,760÷240=124 พอดี) — เพราะตัวเลข
+// 251/116 เป็นยอดที่ต้องส่ง "รวม PO 060+061 เข้าด้วยกัน" (สองใบนี้ log วัสดุเป็นชุดเดียวกัน ถือว่า
+// เป็นชิปเมนต์เดียวกันจริง) ถามยืนยันแล้ว Ji เลือกให้เปลี่ยนมาคำนวณ "ยอดต้องส่ง" per PO แยกกัน
+// (ยอดสั่งของ PO นั้นเองเท่านั้น) — แต่ยอด "ส่งจริง" ที่ log ไว้ยังเป็นตัวเลขเดียวที่ครอบคลุมทั้ง
+// ชิปเมนต์ (log ซ้ำกันทั้งสอง PO) เลยต้องมีวิธี "แบ่ง" ยอดส่งจริงนั้นให้แต่ละ PO อย่างสมเหตุสมผล —
+// Ji ตอบว่า "ใส่ไปให้ครบ 1 PO ก่อนแล้วค่อยบอกว่าอีก PO ขาดเท่าไหร่" คือให้เติมยอดที่ต้องการของ PO
+// แรกในกลุ่มให้เต็มก่อน (ตามลำดับที่ระบุใน shipmentGroup เช่น PO 060 ก่อน PO 061) แล้วเหลือเท่าไหร่
+// ค่อยยกให้ PO ถัดไป — ฟังก์ชันนี้ทำ waterfall allocation นี้ต่อวัสดุแต่ละชนิด+ไซส์แพ็ค (คนละ SKU
+// กันจริง แบ่งข้ามกันไม่ได้ เช่น ลังนอก 10's ส่งมาไม่ช่วยลังนอก 5's) — return null ถ้า PO ที่ถาม
+// เองไม่มี orderItems ของตัวเอง (เช่น PO 053 — ไม่ต้องเช็คแบบนี้)
+function apexMaterialsWaterfallAllocate(poKey, shipmentGroup){
+  const ownReq = apexMaterialsRequirement([poKey]);
+  if(!ownReq) return null;
+  const baseSum = apexMaterialsSummary(poKey);
+  if(!baseSum) return null;
+  const group = (shipmentGroup && shipmentGroup.length) ? shipmentGroup : [poKey];
+  const result = {};
+  Object.keys(baseSum.byItem).forEach(itemName=>{
+    const b = baseSum.byItem[itemName];
+    const cat = apexMaterialCategoryOf(itemName);
+    const ps = apexMaterialPackSizeOf(itemName);
+    if(!cat || ps==null) return;
+    const ownR = ownReq.find(r=>r.packSize===ps);
+    if(!ownR) return;
+    const postBuf = cat==='carton'?ownR.cartonReq : cat==='inner'?ownR.innerReq : ownR.sachetReq;
+    const preBuf  = cat==='carton'?ownR.cartonReqNoBuf : cat==='inner'?ownR.innerReqNoBuf : ownR.sachetReqNoBuf;
+    // ยอด "ส่งจริง" ที่ log ไว้สำหรับรายการนี้เป็นตัวเลขเดียวที่ Ji log ซ้ำกันทุก PO ในกลุ่ม (เพราะ
+    // เป็นชิปเมนต์เดียวกันจริง) — อ่านจากตัวเองได้เลย ไม่ต้องไปควานหา PO อื่นในกลุ่ม
+    let remaining = b.sent;
+    let myAlloc = 0;
+    for(const pk of group){
+      const pkReq = apexMaterialsRequirement([pk]);
+      const r = pkReq ? pkReq.find(x=>x.packSize===ps) : null;
+      const need = r ? (cat==='carton'?r.cartonReq : cat==='inner'?r.innerReq : r.sachetReq) : 0;
+      const alloc = Math.max(0, Math.min(remaining, need));
+      if(pk===poKey) myAlloc = alloc;
+      remaining -= alloc;
+    }
+    result[itemName] = { preBuf, postBuf, allocatedSent: myAlloc };
+  });
+  return result;
 }
 // เหมือน apexMaterialsSummary() แต่เสริมการเช็คกับยอดสั่งจริงเข้าไปด้วย (apexMaterialsRequirement) —
 // ยอด "requested" ที่ใช้ตัดสิน remaining/badge จะกลายเป็น max(ยอดที่ log ไว้เอง, ยอดที่ต้องส่งตามคำ
@@ -2184,38 +2234,52 @@ function apexMaterialsRequirement(groupKeys){
 // แบบเดิมไม่เปลี่ยน (คนละหน้า คนละจุดประสงค์)
 // (แก้ 23 Sep 2026 รอบสิบสี่) เดิมพารามิเตอร์เดียว groupKeys ใช้ทั้งดึงข้อมูล log (primary=
 // groupKeys[0]) และคำนวณยอดสั่งรวม — ตอนนี้ Ji ขอให้ PO 060/061 แสดงแยกแถวกันในตารางสรุป (ดู
-// apexMaterialsSummaryRow) แต่ยอดสั่งที่ใช้เช็คยังต้องรวมทั้งกลุ่มเหมือนเดิม (เพราะเป็นวัสดุที่ส่ง
-// ร่วมชิปเมนต์เดียวกันจริง) เลยแยกเป็น 2 พารามิเตอร์: dataKey (PO ที่จะดึง log จริงๆ มาโชว์) กับ
-// requirementGroupKeys (กลุ่ม PO ที่ต้องรวม orderItems กันตอนคำนวณยอดสั่งขั้นต่ำ — ไม่ใส่ = เช็ค
-// แค่ตัวเอง)
-function apexMaterialsSummaryWithOrderCheck(dataKey, requirementGroupKeys){
+// apexMaterialsSummaryRow) เลยแยกเป็น 2 พารามิเตอร์: dataKey (PO ที่จะดึง log จริงๆ มาโชว์) กับ
+// shipmentGroup (กลุ่ม PO ที่ log วัสดุร่วมกัน/ส่งชิปเมนต์เดียวกันจริง — ไม่ใส่ = ตัวเองอย่างเดียว)
+// (แก้ 23 Sep 2026 รอบสิบหก) เดิม shipmentGroup ถูกใช้ "รวม orderItems ของทุก PO ในกลุ่มเข้าด้วยกัน"
+// ก่อนคำนวณยอดต้องส่ง (เช่น PO 060+061 รวมยอดสั่งเป็น 86,880 ชิ้น แล้วคำนวณยอดลังที่ต้องส่ง 251/116
+// ให้ทั้งคู่เท่ากัน) — Ji ทักว่าตัวเลขนี้ไม่ตรงกับยอดสั่งของ PO 060 เอง (43,440 ชิ้น) เลย ถามยืนยัน
+// แล้วเปลี่ยนเป็น: ยอดต้องส่ง (requirement) คำนวณจาก "ยอดสั่งของ PO ตัวเองเท่านั้น" เสมอ (ไม่รวม PO
+// อื่นในกลุ่มแล้ว) — ส่วน shipmentGroup ตอนนี้ใช้แค่จุดเดียวคือแบ่ง "ยอดส่งจริง" ที่ log ไว้ร่วมกัน
+// (ตัวเลขเดียวกันซ้ำอยู่ทุก PO ในกลุ่ม เพราะเป็นชิปเมนต์เดียวกันจริง) ให้แต่ละ PO ได้ส่วนแบ่งที่
+// สมเหตุสมผล ผ่าน apexMaterialsWaterfallAllocate() — เติมยอดต้องส่งของ PO แรกในกลุ่มให้เต็มก่อน
+// เหลือเท่าไหร่ค่อยยกให้ PO ถัดไป (ตามที่ Ji บอก "ใส่ไปให้ครบ 1 PO ก่อนแล้วค่อยบอกว่าอีก PO ขาด
+// เท่าไหร่") กันไม่ให้ยอดส่งจริงตัวเดียวถูกนับซ้ำเต็มๆ ในทุกแถว (ซึ่งจะทำให้ดูเหมือนส่งครบทุก PO
+// ทั้งที่จริงมีของจริงแค่ก้อนเดียวที่ต้องแบ่งกัน)
+function apexMaterialsSummaryWithOrderCheck(dataKey, shipmentGroup){
   const sum = apexMaterialsSummary(dataKey);
   if(!sum) return null;
-  const groupKeys = (requirementGroupKeys && requirementGroupKeys.length) ? requirementGroupKeys : [dataKey];
-  const requirement = apexMaterialsRequirement(groupKeys);
-  let totalEffectiveRequired = 0;
+  const requirement = apexMaterialsRequirement([dataKey]); // ยอดสั่งของ PO ตัวเองเท่านั้น
+  const waterfall = apexMaterialsWaterfallAllocate(dataKey, shipmentGroup);
+  let totalEffectiveRequired = 0, totalSent = 0, totalPreBuf = 0;
   Object.values(sum.byItem).forEach(b=>{
     let effectiveRequired = b.requested;
-    if(requirement){
-      const cat = apexMaterialCategoryOf(b.item);
-      const packSize = apexMaterialPackSizeOf(b.item);
-      const req = requirement.find(r=>r.packSize===packSize);
-      if(req && cat){
-        const reqQty = cat==='carton'?req.cartonReq : cat==='inner'?req.innerReq : cat==='sachet'?req.sachetReq : null;
-        if(reqQty!=null){
-          b.orderRequired = reqQty;
-          effectiveRequired = Math.max(b.requested, reqQty);
-        }
-      }
+    let sentForDisplay = b.sent;
+    let preBuf = b.requested;
+    const w = waterfall && waterfall[b.item];
+    if(w){
+      effectiveRequired = w.postBuf;
+      sentForDisplay = w.allocatedSent;
+      preBuf = w.preBuf;
+      b.orderRequired = w.postBuf; // ยอดต้องส่งขั้นต่ำ (หลังเผื่อ 1%) ของ PO นี้เอง
+      b.orderRequiredPreBuf = w.preBuf; // ยอดก่อนเผื่อ 1% — โชว์เพื่อความโปร่งใสตามที่ Ji ขอ
     }
     b.effectiveRequired = effectiveRequired;
-    b.remaining = Math.max(0, effectiveRequired - b.sent);
+    b.sent = sentForDisplay; // เฉพาะใน sum ก้อนนี้ (ของหน้า "วัสดุแพ็ค APEX" เท่านั้น) — หน้า detail
+    // sheet เดิม (showAPEXSheet/apexMaterialsListHtml) เรียก apexMaterialsSummary() สดใหม่ทุกครั้ง
+    // ไม่ได้อ้างอิง object ก้อนนี้ เลยไม่กระทบ
+    b.remaining = Math.max(0, effectiveRequired - sentForDisplay);
     totalEffectiveRequired += effectiveRequired;
+    totalSent += sentForDisplay;
+    totalPreBuf += preBuf;
   });
   sum.hasOrderCheck = !!requirement;
   sum.orderRequirement = requirement;
   sum.totalEffectiveRequired = totalEffectiveRequired;
-  sum.bufferPct = totalEffectiveRequired>0 ? (sum.totalSent-totalEffectiveRequired)/totalEffectiveRequired*100 : sum.bufferPct;
+  sum.totalPreBuf = totalPreBuf;
+  sum.totalRequested = totalEffectiveRequired;
+  sum.totalSent = totalSent;
+  sum.bufferPct = totalEffectiveRequired>0 ? (totalSent-totalEffectiveRequired)/totalEffectiveRequired*100 : sum.bufferPct;
   return sum;
 }
 // (แก้ 23 Sep 2026 รอบหก) Ji บอกว่าแบบเดิม "ยังมีความเป็นแผง อ่านยาก" — เปลี่ยนจากยัดทุกอย่าง
@@ -2301,26 +2365,47 @@ function apexMaterialsGroups(){
 // แต่ย้ายไปเป็นข้อความสั้นๆ ต่อท้ายตาราง (ไม่ใช่การ์ดแยกต่อรอบเหมือนเดิม) — ส่วนหน้า detail sheet
 // รายตัว (คลิกแถว PO ในแท็บอื่น) ยังใช้ apexMaterialsSectionHtml() แบบการ์ดต่อรอบเดิม ไม่แตะ
 // เพราะที่นั่นมีที่ว่างพอและ Ji ไม่เคยติงเรื่องซ้ำซ้อนสำหรับหน้านั้น
-function apexMaterialsTableHtml(apexPO, requirementGroupKeys){
-  const sum = apexMaterialsSummaryWithOrderCheck(apexPO, requirementGroupKeys);
+// (แก้ 23 Sep 2026 รอบสิบหก) Ji: "ควรจะมีทั้ง ยอดก่อน+1% เดี่ยวๆ ยอดหลังบวกแล้ว แล้วก็มียอดว่า
+// ตอนนี้ส่งไปเท่าไหร่สิ" — เฉพาะ PO ที่มีการเช็คยอดสั่ง (hasOrderCheck, เช่น PO 060/061) ตารางนี้
+// เปลี่ยนจาก 2 คอลัมน์ (ขอ/ส่งจริง) เป็น 3 คอลัมน์ (ก่อนเผื่อ 1% / หลังเผื่อ 1% ที่ต้องส่งขั้นต่ำ /
+// ส่งจริง เฉพาะส่วนที่แบ่งให้ PO นี้) — ส่วน PO ที่ไม่มีการเช็คยอดสั่ง (เช่น PO 053) ยังใช้ตาราง
+// แบบเดิม 2 คอลัมน์ (ขอ/ส่งจริง) เหมือนเดิมทุกประการ ไม่เปลี่ยน
+function apexMaterialsTableHtml(apexPO, shipmentGroup){
+  const sum = apexMaterialsSummaryWithOrderCheck(apexPO, shipmentGroup);
   if(!sum) return '<div style="color:#8fa3b0;font-size:13px;padding:4px 0 0">ยังไม่มีบันทึกการส่งวัสดุให้ APEX สำหรับ PO นี้ — ส่งตัวเลขมาทางแชทได้เลย เดี๋ยวอัปเดตให้</div>';
+  const showBreakdown = sum.hasOrderCheck;
+  const group = (shipmentGroup && shipmentGroup.length) ? shipmentGroup : [apexPO];
+  const isShared = group.length>1;
   const rows = Object.values(sum.byItem).map(b=>{
     const status = b.remaining>0
       ? `<span class="need">⚠ ขาด ${f(b.remaining)}</span>`
       : `<span class="ok">✓ ครบ</span>`;
-    // (23 Sep 2026 รอบสิบสาม) ถ้ายอดที่ต้องส่งตามยอดสั่งจริง (orderRequired) สูงกว่ายอดที่ log
-    // ไว้เอง (requested) ให้โชว์เตือนไว้ใต้ชื่อวัสดุ — เกิดเฉพาะตอนยอดขอเองต่ำกว่ายอดสั่งจริง
-    const orderHint = (b.orderRequired!=null && b.orderRequired>b.requested)
-      ? `<div style="font-size:11px;color:#a23b3b;margin-top:2px">📐 ตามยอดสั่ง APEX ต้องส่งอย่างน้อย ${f(b.orderRequired)}</div>`
-      : '';
+    const nameCell = `<td style="font-size:12.5px">${b.item}${b.detail?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${b.detail}</div>`:''}</td>`;
+    if(showBreakdown && b.orderRequiredPreBuf!=null){
+      return `<tr>
+        ${nameCell}
+        <td class="n" style="text-align:right;color:var(--muted)">${f(b.orderRequiredPreBuf)}</td>
+        <td class="n" style="text-align:right;font-weight:600">${f(b.orderRequired)}</td>
+        <td class="n" style="text-align:right">${f(b.sent)}</td>
+        <td style="white-space:nowrap;font-size:12px">${status}</td>
+      </tr>`;
+    }
+    // รายการที่ไม่มีการเช็คยอดสั่ง (ไม่รู้จักชนิด/ไซส์แพ็ค หรือ PO ไม่มี orderItems) — ใช้แบบเดิม
     return `<tr>
-      <td style="font-size:12.5px">${b.item}${b.detail?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${b.detail}</div>`:''}${orderHint}</td>
-      <td class="n" style="text-align:right">${f(b.requested)}</td>
+      ${nameCell}
+      ${showBreakdown ? `<td class="n" style="text-align:right;color:#c3ccd1">—</td>` : ''}
+      <td class="n" style="text-align:right${showBreakdown?';font-weight:600':''}">${f(b.requested)}</td>
       <td class="n" style="text-align:right">${f(b.sent)}</td>
       <td style="white-space:nowrap;font-size:12px">${status}</td>
     </tr>`;
   }).join('');
-  const totalRow = `<tr>
+  const totalRow = showBreakdown ? `<tr>
+      <td>รวมทั้งหมด${sum.topups>0?` (ส่งแล้ว ${sum.topups+1} รอบ)`:''}</td>
+      <td class="n" style="text-align:right;color:var(--muted)">${f(sum.totalPreBuf)}</td>
+      <td class="n" style="text-align:right;font-weight:600">${f(sum.totalRequested)}</td>
+      <td class="n" style="text-align:right">${f(sum.totalSent)}</td>
+      <td style="white-space:nowrap;font-size:12px">${apexMaterialBufferBadge(sum.bufferPct, sum.totalSent, sum.totalEffectiveRequired)}</td>
+    </tr>` : `<tr>
       <td>รวมทั้งหมด${sum.topups>0?` (ส่งแล้ว ${sum.topups+1} รอบ)`:''}</td>
       <td class="n" style="text-align:right">${f(sum.totalRequested)}</td>
       <td class="n" style="text-align:right">${f(sum.totalSent)}</td>
@@ -2329,13 +2414,14 @@ function apexMaterialsTableHtml(apexPO, requirementGroupKeys){
   const noteLines = sum.rounds.filter(r=>r.note||r.date).map((r,i)=>
     `<div style="font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.4">${r.date?`<b>${i>0?'รอบเพิ่มเติม ':''}${r.date}</b> — `:''}${r.note?'📝 '+r.note:''}</div>`
   ).join('');
-  // (23 Sep 2026 รอบสิบสาม) แสดงยอดสั่งที่ใช้เช็คไว้โปร่งใส เฉพาะ PO ที่มี orderItems (ดู
-  // apexMaterialsRequirement) — PO ที่ยังไม่มี (เช่น PO 053) จะไม่โชว์บรรทัดนี้เลย
+  // (แก้ 23 Sep 2026 รอบสิบหก) เดิมบรรทัดนี้อ้างอิงยอดสั่งรวมทั้งกลุ่ม (เช่น PO 060+061 รวมกัน) —
+  // เปลี่ยนเป็นยอดสั่งของ PO ตัวเองล้วนๆ (ตามที่ Ji ยืนยัน) แล้วเสริมคำอธิบายเรื่องการแบ่งยอดส่งจริง
+  // เมื่อ PO นี้ log วัสดุร่วมชิปเมนต์กับ PO อื่น (isShared) ให้ Ji เข้าใจที่มาของตัวเลข "ส่งจริง"
   const orderCheckLine = sum.hasOrderCheck
-    ? `<div style="font-size:11.5px;color:var(--ink-soft);margin-top:8px;padding-top:8px;border-top:1px solid var(--line-soft)">📐 เทียบกับยอดสั่ง APEX: ${sum.orderRequirement.map(r=>`${r.packType} ${f(r.orderQty)} ชิ้น`).join(' + ')} → ต้องส่งอย่างน้อย ${sum.orderRequirement.map(r=>`ลัง ${f(r.cartonReq)}${r.innerReq!=null?` / กล่องใน ${f(r.innerReq)}`:''} / ซอง ${f(r.sachetReq)}`).join(', ')}</div>`
+    ? `<div style="font-size:11.5px;color:var(--ink-soft);margin-top:8px;padding-top:8px;border-top:1px solid var(--line-soft)">📐 ยอดสั่งของ ${apexPO} เอง: ${sum.orderRequirement.map(r=>`${r.packType} ${f(r.orderQty)} ชิ้น`).join(' + ')} → ก่อนเผื่อของเสีย 1% ต้องส่ง ${sum.orderRequirement.map(r=>`ลัง ${f(r.cartonReqNoBuf)}${r.innerReqNoBuf!=null?` / กล่องใน ${f(r.innerReqNoBuf)}`:''} / ซอง ${f(r.sachetReqNoBuf)}`).join(', ')} — หลังเผื่อ 1% (ขั้นต่ำที่ต้องส่งจริง) ${sum.orderRequirement.map(r=>`ลัง ${f(r.cartonReq)}${r.innerReq!=null?` / กล่องใน ${f(r.innerReq)}`:''} / ซอง ${f(r.sachetReq)}`).join(', ')}${isShared?`<br>📦 PO นี้ log วัสดุร่วมชิปเมนต์เดียวกับ ${group.filter(k=>k!==apexPO).join(', ')} — ยอด "ส่งจริง" ด้านบนคือส่วนที่แบ่งให้ ${apexPO} เท่านั้น (เติมยอดที่ ${apexPO} ต้องการให้เต็มก่อน เหลือเท่าไหร่ค่อยยกให้ PO ถัดไปในชิปเมนต์)`:''}</div>`
     : '';
   return `<div class="tw"><table class="rt"><thead><tr>
-      <th>วัสดุ</th><th style="text-align:right">ขอ</th><th style="text-align:right">ส่งจริง</th><th>สถานะ</th>
+      <th>วัสดุ</th>${showBreakdown?'<th style="text-align:right">ก่อนเผื่อ 1%</th><th style="text-align:right">หลังเผื่อ 1%</th>':'<th style="text-align:right">ขอ</th>'}<th style="text-align:right">ส่งจริง</th><th>สถานะ</th>
     </tr></thead><tbody>${rows}${totalRow}</tbody></table></div>
     ${orderCheckLine}
     ${noteLines}
