@@ -916,14 +916,42 @@ const APEX_OVERRIDES = [
 // เป็นหน้าต่างโชว์จำนวนได้มั้ย" — เดิมทำเป็นฟอร์มให้ Ji กรอกเอง+ต้องใส่ PIN ทุกครั้ง ไม่สะดวก
 // เปลี่ยนมาใช้ pattern เดียวกับ APEX_OVERRIDES ด้านบนแทน: Ji ส่งตัวเลขมาทางแชท แล้ว Claude
 // เพิ่มเข้ามาในนี้ + deploy ให้ ไม่ต้องกรอกฟอร์ม/ใส่ PIN เอง — หน้าเว็บแค่โชว์ผลรวม/ประวัติ
-// อย่างเดียว (read-only) — คีย์ด้วย apexPO string เดียวกับ APEX_POS, ค่าเป็น array ของ
-// {date, item, requestedQty, sentQty, note} เรียงตามลำดับที่ส่ง (รายการที่ 2 เป็นต้นไปถือเป็น
-// "ขอเพิ่ม" โดยอัตโนมัติ) — ตัวอย่างการเพิ่มรายการ (ใส่ตัวเลขจริงที่ Ji ส่งมาทางแชท):
+// อย่างเดียว (read-only) — คีย์ด้วย apexPO string เดียวกับ APEX_POS, ค่าเป็น array ของ "รอบส่ง"
+// {date, items:[{item,requestedQty,sentQty}], note} — 1 รอบส่งมีวัสดุหลายชนิดพร้อมกันได้
+// (กล่องนอก/กล่องใน/ซองใน ในการส่งครั้งเดียวกัน) รายการที่ 2 เป็นต้นไปในอาเรย์ (รอบถัดไป) ถือเป็น
+// "ขอเพิ่ม" โดยอัตโนมัติ — ตัวอย่างการเพิ่มรายการ (ใส่ตัวเลขจริงที่ Ji ส่งมาทางแชท):
 //   'PO 099': [
-//     {date:'2026-09-20', item:'ซองใน', requestedQty:100000, sentQty:101500, note:'ส่งรอบแรก'},
-//     {date:'2026-09-25', item:'ซองใน', requestedQty:5000,   sentQty:5010,   note:'ขอเพิ่มเพราะของเสียระหว่างแพ็ค'},
+//     {date:'2026-09-20', items:[{item:'ซองใน', requestedQty:100000, sentQty:101500}], note:'ส่งรอบแรก'},
+//     {date:'2026-09-25', items:[{item:'ซองใน', requestedQty:5000,   sentQty:5010}],   note:'ขอเพิ่มเพราะของเสียระหว่างแพ็ค'},
 //   ],
 const APEX_MATERIALS_LOG = {
+  // 23 Sep 2026: Ji ส่งตารางสรุปวัสดุที่จะส่งให้ APEX มาทางแชทสำหรับงาน USA PO 060 & PO 061
+  // (carton 367 / inner 11,539 / sachet 87,750 รวม) ยืนยันว่าเป็น "ยอดที่จะส่งจริง" และ "บวก
+  // +1% ให้เรียบร้อยแล้ว" — ตัวเลขนี้เป็นยอดรวมของทั้ง PO 060 และ PO 061 (ทั้งสอง PO มีสัดส่วน
+  // สินค้าเหมือนกันทุกอย่าง: 10-pack 29,760 + 5-pack 13,680 = 43,440 ชิ้น/PO ตาม remark เดิม —
+  // ตารางที่ Ji ส่งมาคือยอดรวม 2 PO เข้าด้วยกัน สังเกตจากยอด sachet 87,750 ≈ (43,440×2)×1.01)
+  // จึงบันทึกซ้ำไว้ใต้ทั้งสอง PO เพราะเป็นงาน/การส่งเดียวกัน — ยอด "ขอ" (ก่อนบวก 1%) ของกล่องนอก/
+  // ลัง คำนวณตรงจากป้ายกำกับที่ Ji ให้มาเอง (248+114=362 ลัง) ของซองในคำนวณจากยอดสั่งลูกค้าที่
+  // ยืนยันแล้ว ((29,760+13,680)×2=86,880 ชิ้น) ส่วนกล่องในเป็นค่าประมาณย้อนกลับจาก +1%
+  // (11,539/1.01≈11,426) — ถ้าตัวเลขไหนไม่ตรงกับที่ Ji คำนวณไว้จริง แจ้งแก้ไขได้เลย
+  'PO 060': [
+    { date:'2026-09-23',
+      items:[
+        {item:'กล่องนอก/ลัง (Carton)', requestedQty:362, sentQty:367},
+        {item:'กล่องใน (Inner box)', requestedQty:11426, sentQty:11539},
+        {item:'ซองใน (Sachet)', requestedQty:86880, sentQty:87750},
+      ],
+      note:'ยอดรวมงาน PO 060 + PO 061 (สัดส่วนสินค้าเหมือนกันทั้งคู่) — ส่งจริงบวก +1% แล้วตามที่ Ji ยืนยัน' },
+  ],
+  'PO 061': [
+    { date:'2026-09-23',
+      items:[
+        {item:'กล่องนอก/ลัง (Carton)', requestedQty:362, sentQty:367},
+        {item:'กล่องใน (Inner box)', requestedQty:11426, sentQty:11539},
+        {item:'ซองใน (Sachet)', requestedQty:86880, sentQty:87750},
+      ],
+      note:'ยอดรวมงาน PO 060 + PO 061 (สัดส่วนสินค้าเหมือนกันทั้งคู่) — ส่งจริงบวก +1% แล้วตามที่ Ji ยืนยัน' },
+  ],
 };
 // 23 Sep 2026: ก่อนหน้านี้ override ทำได้แค่ "ทับ field ของ PO ที่มีอยู่แล้วใน APEX_POS เท่านั้น"
 // — ถ้า PO ไหนยังไม่เคยเข้ามาทาง live sync (ชีต "APX Tracking" ยังไม่มีแถวนั้น) override จะ
@@ -1983,15 +2011,19 @@ function savePOField(po, field, dateStr){
 // D.apexMaterials — หน้าเว็บเหลือแค่โชว์ผลรวม/ประวัติอย่างเดียว ไม่มีฟอร์มกรอก/ปุ่มลบแล้ว
 function apexMatKey(apexPO){ return String(apexPO).replace(/[^a-zA-Z0-9]/g,'_'); }
 function apexMaterialsFor(apexPO){ return APEX_MATERIALS_LOG[apexPO] || []; }
-// สรุปยอดรวมทั้งหมดที่เคยส่งให้ PO นี้ + % ส่วนเกินเทียบกับยอดที่ APEX ขอรวม — คืน null ถ้ายัง
-// ไม่มีบันทึกเลย (ไม่มั่วตัวเลข)
+// (แก้ 23 Sep 2026 รอบสาม) ตอนบันทึกข้อมูลจริงชุดแรก (PO 060/061) พบว่างานหนึ่งรอบส่งวัสดุ
+// หลายชนิดพร้อมกันเสมอ (กล่องนอก/กล่องใน/ซองใน ในการส่งครั้งเดียวกัน) — โครงสร้างเดิมที่เก็บ
+// เป็น "1 แถว = 1 ชนิดวัสดุ" จะนับชนิดวัสดุที่ 2,3 เป็น "ขอเพิ่ม" (topup) ผิดๆ ทั้งที่จริงเป็น
+// วัสดุคนละชนิดในรอบเดียวกัน — เปลี่ยนโครงสร้างเป็น "1 รายการ = 1 รอบส่ง" แต่ละรอบมี items[]
+// ย่อยหลายชนิดได้ {item, requestedQty, sentQty} — topup นับจากจำนวน "รอบ" (rounds.length-1)
+// ไม่ใช่จำนวนชนิดวัสดุอีกต่อไป
 function apexMaterialsSummary(apexPO){
-  const rows = apexMaterialsFor(apexPO);
-  if(!rows.length) return null;
-  const totalRequested = rows.reduce((s,r)=>s+(Number(r.requestedQty)||0),0);
-  const totalSent = rows.reduce((s,r)=>s+(Number(r.sentQty)||0),0);
+  const rounds = apexMaterialsFor(apexPO);
+  if(!rounds.length) return null;
+  let totalRequested=0, totalSent=0;
+  rounds.forEach(r=>(r.items||[]).forEach(it=>{ totalRequested += Number(it.requestedQty)||0; totalSent += Number(it.sentQty)||0; }));
   const bufferPct = totalRequested>0 ? (totalSent-totalRequested)/totalRequested*100 : null;
-  return { rows, count: rows.length, totalRequested, totalSent, bufferPct, topups: rows.length-1 };
+  return { rounds, count: rounds.length, totalRequested, totalSent, bufferPct, topups: rounds.length-1 };
 }
 // ป้ายเปอร์เซ็นต์ส่วนเกิน — เขียว+✓ ถ้า ≥1% ตามกติกาที่ Ji ตั้งไว้ ("ต้องส่งเกิน 1% ของที่ขอ"),
 // แดง+⚠ ถ้าต่ำกว่า ช่วยเตือนตอนกรอกก่อนกดบันทึกด้วย ไม่ได้ห้ามบันทึกแค่เตือน (Ji อาจมีเหตุผล)
@@ -2001,15 +2033,22 @@ function apexMaterialBufferBadge(pct){
   return `<span style="color:${ok?'#155724':'#a23b3b'};font-weight:700">${pct>=0?'+':''}${pct.toFixed(1)}%</span> ${ok?'✓':'⚠ ต่ำกว่าเกณฑ์ 1%'}`;
 }
 function apexMaterialsListHtml(apexPO){
-  const rows = apexMaterialsFor(apexPO);
-  if(!rows.length) return '<div style="color:#8fa3b0;font-size:13px;padding:6px 0">ยังไม่มีบันทึกการส่งวัสดุให้ APEX สำหรับ PO นี้ — ส่งตัวเลขมาทางแชทได้เลย เดี๋ยวอัปเดตให้</div>';
-  return rows.map((r,i)=>{
-    const req=Number(r.requestedQty)||0, sent=Number(r.sentQty)||0;
+  const rounds = apexMaterialsFor(apexPO);
+  if(!rounds.length) return '<div style="color:#8fa3b0;font-size:13px;padding:6px 0">ยังไม่มีบันทึกการส่งวัสดุให้ APEX สำหรับ PO นี้ — ส่งตัวเลขมาทางแชทได้เลย เดี๋ยวอัปเดตให้</div>';
+  return rounds.map((r,i)=>{
+    const items = r.items||[];
+    const req = items.reduce((s,it)=>s+(Number(it.requestedQty)||0),0);
+    const sent = items.reduce((s,it)=>s+(Number(it.sentQty)||0),0);
     const pct = req>0 ? (sent-req)/req*100 : null;
+    const itemLines = items.map(it=>{
+      const ir=Number(it.requestedQty)||0, is=Number(it.sentQty)||0;
+      return `<div style="font-size:12px;color:#5b6b76">${it.item||'—'}: ขอ ${f(ir)} → ส่งจริง ${f(is)}</div>`;
+    }).join('');
     return `<div class="srow" style="align-items:flex-start">
       <div>
-        <div style="font-weight:600">รอบ ${i+1}${i>0?' · ขอเพิ่ม':''} — ${r.item||'—'}${r.date?` <span style="font-weight:400;color:#8fa3b0">· ${r.date}</span>`:''}</div>
-        <div style="font-size:12px;color:#5b6b76;margin-top:2px">ขอ ${f(req)} → ส่งจริง ${f(sent)} (${apexMaterialBufferBadge(pct)})</div>
+        <div style="font-weight:600">รอบ ${i+1}${i>0?' · ขอเพิ่ม':''}${r.date?` <span style="font-weight:400;color:#8fa3b0">· ${r.date}</span>`:''}</div>
+        ${itemLines}
+        <div style="font-size:12px;color:#5b6b76;margin-top:2px;font-weight:600">รวมรอบนี้: ขอ ${f(req)} → ส่งจริง ${f(sent)} (${apexMaterialBufferBadge(pct)})</div>
         ${r.note?`<div style="font-size:12px;color:#8fa3b0;margin-top:2px">📝 ${r.note}</div>`:''}
       </div>
     </div>`;
