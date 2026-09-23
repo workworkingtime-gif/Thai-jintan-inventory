@@ -2372,42 +2372,60 @@ function pageAPEX(){
 }
 // ─── CALENDAR ─────────────────────────────────────────────────────────────
 const MONTH_NAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
+// 23 Sep 2026 (Ji: "สีมันซ้ำกันอ่านยาก...บนตารางมันโชว์แค่จุด...ไม่รู้ว่าเลขไหน PO ใด"):
+// เดิมมี 6 หมวดแต่ใช้แค่ 4 สี (เหลืองซ้ำ 2 หมวด: po-exp กับ apex-exp, เขียวซ้ำ 2 หมวด: po-act
+// กับ apex-act) แยกไม่ออกว่าจุดไหนคือฝั่ง Supplier หรือฝั่ง APEX แถมในช่องปฏิทินก็มีแค่จุดกลมๆ
+// ไม่มีตัวหนังสือเลย ต้องกดเข้าไปดูรายละเอียดถึงจะรู้ว่าเป็น PO ไหน — แก้โดย:
+// 1) จัดเป็น 3 "สาย" ที่แยกสีชัดเจนไม่ซ้ำกันเลย (Supplier=น้ำเงิน, APEX=ส้ม, ส่งลูกค้า=เขียวอมฟ้า)
+//    ทั้ง 3 สีนี้ผ่านการเช็คแยกสีสำหรับตาบอดสีทุกคู่ (ไม่ใช่แค่คู่ที่อยู่ติดกัน)
+// 2) ใช้จุดกลวง(hollow)="ยังไม่ถึง/คาดว่าจะ" vs จุดทึบ(solid)="เกิดขึ้น/ยืนยันแล้ว" เป็นตัวช่วย
+//    แยกอีกชั้นหนึ่ง ไม่ต้องพึ่งสีอย่างเดียว (ใช้แนวคิดเดียวกับ ✓/⏳ ที่ใช้อยู่แล้วทั่วทั้งเว็บ)
+// 3) ใส่อีโมจิ 🚚(Supplier)/✈️(APEX)/📤(ส่งลูกค้า) ให้ตรงกับอีโมจิที่ใช้ในแท็บอยู่แล้ว
+//    (Supplier POs = 🚚, APEX Orders = ✈️) คนอ่านคุ้นตาทันทีโดยไม่ต้องจำสีใหม่เลย
+// 4) ในช่องปฏิทิน โชว์เลข PO/รหัสสั้นๆ ตรงๆ (ไม่ใช่จุดเปล่าๆ) อย่างน้อย 2 รายการแรกต่อวัน
 const CAL_CAT_LABEL={
-  'po-exp':{label:'Supplier PO expected',cls:'ba',dot:'#ffc107'},
-  'po-act':{label:'Supplier PO received',cls:'bg',dot:'#28a745'},
-  'apex-sent':{label:'Sent to APEX',cls:'bb',dot:'#004085'},
-  'apex-exp':{label:'Expected from APEX',cls:'ba',dot:'#ffc107'},
-  'apex-act':{label:'Received from APEX',cls:'bg',dot:'#28a745'},
-  'apex-cust':{label:'Sent to Customer',cls:'bb',dot:'#5c2d91'},
+  'po-exp':   {label:'Supplier PO — คาดว่าจะมา', emoji:'🚚', color:'#2a78d6', fill:'hollow'},
+  'po-act':   {label:'Supplier PO — รับแล้ว',     emoji:'🚚', color:'#2a78d6', fill:'solid'},
+  'apex-sent':{label:'ส่ง PO ให้ APEX แล้ว',       emoji:'✈️', color:'#eb6834', fill:'solid'},
+  'apex-exp': {label:'APEX — คาดว่าจะส่งมา',       emoji:'✈️', color:'#eb6834', fill:'hollow'},
+  'apex-act': {label:'APEX — ส่งมาแล้ว',           emoji:'✈️', color:'#eb6834', fill:'solid'},
+  'apex-cust':{label:'ส่งลูกค้าแล้ว',              emoji:'📤', color:'#1baf7a', fill:'solid'},
 };
+function calDotHtml(cat,size){
+  const c=CAL_CAT_LABEL[cat]; const s=size||8;
+  return c.fill==='solid'
+    ? `<span style="width:${s}px;height:${s}px;border-radius:50%;background:${c.color};display:inline-block;flex-shrink:0"></span>`
+    : `<span style="width:${s}px;height:${s}px;border-radius:50%;background:#fff;border:2px solid ${c.color};box-sizing:border-box;display:inline-block;flex-shrink:0"></span>`;
+}
 let CAL_VIEW = null; // {y,m} currently displayed month (m: 0-11)
 let CAL_SEL = null;  // selected day, ms timestamp
 function dayKey(ms){ const d=new Date(ms); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
 function calEvents(){
   const evs=[];
-  const push=(ms,cat,label,sub)=>{ if(!ms) return; evs.push({ms,cat,label,sub}); };
+  // short = ข้อความสั้นๆ (เลข PO/รหัส) สำหรับโชว์ตรงในช่องปฏิทินเลย ไม่ต้องกดเข้าไปดู
+  const push=(ms,cat,label,sub,short)=>{ if(!ms) return; evs.push({ms,cat,label,sub,short:short||label}); };
   // 7 Aug 2026 (Ji ขอ "ทุกวันที่ที่มีบันทึกว่าของจะเข้า ก็แจ้งไว้บนปฏิทินเลยสิ"): ถ้า field
   // นั้นไม่มีวันที่เดี่ยว (…D) แต่มีข้อความอิสระ (…Text เช่น "24 Jul 2026\n31 Jul 2026" หรือ
   // "6, 7, 16 July 2026") ให้ดึงวันที่ทุกตัวที่ parse ได้ออกมาแปะเป็นจุดบนปฏิทินให้ครบ แทนที่
   // จะโดนดีดไปอยู่แค่ในลิสต์ "หลายวันที่ปนกันในช่องเดียว" ด้านล่างเฉยๆ เหมือนก่อนหน้านี้
-  const pushMulti=(text,cat,label,sub)=>{
-    parseFreeDates(text).forEach(ms=>push(ms,cat,label,sub));
+  const pushMulti=(text,cat,label,sub,short)=>{
+    parseFreeDates(text).forEach(ms=>push(ms,cat,label,sub,short));
   };
   D.pos.forEach(p=>{
-    push(p.expMs,'po-exp', `${p.vendor} ${p.po} — Expected`, p.product);
-    push(p.actMs,'po-act', `${p.vendor} ${p.po} — Received`, p.product);
+    push(p.expMs,'po-exp', `${p.vendor} ${p.po} — Expected`, p.product, `${p.vendor} ${p.po}`);
+    push(p.actMs,'po-act', `${p.vendor} ${p.po} — Received`, p.product, `${p.vendor} ${p.po}`);
   });
   APEX_POS.forEach(p=>{
     if(p.cancelled) return; // 21 Aug 2026: PO ที่ยกเลิกแล้วไม่ต้องขึ้นจุดบนปฏิทิน เพราะของจะไม่มาแล้ว
     const label = p.apexPO || p.custPO || 'APEX';
-    if(apexDateD(p,'sent')) push(serialToMs(apexDateD(p,'sent')),'apex-sent', `${label} — Sent to APEX`, p.nat);
-    else pushMulti(p.sentText,'apex-sent', `${label} — Sent to APEX`, p.nat);
-    if(apexDateD(p,'exp')) push(serialToMs(apexDateD(p,'exp')),'apex-exp', `${label} — Expected from APEX`, p.nat);
-    else pushMulti(expTextFallback(p)||p.expText,'apex-exp', `${label} — Expected from APEX`, p.nat);
-    if(apexDateD(p,'act')) push(serialToMs(apexDateD(p,'act')),'apex-act', `${label} — Received from APEX`, p.nat);
-    else pushMulti(p.actText,'apex-act', `${label} — Received from APEX`, p.nat);
-    if(apexDateD(p,'toCust')) push(serialToMs(apexDateD(p,'toCust')),'apex-cust', `${label} — Sent to Customer`, p.nat);
-    else pushMulti(p.toCustText,'apex-cust', `${label} — Sent to Customer`, p.nat);
+    if(apexDateD(p,'sent')) push(serialToMs(apexDateD(p,'sent')),'apex-sent', `${label} — Sent to APEX`, p.nat, label);
+    else pushMulti(p.sentText,'apex-sent', `${label} — Sent to APEX`, p.nat, label);
+    if(apexDateD(p,'exp')) push(serialToMs(apexDateD(p,'exp')),'apex-exp', `${label} — Expected from APEX`, p.nat, label);
+    else pushMulti(expTextFallback(p)||p.expText,'apex-exp', `${label} — Expected from APEX`, p.nat, label);
+    if(apexDateD(p,'act')) push(serialToMs(apexDateD(p,'act')),'apex-act', `${label} — Received from APEX`, p.nat, label);
+    else pushMulti(p.actText,'apex-act', `${label} — Received from APEX`, p.nat, label);
+    if(apexDateD(p,'toCust')) push(serialToMs(apexDateD(p,'toCust')),'apex-cust', `${label} — Sent to Customer`, p.nat, label);
+    else pushMulti(p.toCustText,'apex-cust', `${label} — Sent to Customer`, p.nat, label);
   });
   evs.sort((a,b)=>a.ms-b.ms);
   return evs;
@@ -2434,7 +2452,7 @@ function pageCalendar(){
   }
   const grid=calGrid(CAL_VIEW.y,CAL_VIEW.m,evs);
   const selEvs=evs.filter(e=>dayKey(e.ms)===dayKey(CAL_SEL));
-  const legend=Object.values(CAL_CAT_LABEL).map(c=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#5b6b76;margin-right:12px"><span style="width:8px;height:8px;border-radius:50%;background:${c.dot};display:inline-block"></span>${c.label}</span>`).join('');
+  const legend=Object.entries(CAL_CAT_LABEL).map(([cat,c])=>`<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#5b6b76;margin-right:14px;margin-bottom:4px">${calDotHtml(cat)}<span>${c.emoji} ${c.label}</span></span>`).join('');
   return `<div class="pt">📅 Calendar</div><div class="ps">รวมกำหนดการทั้งหมด — วันที่คาด/รับจาก Supplier และ APEX ในที่เดียว ${liveBadge('apex')}</div>
     <div class="card"><div class="card-body" style="padding:16px 18px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
@@ -2446,7 +2464,7 @@ function pageCalendar(){
         <button class="bg2" style="margin:0" onclick="calToday()">Today</button>
       </div>
       <div class="hint" style="padding:0 0 10px;background:none;border:none">คลิกวันที่ในปฏิทินเพื่อดูรายการของวันนั้น</div>
-      <div style="margin-bottom:10px">${legend}</div>
+      <div style="margin-bottom:10px;display:flex;flex-wrap:wrap">${legend}</div>
       ${grid}
     </div></div>
     <div class="card"><div class="card-body">
@@ -2454,7 +2472,7 @@ function pageCalendar(){
         <div style="font-weight:700;font-size:13px;margin-bottom:8px">${new Date(CAL_SEL).toLocaleDateString('en-GB',{weekday:'long',day:'2-digit',month:'short',year:'numeric'})}</div>
         ${selEvs.length? selEvs.map(e=>{
           const c=CAL_CAT_LABEL[e.cat];
-          return `<div class="srow"><div><span class="badge ${c.cls}" style="font-size:10px">${c.label}</span><div style="margin-top:4px">${e.label}${e.sub?` <span style="color:#8fa3b0">· ${e.sub}</span>`:''}</div></div></div>`;
+          return `<div class="srow"><div style="display:flex;align-items:flex-start;gap:8px">${calDotHtml(e.cat,10)}<div><span class="badge" style="font-size:10px;background:${c.color}1a;color:${c.color}">${c.emoji} ${c.label}</span><div style="margin-top:4px">${e.label}${e.sub?` <span style="color:#8fa3b0">· ${e.sub}</span>`:''}</div></div></div></div>`;
         }).join('') : '<div style="color:#8fa3b0;font-size:13px;padding:6px 0">ไม่มีกำหนดการวันนี้</div>'}
       </div>
     </div></div>
@@ -2477,11 +2495,16 @@ function calGrid(y,m,evs){
     const dayEvs=evs.filter(e=>dayKey(e.ms)===key);
     const isToday=key===todayKey;
     const isSel=CAL_SEL!==null && dayKey(CAL_SEL)===key;
-    const dots=dayEvs.slice(0,4).map(e=>`<span style="width:6px;height:6px;border-radius:50%;background:${CAL_CAT_LABEL[e.cat].dot};display:inline-block;margin:1px"></span>`).join('');
-    const more=dayEvs.length>4?`<div style="font-size:9px;color:#8fa3b0">+${dayEvs.length-4}</div>`:'';
-    cells+=`<div onclick="calSelect(${ms})" title="คลิกเพื่อดูรายการวันนี้" style="min-height:64px;border:1px solid ${isSel?'#1a2633':'#eef1f5'};border-radius:6px;padding:5px;cursor:pointer;background:${isToday?'#eef4ff':'#fff'}">
+    // 23 Sep 2026 (Ji: "บนตารางมันโชว์แค่จุด...ไม่รู้ว่าเลขไหน PO ใด"): โชว์เลข PO/รหัสสั้นๆ
+    // ตรงในช่องเลย (สูงสุด 3 บรรทัด) แทนจุดเปล่าๆ — ใช้ e.short ที่เตรียมไว้ใน calEvents()
+    const MAXLINES=3;
+    const lines=dayEvs.slice(0,MAXLINES).map(e=>
+      `<div title="${(e.label+(e.sub?' · '+e.sub:'')).replace(/"/g,'&quot;')}" style="display:flex;align-items:center;gap:3px;overflow:hidden;margin-top:2px">${calDotHtml(e.cat,6)}<span style="font-size:9px;color:#1a2633;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${CAL_CAT_LABEL[e.cat].emoji}${e.short}</span></div>`
+    ).join('');
+    const more=dayEvs.length>MAXLINES?`<div style="font-size:9px;color:#8fa3b0;margin-top:2px">+${dayEvs.length-MAXLINES} เพิ่มเติม</div>`:'';
+    cells+=`<div onclick="calSelect(${ms})" title="คลิกเพื่อดูรายการวันนี้" style="min-height:${dayEvs.length?'92px':'64px'};border:1px solid ${isSel?'#1a2633':'#eef1f5'};border-radius:6px;padding:5px;cursor:pointer;background:${isToday?'#eef4ff':'#fff'};overflow:hidden">
       <div style="font-size:11px;font-weight:${isToday?700:500};color:${isToday?'#1a2633':'#5b6b76'}">${d}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:1px;margin-top:3px">${dots}</div>${more}
+      ${lines}${more}
     </div>`;
   }
   return `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;font-size:10px;color:#8fa3b0;text-transform:uppercase;text-align:center">
