@@ -2359,6 +2359,30 @@ function apexMaterialsTableHtml(apexPO, requirementGroupKeys){
 // ใช้รวม orderItems ตอนคำนวณยอดสั่งขั้นต่ำ — ดู apexMaterialsOverviewHtml ด้านล่าง) พร้อมโชว์
 // ข้อความเล็กๆ กำกับไว้ว่า "ส่งพร้อมกับ PO ..." ให้รู้ว่าตัวเลขที่ซ้ำกันมาจากชิปเมนต์เดียวกันจริง
 // ไม่ใช่การกรอกผิดซ้ำ
+// (แก้ 23 Sep 2026 รอบสิบห้า) Ji ดูตารางแล้วบอก "อ่านยากจัง ตรงนี้อยากให้โชว์ว่า ส่งทั้งหมดคือแยก
+// ลัง อินเนอร์ ซอง มากกว่า เพราะอ่านแล้วเข้าใจยาก ตัวเลขมันควรสัมพันธ์กันกับจำนวนชิ้นที่เปิด PO
+// ไป" — คอลัมน์ "ขอทั้งหมด/ส่งจริงทั้งหมด" เดิมเอาตัวเลขวัสดุคนละหน่วยกัน (ลัง+กล่องใน+ซอง) มา
+// บวกรวมกันเป็นก้อนเดียว ซึ่งไม่มีความหมายทางธุรกิจจริง (99,656 คือ 251+116+6,012+5,527+60,116+
+// 27,634 ปนกันหมด) — เปลี่ยนเป็นแยก 3 คอลัมน์ตามชนิดวัสดุจริง (ลัง/กล่องใน/ซอง) แต่ละคอลัมน์โชว์
+// "ส่งจริง / ขอ" (รวมทุกไซส์แพ็คในชนิดนั้นเข้าด้วยกัน — รายละเอียดแยกไซส์ 10's/5's ยังดูได้เต็มๆ
+// ใน detail sheet เดิม ไม่ได้ตัดทิ้ง) — เพิ่มคอลัมน์ "ยอดสั่ง (ชิ้น)" ให้เห็นจำนวนที่เปิด PO ไป
+// (จาก orderItems ของ PO นั้นเอง) วางไว้ข้างๆ ให้เทียบกันได้ทันทีว่าสั่งเท่านี้ ส่งวัสดุไปเท่านี้
+// สมเหตุสมผลมั้ย — PO ที่ยังไม่มี orderItems (เช่น PO 053) คอลัมน์นี้โชว่ "—"
+function apexMaterialsByCategory(sum){
+  const cats = { carton:{requested:0,sent:0}, inner:{requested:0,sent:0}, sachet:{requested:0,sent:0} };
+  Object.values(sum.byItem||{}).forEach(b=>{
+    const cat = apexMaterialCategoryOf(b.item);
+    if(!cats[cat]) return; // ชนิดที่ไม่รู้จัก (ยังไม่เคยเกิดขึ้นจริง) ข้ามไป กันตารางพัง
+    cats[cat].requested += (b.effectiveRequired!=null ? b.effectiveRequired : b.requested);
+    cats[cat].sent += b.sent;
+  });
+  return cats;
+}
+function apexMaterialsCatCell(cat){
+  if(!cat || (cat.requested===0 && cat.sent===0)) return '<span style="color:#c3ccd1">—</span>';
+  const short = cat.sent < cat.requested;
+  return `<span style="${short?'color:#a23b3b;font-weight:700':''}">${f(cat.sent)}</span><span style="color:#8fa3b0"> / ${f(cat.requested)}</span>`;
+}
 function apexMaterialsSummaryRow(poKey, shipmentGroup){
   const gk = (shipmentGroup && shipmentGroup.length) ? shipmentGroup : [poKey];
   const sum = apexMaterialsSummaryWithOrderCheck(poKey, gk);
@@ -2370,11 +2394,17 @@ function apexMaterialsSummaryRow(poKey, shipmentGroup){
   const statusBadge = !sum ? '—' : (matShort
     ? `<span class="badge br">⚠ ขาด</span>`
     : `<span class="badge bg">✓ ครบ</span>`);
+  const orderQty = (p && Array.isArray(p.orderItems) && p.orderItems.length)
+    ? p.orderItems.reduce((s,it)=>s+(Number(it.qty)||0),0)
+    : null;
+  const cats = sum ? apexMaterialsByCategory(sum) : null;
   return `<tr onclick="showApexMaterialsSheet(this,${JSON.stringify(poKey).replace(/"/g,'&quot;')},${JSON.stringify(gk).replace(/"/g,'&quot;')})">
       <td>${p?`<span class="nat ${nc}">${p.nat}</span>`:''}</td>
       <td style="font-weight:600">${poKey}${sharedNote}</td>
-      <td class="n" style="text-align:right">${sum?f(sum.totalRequested):'—'}</td>
-      <td class="n" style="text-align:right">${sum?f(sum.totalSent):'—'}</td>
+      <td class="n" style="text-align:right">${orderQty!=null?f(orderQty):'<span style="color:#c3ccd1">—</span>'}</td>
+      <td class="n" style="text-align:right">${apexMaterialsCatCell(cats&&cats.carton)}</td>
+      <td class="n" style="text-align:right">${apexMaterialsCatCell(cats&&cats.inner)}</td>
+      <td class="n" style="text-align:right">${apexMaterialsCatCell(cats&&cats.sachet)}</td>
       <td style="white-space:nowrap">${statusBadge}${sum&&sum.topups>0?` <span style="font-size:11px;color:#8fa3b0">(${sum.topups+1} รอบ)</span>`:''}</td>
     </tr>`;
 }
@@ -2393,10 +2423,10 @@ function showApexMaterialsSheet(row, poKey, shipmentGroup){
 function apexMaterialsOverviewHtml(){
   const groups = apexMaterialsGroups();
   if(!groups.length) return `<div class="card"><div class="card-body" style="text-align:center;color:#8fa3b0;padding:20px">ยังไม่มีบันทึกการส่งวัสดุให้ APEX เลย — ส่งตัวเลขมาทางแชทได้เลย เดี๋ยวอัปเดตให้</div></div>`;
-  const THEAD = `<thead><tr><th>Nat.</th><th>APEX PO</th><th style="text-align:right">ขอทั้งหมด</th><th style="text-align:right">ส่งจริงทั้งหมด</th><th>สถานะ</th></tr></thead>`;
+  const THEAD = `<thead><tr><th>Nat.</th><th>APEX PO</th><th style="text-align:right">ยอดสั่ง (ชิ้น)</th><th style="text-align:right">ลัง</th><th style="text-align:right">กล่องใน</th><th style="text-align:right">ซอง</th><th>สถานะ</th></tr></thead>`;
   const rowsHtml = groups.map(g=>g.map(poKey=>apexMaterialsSummaryRow(poKey, g)).join('')).join('');
   return `<div class="card">
-    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียดวัสดุแต่ละชนิด</div><div class="tw"><table>${THEAD}<tbody>
+    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียดวัสดุแต่ละชนิด — แต่ละคอลัมน์ตัวเลข = ส่งจริง / ขอ (รวมทุกไซส์แพ็คของชนิดนั้น ดูแยกไซส์ได้ในหน้ารายละเอียด)</div><div class="tw"><table>${THEAD}<tbody>
       ${rowsHtml}
     </tbody></table></div></div>
   </div>`;
