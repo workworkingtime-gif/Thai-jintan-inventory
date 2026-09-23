@@ -924,33 +924,51 @@ const APEX_OVERRIDES = [
 //     {date:'2026-09-20', items:[{item:'ซองใน', requestedQty:100000, sentQty:101500}], note:'ส่งรอบแรก'},
 //     {date:'2026-09-25', items:[{item:'ซองใน', requestedQty:5000,   sentQty:5010}],   note:'ขอเพิ่มเพราะของเสียระหว่างแพ็ค'},
 //   ],
+// (แก้ 23 Sep 2026 รอบสี่) Ji ส่งใบนำสินค้าออกนอกบริษัท (ใบส่งของจริง ลงนามแล้ว วันที่
+// 22/09/2026) มาเทียบ — ยอดกล่องใน/ซอง ตรงกับที่บันทึกไว้ครบทุกบรรทัด แต่ยอด "ลังนอก" (carton)
+// ส่งจริงได้แค่ 210 (10's) + 0 (5's) = 210 ชิ้น เพราะของไม่พอ (เป้าหมายเดิมคือ 251+116=367) —
+// Ji ยืนยันเองว่า "ส่งจริงคือ 210 กับ 0" กำลังสั่งของเพิ่มแล้วจะส่งส่วนที่ขาดตามไปทีหลัง — แก้
+// sentQty ของ carton ในรอบแรกให้ตรงกับยอดที่ส่งจริง (210) ไม่ใช่ยอดเป้าหมายเต็ม (367) อีกต่อไป
+// — inner/sachet ส่งครบเต็มจำนวนแล้วจริง ไม่ต้องแก้ (ยืนยันจากใบส่งของ: 6,012+5,527=11,539,
+// 60,116+27,634=87,750 ตรงกับเป้าหมายเป๊ะ) — ส่วนที่ยังขาดส่งของ carton จะคำนวณให้อัตโนมัติจาก
+// apexMaterialsSummary().byItem (ดูด้านล่าง) ไม่ต้องมานั่งลบเลขเองทุกครั้ง เมื่อ Ji ส่งของรอบ 2
+// (หลังสั่งของมาเพิ่ม) มาให้ค่อยเพิ่มเป็นรอบถัดไปในนี้
 const APEX_MATERIALS_LOG = {
-  // 23 Sep 2026: Ji ส่งตารางสรุปวัสดุที่จะส่งให้ APEX มาทางแชทสำหรับงาน USA PO 060 & PO 061
-  // (carton 367 / inner 11,539 / sachet 87,750 รวม) ยืนยันว่าเป็น "ยอดที่จะส่งจริง" และ "บวก
-  // +1% ให้เรียบร้อยแล้ว" — ตัวเลขนี้เป็นยอดรวมของทั้ง PO 060 และ PO 061 (ทั้งสอง PO มีสัดส่วน
-  // สินค้าเหมือนกันทุกอย่าง: 10-pack 29,760 + 5-pack 13,680 = 43,440 ชิ้น/PO ตาม remark เดิม —
-  // ตารางที่ Ji ส่งมาคือยอดรวม 2 PO เข้าด้วยกัน สังเกตจากยอด sachet 87,750 ≈ (43,440×2)×1.01)
-  // จึงบันทึกซ้ำไว้ใต้ทั้งสอง PO เพราะเป็นงาน/การส่งเดียวกัน — ยอด "ขอ" (ก่อนบวก 1%) ของกล่องนอก/
-  // ลัง คำนวณตรงจากป้ายกำกับที่ Ji ให้มาเอง (248+114=362 ลัง) ของซองในคำนวณจากยอดสั่งลูกค้าที่
-  // ยืนยันแล้ว ((29,760+13,680)×2=86,880 ชิ้น) ส่วนกล่องในเป็นค่าประมาณย้อนกลับจาก +1%
-  // (11,539/1.01≈11,426) — ถ้าตัวเลขไหนไม่ตรงกับที่ Ji คำนวณไว้จริง แจ้งแก้ไขได้เลย
   'PO 060': [
-    { date:'2026-09-23',
+    { date:'2026-09-22',
       items:[
-        {item:'กล่องนอก/ลัง (Carton)', requestedQty:362, sentQty:367},
+        {item:'กล่องนอก/ลัง (Carton)', requestedQty:362, sentQty:210},
         {item:'กล่องใน (Inner box)', requestedQty:11426, sentQty:11539},
         {item:'ซองใน (Sachet)', requestedQty:86880, sentQty:87750},
       ],
-      note:'ยอดรวมงาน PO 060 + PO 061 (สัดส่วนสินค้าเหมือนกันทั้งคู่) — ส่งจริงบวก +1% แล้วตามที่ Ji ยืนยัน' },
+      note:'ยอดรวมงาน PO 060 + PO 061 (สัดส่วนสินค้าเหมือนกันทั้งคู่) — ตามใบนำสินค้าออกนอกบริษัท 22/09/2026: กล่องใน/ซองส่งครบเต็มจำนวนแล้ว แต่ลังนอกส่งได้แค่ 210 จาก 367 เพราะของไม่พอ (Ji ยืนยัน "ส่งจริงคือ 210 กับ 0") — กำลังสั่งเพิ่มเพื่อส่งส่วนที่ขาดตามไป' },
   ],
   'PO 061': [
-    { date:'2026-09-23',
+    { date:'2026-09-22',
       items:[
-        {item:'กล่องนอก/ลัง (Carton)', requestedQty:362, sentQty:367},
+        {item:'กล่องนอก/ลัง (Carton)', requestedQty:362, sentQty:210},
         {item:'กล่องใน (Inner box)', requestedQty:11426, sentQty:11539},
         {item:'ซองใน (Sachet)', requestedQty:86880, sentQty:87750},
       ],
-      note:'ยอดรวมงาน PO 060 + PO 061 (สัดส่วนสินค้าเหมือนกันทั้งคู่) — ส่งจริงบวก +1% แล้วตามที่ Ji ยืนยัน' },
+      note:'ยอดรวมงาน PO 060 + PO 061 (สัดส่วนสินค้าเหมือนกันทั้งคู่) — ตามใบนำสินค้าออกนอกบริษัท 22/09/2026: กล่องใน/ซองส่งครบเต็มจำนวนแล้ว แต่ลังนอกส่งได้แค่ 210 จาก 367 เพราะของไม่พอ (Ji ยืนยัน "ส่งจริงคือ 210 กับ 0") — กำลังสั่งเพิ่มเพื่อส่งส่วนที่ขาดตามไป' },
+  ],
+  // 23 Sep 2026: Ji แจ้งรายการที่ APEX ขอวัสดุทดแทนเพิ่มสำหรับ PO 053 (พบของเสีย/บกพร่องระหว่าง
+  // แพ็คจริงจาก APEX เอง ไม่ใช่การประมาณยอดส่งตั้งต้นแบบ PO 060/061 ด้านบน) จะส่งให้ APEX วันที่
+  // 26 Sep 2026 — เป็นยอดทดแทนตามจำนวนที่นับเจอจริง requestedQty=sentQty เท่ากันทุกรายการ (ไม่ใช่
+  // ยอดประมาณที่ต้องบวก +1% เหมือนการส่งวัสดุตั้งต้นก้อนแรก) ดังนั้น badge ที่ขึ้น "ต่ำกว่าเกณฑ์ 1%"
+  // สำหรับ PO นี้ไม่ได้แปลว่าส่งไม่พอ แค่เป็นรอบทดแทนของเสียที่นับเป๊ะแล้ว ไม่ใช่รอบส่งตั้งต้น
+  'PO 053': [
+    { date:'2026-09-26',
+      items:[
+        {item:'ซองพลาสติก — Variety 5-pack: Berries เสีย', requestedQty:20, sentQty:20},
+        {item:'ซองพลาสติก — Variety 5-pack: Melon เสีย', requestedQty:30, sentQty:30},
+        {item:'ซองพลาสติก — Variety 5-pack: Spearmint กระดาษลอก', requestedQty:10, sentQty:10},
+        {item:'ซองพลาสติก — Variety 5-pack: Honey Lemon มีจุดดำ', requestedQty:5, sentQty:5},
+        {item:'ซองพลาสติก — Variety 5-pack: Peppermint เสีย', requestedQty:40, sentQty:40},
+        {item:'ซองพลาสติก — Mint Peppermint 10-pack: Peppermint เสีย', requestedQty:160, sentQty:160},
+        {item:'กล่องใน — Mint Peppermint 10-pack: Peppermint ขาดบรรจุ (พบจากไลน์ผลิต)', requestedQty:10, sentQty:10},
+      ],
+      note:'APEX แจ้งของเสีย/บกพร่องที่พบระหว่างแพ็ค NUDE Capsule ขอวัสดุทดแทนเพิ่ม — Ji แจ้ง 23 Sep 2026 ว่าจะส่งให้ APEX วันที่ 26 Sep 2026 (งาน Variety Flavor 5-pack: Berries/Melon/Spearmint/Honey Lemon/Peppermint และงาน Mint Peppermint Flavor 10-pack: ซอง Peppermint + กล่องใน Peppermint ขาดบรรจุ)' },
   ],
 };
 // 23 Sep 2026: ก่อนหน้านี้ override ทำได้แค่ "ทับ field ของ PO ที่มีอยู่แล้วใน APEX_POS เท่านั้น"
@@ -2017,19 +2035,47 @@ function apexMaterialsFor(apexPO){ return APEX_MATERIALS_LOG[apexPO] || []; }
 // วัสดุคนละชนิดในรอบเดียวกัน — เปลี่ยนโครงสร้างเป็น "1 รายการ = 1 รอบส่ง" แต่ละรอบมี items[]
 // ย่อยหลายชนิดได้ {item, requestedQty, sentQty} — topup นับจากจำนวน "รอบ" (rounds.length-1)
 // ไม่ใช่จำนวนชนิดวัสดุอีกต่อไป
+// (แก้ 23 Sep 2026 รอบสี่) เจอเคสจริง: ลังนอกส่งขาด (ของไม่พอ) แต่กล่องใน/ซองส่งเกินเป้านิดหน่อย
+// — ถ้าดูแค่ยอดรวมข้ามชนิดวัสดุ (totalSent/totalRequested) ยอดเกินของกล่องใน/ซองอาจ "กลบ" ยอด
+// ขาดของลังนอกจนดูเหมือนผ่านเกณฑ์ 1% ทั้งที่ลังนอกยังขาดอยู่จริง — เพิ่ม `byItem` แยกคำนวณทุก
+// ชนิดวัสดุเป็นรายตัว พร้อม `remaining` = ยังต้องส่งอีกเท่าไหร่ถึงจะครบเกณฑ์ +1% ของ Ji (ปัดขึ้น
+// เป็นจำนวนเต็ม, 0 ถ้าครบแล้ว) ให้เช็คทีละชนิดแทนที่จะพึ่งยอดรวมอย่างเดียว
 function apexMaterialsSummary(apexPO){
   const rounds = apexMaterialsFor(apexPO);
   if(!rounds.length) return null;
   let totalRequested=0, totalSent=0;
-  rounds.forEach(r=>(r.items||[]).forEach(it=>{ totalRequested += Number(it.requestedQty)||0; totalSent += Number(it.sentQty)||0; }));
+  const byItem = {};
+  rounds.forEach(r=>(r.items||[]).forEach(it=>{
+    const req=Number(it.requestedQty)||0, sent=Number(it.sentQty)||0;
+    totalRequested += req; totalSent += sent;
+    const key = it.item || '—';
+    if(!byItem[key]) byItem[key] = {item:key, requested:0, sent:0};
+    byItem[key].requested += req;
+    byItem[key].sent += sent;
+  }));
+  Object.values(byItem).forEach(b=>{
+    b.bufferPct = b.requested>0 ? (b.sent-b.requested)/b.requested*100 : null;
+    const rawRemaining = Math.max(0, Math.ceil(b.requested*1.01 - b.sent));
+    // เผื่อ noise เล็กน้อยจากการปัดเศษ (เช่น ยอด "ขอ" ที่คำนวณย้อนกลับจาก +1% แทนที่จะรู้ยอดจริง
+    // เป๊ะๆ) — ห่างจากเกณฑ์ไม่เกิน 3 ชิ้นถือว่าครบแล้ว ไม่ต้องขึ้นเตือนขาดส่งเป็น false alarm
+    b.remaining = rawRemaining<=3 ? 0 : rawRemaining;
+  });
   const bufferPct = totalRequested>0 ? (totalSent-totalRequested)/totalRequested*100 : null;
-  return { rounds, count: rounds.length, totalRequested, totalSent, bufferPct, topups: rounds.length-1 };
+  return { rounds, count: rounds.length, totalRequested, totalSent, bufferPct, topups: rounds.length-1, byItem };
 }
 // ป้ายเปอร์เซ็นต์ส่วนเกิน — เขียว+✓ ถ้า ≥1% ตามกติกาที่ Ji ตั้งไว้ ("ต้องส่งเกิน 1% ของที่ขอ"),
 // แดง+⚠ ถ้าต่ำกว่า ช่วยเตือนตอนกรอกก่อนกดบันทึกด้วย ไม่ได้ห้ามบันทึกแค่เตือน (Ji อาจมีเหตุผล)
-function apexMaterialBufferBadge(pct){
+// (แก้ 23 Sep 2026 รอบห้า) เจอเคสรอบทดแทนของเสียของ PO 053 ที่ requestedQty=sentQty เป๊ะทุกรายการ
+// (ไม่ใช่ยอดประมาณที่ต้องบวก 1% แบบรอบส่งตั้งต้น) ทำให้ % รวมออกมา 0% ต่ำกว่าเกณฑ์ทางเทคนิค ทั้งที่
+// จริงส่งครบตามที่นับได้แล้ว — เพิ่ม sent/requested (absolute) เป็น optional param ให้เช็คด้วย
+// "ส่วนต่างจริงห่างจากเกณฑ์ไม่เกิน 3 ชิ้น" (เกณฑ์เดียวกับ byItem.remaining) ก่อนตัดสินว่า ok หรือไม่
+// กันไม่ให้ยอดจำนวนน้อยๆ (เช่น 20, 30 ชิ้น) โดน ⚠ เตือนเกินจริงจากการปัดเศษ % แค่นั้น
+function apexMaterialBufferBadge(pct, sent, requested){
   if(pct==null) return '<span style="color:#8fa3b0">—</span>';
-  const ok = pct>=1;
+  let ok = pct>=1;
+  if(!ok && sent!=null && requested!=null && requested>0){
+    ok = (requested*1.01 - sent) <= 3;
+  }
   return `<span style="color:${ok?'#155724':'#a23b3b'};font-weight:700">${pct>=0?'+':''}${pct.toFixed(1)}%</span> ${ok?'✓':'⚠ ต่ำกว่าเกณฑ์ 1%'}`;
 }
 function apexMaterialsListHtml(apexPO){
@@ -2046,9 +2092,9 @@ function apexMaterialsListHtml(apexPO){
     }).join('');
     return `<div class="srow" style="align-items:flex-start">
       <div>
-        <div style="font-weight:600">รอบ ${i+1}${i>0?' · ขอเพิ่ม':''}${r.date?` <span style="font-weight:400;color:#8fa3b0">· ${r.date}</span>`:''}</div>
+        <div style="font-weight:600">รอบ ${i+1}${i>0?' · เพิ่มเติม':''}${r.date?` <span style="font-weight:400;color:#8fa3b0">· ${r.date}</span>`:''}</div>
         ${itemLines}
-        <div style="font-size:12px;color:#5b6b76;margin-top:2px;font-weight:600">รวมรอบนี้: ขอ ${f(req)} → ส่งจริง ${f(sent)} (${apexMaterialBufferBadge(pct)})</div>
+        <div style="font-size:12px;color:#5b6b76;margin-top:2px;font-weight:600">รวมรอบนี้: ขอ ${f(req)} → ส่งจริง ${f(sent)} (${apexMaterialBufferBadge(pct, sent, req)})</div>
         ${r.note?`<div style="font-size:12px;color:#8fa3b0;margin-top:2px">📝 ${r.note}</div>`:''}
       </div>
     </div>`;
@@ -2056,12 +2102,20 @@ function apexMaterialsListHtml(apexPO){
 }
 // read-only — Ji ไม่ต้องกรอกฟอร์ม/ใส่ PIN แล้ว แค่ส่งตัวเลขมาทางแชท Claude จะเพิ่มเข้า
 // APEX_MATERIALS_LOG ด้านบนแล้ว deploy ให้ หน้านี้แสดงผลรวม+ประวัติที่บันทึกไว้อย่างเดียว
+// รายชื่อวัสดุที่ยังส่งไม่ครบเกณฑ์ +1% (remaining>0) — โชว์แยกเป็นบรรทัดเตือนต่างหาก ไม่ให้
+// ยอดเกินของวัสดุชนิดอื่นกลบยอดขาดจนมองไม่เห็น (ดู comment ที่ apexMaterialsSummary ด้านบน)
+function apexMaterialsShortfallHtml(sum){
+  const short = Object.values(sum.byItem||{}).filter(b=>b.remaining>0);
+  if(!short.length) return '';
+  const lines = short.map(b=>`⚠ ${b.item} ยังขาดส่งอีกอย่างน้อย ${f(b.remaining)} ชิ้น (ส่งแล้ว ${f(b.sent)}/${f(b.requested)})`).join('<br>');
+  return `<div style="font-size:12px;color:#a23b3b;background:#fdf1f1;border-radius:6px;padding:6px 8px;margin-bottom:8px;font-weight:600">${lines}</div>`;
+}
 function apexMaterialsSectionHtml(apexPO){
   const sum = apexMaterialsSummary(apexPO);
   const gid = apexMatKey(apexPO);
   return `<div class="ssect" id="apex_mat_sect_${gid}">
     <div class="ssect-t">📦 วัสดุแพ็ค (ซอง/กล่องใน) ที่ส่งให้ APEX</div>
-    ${sum ? `<div style="font-size:12px;color:#5b6b76;margin-bottom:8px">รวมส่งแล้ว ${f(sum.totalSent)} จากที่ขอทั้งหมด ${f(sum.totalRequested)} ชิ้น (${apexMaterialBufferBadge(sum.bufferPct)})${sum.topups>0?` · ขอเพิ่มแล้ว ${sum.topups} ครั้ง`:''}</div>` : ''}
+    ${sum ? `<div style="font-size:12px;color:#5b6b76;margin-bottom:8px">รวมส่งแล้ว ${f(sum.totalSent)} จากที่ขอทั้งหมด ${f(sum.totalRequested)} ชิ้น (${apexMaterialBufferBadge(sum.bufferPct, sum.totalSent, sum.totalRequested)})${sum.topups>0?` · ส่งเพิ่มเติมแล้ว ${sum.topups} รอบ`:''}</div>${apexMaterialsShortfallHtml(sum)}` : ''}
     <div id="apex_mat_list_${gid}">${apexMaterialsListHtml(apexPO)}</div>
     <div style="margin-top:8px;font-size:11px;color:#8fa3b0">มีตัวเลขใหม่ ส่งมาทางแชทได้เลย เดี๋ยวอัปเดตหน้านี้ให้</div>
   </div>`;
@@ -2426,8 +2480,11 @@ function apexRow(p){
   // ขึ้นสีแดง/⚠ ถ้าส่วนเกินรวมยังต่ำกว่าเกณฑ์ 1% ที่ Ji ตั้งไว้ ให้เห็นจากตารางหลักได้เลยว่า PO
   // ไหนอาจต้องตามวัสดุเพิ่ม
   const matSum = apexMaterialsSummary(p.apexPO);
+  // เช็คขาดส่งแยกรายชนิดวัสดุด้วย (ไม่ใช่แค่ยอดรวม) เพราะยอดเกินของวัสดุชนิดอื่นอาจกลบยอดขาด
+  // ของชนิดใดชนิดหนึ่งได้ถ้าดูแค่ % รวม (ดู apexMaterialsSummary ด้านบน)
+  const matShort = matSum ? Object.values(matSum.byItem||{}).some(b=>b.remaining>0) : false;
   const matIcon = matSum
-    ? `<span title="วัสดุแพ็คส่งให้ APEX: ${f(matSum.totalSent)}/${f(matSum.totalRequested)} ชิ้น (${matSum.bufferPct!=null?(matSum.bufferPct>=0?'+':'')+matSum.bufferPct.toFixed(1)+'%':'—'})${matSum.topups>0?' · ขอเพิ่ม '+matSum.topups+' ครั้ง':''}" style="cursor:help;color:${matSum.bufferPct!=null&&matSum.bufferPct<1?'#a23b3b':'inherit'}">📦${matSum.topups>0?matSum.topups:''}</span>`
+    ? `<span title="วัสดุแพ็คส่งให้ APEX: ${f(matSum.totalSent)}/${f(matSum.totalRequested)} ชิ้น (${matSum.bufferPct!=null?(matSum.bufferPct>=0?'+':'')+matSum.bufferPct.toFixed(1)+'%':'—'})${matSum.topups>0?' · ส่งเพิ่มเติมแล้ว '+matSum.topups+' รอบ':''}${matShort?' · ยังขาดส่งบางรายการ':''}" style="cursor:help;color:${matShort?'#a23b3b':'inherit'}">📦${matSum.topups>0?matSum.topups:''}</span>`
     : '';
   return `<tr onclick="showAPEXSheet(this,${JSON.stringify(p).replace(/"/g,'&quot;')})"${st.cancelled?' style="opacity:.55;text-decoration:line-through"':''}>
       <td><span class="nat ${nc}">${p.nat}</span></td>
