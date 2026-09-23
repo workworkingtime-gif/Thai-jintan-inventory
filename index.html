@@ -12,7 +12,7 @@
      เน็ตเวิร์กบล็อก ก็แค่ fallback ไป THSarabunNew/sans-serif ตามปกติ ไม่พังอะไร) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='36' r='22' fill='%23f0f2f5'/%3E%3Cpath d='M14 20 L22 30 L10 30 Z' fill='%23f0f2f5'/%3E%3Cpath d='M50 20 L54 30 L42 30 Z' fill='%23f0f2f5'/%3E%3Ccircle cx='23' cy='34' r='3' fill='%231a2633'/%3E%3Ccircle cx='41' cy='34' r='3' fill='%231a2633'/%3E%3Ccircle cx='18' cy='40' r='3' fill='%2317a2b8' opacity='.6'/%3E%3Ccircle cx='46' cy='40' r='3' fill='%2317a2b8' opacity='.6'/%3E%3Cpath d='M27 44 Q32 48 37 44' stroke='%231a2633' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%A6%3C/text%3E%3C/svg%3E">
 <style>
 @font-face{
   font-family:'THSarabunNew';
@@ -202,27 +202,14 @@ tbody tr.sel td{background:#eef4ff}
 .bg2:hover{background:var(--accent-tint);border-color:var(--accent-tint)}
 .rw{display:none;margin-top:20px}
 .save-notice{font-size:11px;color:var(--muted);padding:6px 0}
-/* 23 Sep 2026: มาสคอตแมวเล็กๆ ในแถบด้านบน — วาดเป็น inline SVG ต้นฉบับเอง (ไม่ใช่รูปที่ Ji
-   ส่งมา ซึ่งเป็นภาพสไตล์เชิงพาณิชย์ที่ไม่รู้สิทธิ์การใช้งาน) รูปทรงเรขาคณิตง่ายๆ วงกลม+
-   สามเหลี่ยมหู ให้ความรู้สึกน่ารักโดยไม่เสี่ยงเรื่องลิขสิทธิ์เลย */
-.mascot{display:inline-block;vertical-align:middle;flex-shrink:0}
+/* 23 Sep 2026 (แก้กลับ): Ji บอก "ช่วยทำให้เป็นรูปกล่องแบบก่อนหน้านี้แทนได้มั้ยหรอ" — อยากได้
+   ไอคอนกล่อง 📦 แบบเดิมที่ topbar กลับมา แทนมาสคอตแมว SVG ที่เพิ่งวาดให้ (ลบ .mascot ออกแล้ว
+   เพราะไม่ได้ใช้แล้ว) */
 </style>
 </head>
 <body>
 <div class="topbar">
-  <div class="topbar-title">
-    <svg class="mascot" width="26" height="26" viewBox="0 0 64 64" aria-hidden="true">
-      <circle cx="32" cy="36" r="22" fill="#fff"/>
-      <path d="M14 20 L22 30 L10 30 Z" fill="#fff"/>
-      <path d="M50 20 L54 30 L42 30 Z" fill="#fff"/>
-      <circle cx="23" cy="34" r="3" fill="#1a2633"/>
-      <circle cx="41" cy="34" r="3" fill="#1a2633"/>
-      <circle cx="18" cy="40" r="3" fill="#8fa3b0" opacity=".6"/>
-      <circle cx="46" cy="40" r="3" fill="#8fa3b0" opacity=".6"/>
-      <path d="M27 44 Q32 48 37 44" stroke="#1a2633" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    </svg>
-    <span>THAI JINTAN — Packaging Inventory</span>
-  </div>
+  <div class="topbar-title">📦 THAI JINTAN — Packaging Inventory</div>
   <span id="gas-badge" style="font-size:11px;margin-right:10px"></span>
   <div class="topbar-time" id="clock"></div>
 </div>
@@ -924,6 +911,20 @@ const APEX_OVERRIDES = [
   {apexPO:'PO 061', newEntry:true, nat:'USA', expText:'26 Oct 2026',
     remark:'USA Apex pack full service — NUDE Capsule Mint Spearmint Flavor (10-pack) 29,760 ชิ้น + (5-pack) 13,680 ชิ้น = รวม 43,440 ชิ้น · จากชีต Customer requisition (23 Sep 2026) — ยังไม่เจอใน APX Tracking sheet'},
 ];
+// APEX_MATERIALS_LOG — บันทึกวัสดุแพ็ค (ซอง/กล่องใน/กล่องนอก) ที่ส่งให้ APEX ต่อ PO
+// (23 Sep 2026, แก้ตามที่ Ji ขอ 23 Sep 2026 รอบสอง: "ฉันส่งตัวเลขให้คุณอย่างเดียวแล้วคุณทำ
+// เป็นหน้าต่างโชว์จำนวนได้มั้ย" — เดิมทำเป็นฟอร์มให้ Ji กรอกเอง+ต้องใส่ PIN ทุกครั้ง ไม่สะดวก
+// เปลี่ยนมาใช้ pattern เดียวกับ APEX_OVERRIDES ด้านบนแทน: Ji ส่งตัวเลขมาทางแชท แล้ว Claude
+// เพิ่มเข้ามาในนี้ + deploy ให้ ไม่ต้องกรอกฟอร์ม/ใส่ PIN เอง — หน้าเว็บแค่โชว์ผลรวม/ประวัติ
+// อย่างเดียว (read-only) — คีย์ด้วย apexPO string เดียวกับ APEX_POS, ค่าเป็น array ของ
+// {date, item, requestedQty, sentQty, note} เรียงตามลำดับที่ส่ง (รายการที่ 2 เป็นต้นไปถือเป็น
+// "ขอเพิ่ม" โดยอัตโนมัติ) — ตัวอย่างการเพิ่มรายการ (ใส่ตัวเลขจริงที่ Ji ส่งมาทางแชท):
+//   'PO 099': [
+//     {date:'2026-09-20', item:'ซองใน', requestedQty:100000, sentQty:101500, note:'ส่งรอบแรก'},
+//     {date:'2026-09-25', item:'ซองใน', requestedQty:5000,   sentQty:5010,   note:'ขอเพิ่มเพราะของเสียระหว่างแพ็ค'},
+//   ],
+const APEX_MATERIALS_LOG = {
+};
 // 23 Sep 2026: ก่อนหน้านี้ override ทำได้แค่ "ทับ field ของ PO ที่มีอยู่แล้วใน APEX_POS เท่านั้น"
 // — ถ้า PO ไหนยังไม่เคยเข้ามาทาง live sync (ชีต "APX Tracking" ยังไม่มีแถวนั้น) override จะ
 // เงียบๆ ไม่ทำอะไรเลย (filter ได้ผลลัพธ์ว่างเปล่า) ทำให้ PO ใหม่ที่ Ji เจอจากชีตอื่น (เช่น
@@ -1963,6 +1964,69 @@ function savePOField(po, field, dateStr){
   renderMain();
   closeSheet();
 }
+// ─── APEX PACKING MATERIALS LOG ─────────────────────────────────────────────
+// 23 Sep 2026: Ji ขอบันทึกประวัติวัสดุแพ็ค (ซอง/กล่องใน/กล่องนอก) ที่ต้องส่งให้ APEX ก่อนเค้า
+// จะแพ็คของให้แต่ละ PO — "เราจะต้องส่งไปโดยที่ส่งไปเกิน 1% ของจำนวนที่เค้าขอ แล้วหลายๆครั้งเนี่ย
+// เค้ามักจะมาขอเพิ่มเพราะว่าของมันเสียระหว่างการแพ็คผลิต" — เก็บเป็น log หลายรายการต่อ PO ได้
+// (ไม่ใช่ค่าเดียว) เพราะ APEX ขอเพิ่มทีหลังได้เรื่อยๆ ผูกกับ APEX PO เดียวกับที่ใช้ใน APEX
+// Orders tab อยู่แล้ว (คีย์ด้วย apexPO string เหมือน poOverrides คีย์ด้วย po string)
+//
+// จุดที่วางฟีเจอร์นี้: เพิ่มเป็น section ใหม่ในหน้ารายละเอียด APEX PO เดิม (showAPEXSheet)
+// แทนที่จะทำเป็นแท็บแยกต่างหาก เพราะข้อมูลนี้ผูกกับ APEX PO ใบเดียวกันโดยตรง (วัสดุที่ส่งไป
+// เพื่อให้แพ็คของ PO นั้นๆ) การดูคู่กับสถานะ/วันที่ของ PO เดียวกันจะเข้าใจง่ายกว่าแยกหน้า —
+// ตารางหลักของ APEX Orders โชว์แค่ไอคอน 📦 เล็กๆ (กดดูรายละเอียดในหน้าเดิม เหมือน 📝remark)
+// ให้ตารางยังคงกระชับตามที่ Ji ขอไว้ก่อนหน้านี้ ไม่ต้องเพิ่มคอลัมน์ใหม่
+//
+// (แก้ 23 Sep 2026 รอบสอง) เดิมเก็บผ่าน backend เดียวกับ Supplier PO edits ให้ Ji กรอกฟอร์ม
+// เองในหน้าเว็บ (ต้องใส่ PIN ทุกครั้ง) — Ji บอกว่าไม่สะดวก อยากส่งตัวเลขมาทางแชทแล้วให้ Claude
+// จัดการแทน จึงเปลี่ยนมาอ่านจาก APEX_MATERIALS_LOG (hardcoded, แก้โดย Claude ตอน deploy) แทน
+// D.apexMaterials — หน้าเว็บเหลือแค่โชว์ผลรวม/ประวัติอย่างเดียว ไม่มีฟอร์มกรอก/ปุ่มลบแล้ว
+function apexMatKey(apexPO){ return String(apexPO).replace(/[^a-zA-Z0-9]/g,'_'); }
+function apexMaterialsFor(apexPO){ return APEX_MATERIALS_LOG[apexPO] || []; }
+// สรุปยอดรวมทั้งหมดที่เคยส่งให้ PO นี้ + % ส่วนเกินเทียบกับยอดที่ APEX ขอรวม — คืน null ถ้ายัง
+// ไม่มีบันทึกเลย (ไม่มั่วตัวเลข)
+function apexMaterialsSummary(apexPO){
+  const rows = apexMaterialsFor(apexPO);
+  if(!rows.length) return null;
+  const totalRequested = rows.reduce((s,r)=>s+(Number(r.requestedQty)||0),0);
+  const totalSent = rows.reduce((s,r)=>s+(Number(r.sentQty)||0),0);
+  const bufferPct = totalRequested>0 ? (totalSent-totalRequested)/totalRequested*100 : null;
+  return { rows, count: rows.length, totalRequested, totalSent, bufferPct, topups: rows.length-1 };
+}
+// ป้ายเปอร์เซ็นต์ส่วนเกิน — เขียว+✓ ถ้า ≥1% ตามกติกาที่ Ji ตั้งไว้ ("ต้องส่งเกิน 1% ของที่ขอ"),
+// แดง+⚠ ถ้าต่ำกว่า ช่วยเตือนตอนกรอกก่อนกดบันทึกด้วย ไม่ได้ห้ามบันทึกแค่เตือน (Ji อาจมีเหตุผล)
+function apexMaterialBufferBadge(pct){
+  if(pct==null) return '<span style="color:#8fa3b0">—</span>';
+  const ok = pct>=1;
+  return `<span style="color:${ok?'#155724':'#a23b3b'};font-weight:700">${pct>=0?'+':''}${pct.toFixed(1)}%</span> ${ok?'✓':'⚠ ต่ำกว่าเกณฑ์ 1%'}`;
+}
+function apexMaterialsListHtml(apexPO){
+  const rows = apexMaterialsFor(apexPO);
+  if(!rows.length) return '<div style="color:#8fa3b0;font-size:13px;padding:6px 0">ยังไม่มีบันทึกการส่งวัสดุให้ APEX สำหรับ PO นี้ — ส่งตัวเลขมาทางแชทได้เลย เดี๋ยวอัปเดตให้</div>';
+  return rows.map((r,i)=>{
+    const req=Number(r.requestedQty)||0, sent=Number(r.sentQty)||0;
+    const pct = req>0 ? (sent-req)/req*100 : null;
+    return `<div class="srow" style="align-items:flex-start">
+      <div>
+        <div style="font-weight:600">รอบ ${i+1}${i>0?' · ขอเพิ่ม':''} — ${r.item||'—'}${r.date?` <span style="font-weight:400;color:#8fa3b0">· ${r.date}</span>`:''}</div>
+        <div style="font-size:12px;color:#5b6b76;margin-top:2px">ขอ ${f(req)} → ส่งจริง ${f(sent)} (${apexMaterialBufferBadge(pct)})</div>
+        ${r.note?`<div style="font-size:12px;color:#8fa3b0;margin-top:2px">📝 ${r.note}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+// read-only — Ji ไม่ต้องกรอกฟอร์ม/ใส่ PIN แล้ว แค่ส่งตัวเลขมาทางแชท Claude จะเพิ่มเข้า
+// APEX_MATERIALS_LOG ด้านบนแล้ว deploy ให้ หน้านี้แสดงผลรวม+ประวัติที่บันทึกไว้อย่างเดียว
+function apexMaterialsSectionHtml(apexPO){
+  const sum = apexMaterialsSummary(apexPO);
+  const gid = apexMatKey(apexPO);
+  return `<div class="ssect" id="apex_mat_sect_${gid}">
+    <div class="ssect-t">📦 วัสดุแพ็ค (ซอง/กล่องใน) ที่ส่งให้ APEX</div>
+    ${sum ? `<div style="font-size:12px;color:#5b6b76;margin-bottom:8px">รวมส่งแล้ว ${f(sum.totalSent)} จากที่ขอทั้งหมด ${f(sum.totalRequested)} ชิ้น (${apexMaterialBufferBadge(sum.bufferPct)})${sum.topups>0?` · ขอเพิ่มแล้ว ${sum.topups} ครั้ง`:''}</div>` : ''}
+    <div id="apex_mat_list_${gid}">${apexMaterialsListHtml(apexPO)}</div>
+    <div style="margin-top:8px;font-size:11px;color:#8fa3b0">มีตัวเลขใหม่ ส่งมาทางแชทได้เลย เดี๋ยวอัปเดตหน้านี้ให้</div>
+  </div>`;
+}
 function incomingByFlavor(marketKey){
   const map = {};
   D.pos.forEach(p=>{
@@ -2318,6 +2382,14 @@ function apexRow(p){
     : (actSummary
         ? `${actSummary.headline}<br><span style="font-size:11px;color:#8fa3b0">${actSummary.sub}</span>`
         : (nl2br(actStr) || '—'));
+  // 23 Sep 2026: ไอคอน 📦 เล็กๆ บอกว่า PO นี้มีบันทึกวัสดุแพ็คที่ส่งให้ APEX แล้ว (กดดูรายละเอียด
+  // เต็มในหน้าเดิม เหมือน 📝remark) — ตารางหลักยังกระชับตามที่ Ji ขอไว้ ไม่ต้องเพิ่มคอลัมน์ใหม่
+  // ขึ้นสีแดง/⚠ ถ้าส่วนเกินรวมยังต่ำกว่าเกณฑ์ 1% ที่ Ji ตั้งไว้ ให้เห็นจากตารางหลักได้เลยว่า PO
+  // ไหนอาจต้องตามวัสดุเพิ่ม
+  const matSum = apexMaterialsSummary(p.apexPO);
+  const matIcon = matSum
+    ? `<span title="วัสดุแพ็คส่งให้ APEX: ${f(matSum.totalSent)}/${f(matSum.totalRequested)} ชิ้น (${matSum.bufferPct!=null?(matSum.bufferPct>=0?'+':'')+matSum.bufferPct.toFixed(1)+'%':'—'})${matSum.topups>0?' · ขอเพิ่ม '+matSum.topups+' ครั้ง':''}" style="cursor:help;color:${matSum.bufferPct!=null&&matSum.bufferPct<1?'#a23b3b':'inherit'}">📦${matSum.topups>0?matSum.topups:''}</span>`
+    : '';
   return `<tr onclick="showAPEXSheet(this,${JSON.stringify(p).replace(/"/g,'&quot;')})"${st.cancelled?' style="opacity:.55;text-decoration:line-through"':''}>
       <td><span class="nat ${nc}">${p.nat}</span></td>
       <td style="font-weight:600">${p.apexPO}</td>
@@ -2326,7 +2398,7 @@ function apexRow(p){
       <td style="font-size:12px">${expCell}</td>
       <td style="font-size:12px;font-weight:${st.done?600:400};color:${st.done?'#155724':st.partial?'#856404':'inherit'}">${actCell}</td>
       <td style="white-space:nowrap">${statusBadge}</td>
-      <td style="white-space:nowrap">${p.remark?`<span title="${String(p.remark).replace(/"/g,'&quot;')}" style="cursor:help">📝</span>`:''}</td>
+      <td style="white-space:nowrap">${p.remark?`<span title="${String(p.remark).replace(/"/g,'&quot;')}" style="cursor:help">📝</span>`:''} ${matIcon}</td>
     </tr>`;
 }
 // (20 Jul 2026, ตามที่ Ji ขอ) แยกตาราง APEX PO Order Log เป็นกลุ่มชัดเจน —
@@ -2383,19 +2455,26 @@ const MONTH_NAMES=['January','February','March','April','May','June','July','Aug
 // 3) ใส่อีโมจิ 🚚(Supplier)/✈️(APEX)/📤(ส่งลูกค้า) ให้ตรงกับอีโมจิที่ใช้ในแท็บอยู่แล้ว
 //    (Supplier POs = 🚚, APEX Orders = ✈️) คนอ่านคุ้นตาทันทีโดยไม่ต้องจำสีใหม่เลย
 // 4) ในช่องปฏิทิน โชว์เลข PO/รหัสสั้นๆ ตรงๆ (ไม่ใช่จุดเปล่าๆ) อย่างน้อย 2 รายการแรกต่อวัน
+// 23 Sep 2026 (Ji แจ้งอีกครั้ง: "ส่วนนี้ยังซ้ำอยู่เลย ฝากช่วยแก้ให้ต่างกันหน่อยสิ" — ชี้ที่
+// legend ฝั่ง APEX): "ส่ง PO ให้ APEX แล้ว" กับ "APEX — ส่งมาแล้ว" ทั้งคู่เป็นจุดสีส้มทึบ
+// เหมือนกันเป๊ะ (ต่างกันแค่ตัวหนังสือ) เพราะฝั่ง APEX มี 3 สถานะ (ส่งแล้ว/คาดว่าจะมา/มาแล้ว)
+// แต่ระบบเดิมมีแค่ 2 แบบ (กลวง/ทึบ) ไม่พอแยก 3 สถานะ — เพิ่ม shape เป็นตัวช่วยแยกอีกชั้น:
+// สี่เหลี่ยมทึบ = "ส่งออกไปแล้ว" (Ji เป็นคนทำเอง), วงกลมกลวง = "คาดว่าจะ" (ยังไม่ถึง),
+// วงกลมทึบ = "ได้รับ/จบขั้นตอนแล้ว" (ปลายทางมาถึงแล้ว) — ตอนนี้ทุกหมวดต่างกันทั้งสี+รูปทรง+fill
 const CAL_CAT_LABEL={
-  'po-exp':   {label:'Supplier PO — คาดว่าจะมา', emoji:'🚚', color:'#2a78d6', fill:'hollow'},
-  'po-act':   {label:'Supplier PO — รับแล้ว',     emoji:'🚚', color:'#2a78d6', fill:'solid'},
-  'apex-sent':{label:'ส่ง PO ให้ APEX แล้ว',       emoji:'✈️', color:'#eb6834', fill:'solid'},
-  'apex-exp': {label:'APEX — คาดว่าจะส่งมา',       emoji:'✈️', color:'#eb6834', fill:'hollow'},
-  'apex-act': {label:'APEX — ส่งมาแล้ว',           emoji:'✈️', color:'#eb6834', fill:'solid'},
-  'apex-cust':{label:'ส่งลูกค้าแล้ว',              emoji:'📤', color:'#1baf7a', fill:'solid'},
+  'po-exp':   {label:'Supplier PO — คาดว่าจะมา', emoji:'🚚', color:'#2a78d6', fill:'hollow', shape:'circle'},
+  'po-act':   {label:'Supplier PO — รับแล้ว',     emoji:'🚚', color:'#2a78d6', fill:'solid',  shape:'circle'},
+  'apex-sent':{label:'ส่ง PO ให้ APEX แล้ว',       emoji:'✈️', color:'#eb6834', fill:'solid',  shape:'square'},
+  'apex-exp': {label:'APEX — คาดว่าจะส่งมา',       emoji:'✈️', color:'#eb6834', fill:'hollow', shape:'circle'},
+  'apex-act': {label:'APEX — ส่งมาแล้ว',           emoji:'✈️', color:'#eb6834', fill:'solid',  shape:'circle'},
+  'apex-cust':{label:'ส่งลูกค้าแล้ว',              emoji:'📤', color:'#1baf7a', fill:'solid',  shape:'circle'},
 };
 function calDotHtml(cat,size){
   const c=CAL_CAT_LABEL[cat]; const s=size||8;
+  const radius = c.shape==='square' ? '2px' : '50%';
   return c.fill==='solid'
-    ? `<span style="width:${s}px;height:${s}px;border-radius:50%;background:${c.color};display:inline-block;flex-shrink:0"></span>`
-    : `<span style="width:${s}px;height:${s}px;border-radius:50%;background:#fff;border:2px solid ${c.color};box-sizing:border-box;display:inline-block;flex-shrink:0"></span>`;
+    ? `<span style="width:${s}px;height:${s}px;border-radius:${radius};background:${c.color};display:inline-block;flex-shrink:0"></span>`
+    : `<span style="width:${s}px;height:${s}px;border-radius:${radius};background:#fff;border:2px solid ${c.color};box-sizing:border-box;display:inline-block;flex-shrink:0"></span>`;
 }
 let CAL_VIEW = null; // {y,m} currently displayed month (m: 0-11)
 let CAL_SEL = null;  // selected day, ms timestamp
@@ -2850,7 +2929,8 @@ function showAPEXSheet(row, p){
       <div class="row"><span>ส่ง Customer</span><span style="text-align:right">${nl2br(apexDate(p,'toCust'))||'—'}</span></div>
     </div>
     ${roundsSum ? apexRoundsSummaryHtml(roundsSum) : ''}
-    ${p.remark?`<div style="margin:12px 16px;padding:10px;background:#f4f6f9;border-radius:6px;font-size:12px;color:#5b6b76">${nl2br(p.remark)}</div>`:''}`;
+    ${p.remark?`<div style="margin:12px 16px;padding:10px;background:#f4f6f9;border-radius:6px;font-size:12px;color:#5b6b76">${nl2br(p.remark)}</div>`:''}
+    ${apexMaterialsSectionHtml(p.apexPO)}`;
   openSheet(`${p.nat} · ${p.apexPO}`, html, row);
 }
 // ─── INCOMING ─────────────────────────────────────────────────────────────
