@@ -847,6 +847,17 @@ const APEX_OVERRIDES = [
   // มั่นใจว่าข้อมูลชุดนี้ถูกต้องครบถ้วน ไม่ใช่แค่บางส่วน
   {apexPO:'PO 054', expText:'14 Sept 2026\n8 Oct 2026\n15 Oct 2026\n28 Oct 2026\n30 Oct 2026\n13 Nov 2026', expD:null,
     actText:'14 Sept 2026\n8 Oct 2026\n15 Oct 2026\n28 Oct 2026\n30 Oct 2026\n13 Nov 2026', actD:null,
+    // 23 Sep 2026 (ต่อ, ตามที่ Ji ขอ "ช่วยให้เห็นว่ายอดที่สั่งทั้งหมด/เหลือ/ส่งอีกเท่าไหร่"):
+    // เพิ่ม field ใหม่ `rounds` — array ของแต่ละรอบพร้อมรายการ items จริง (ไม่ใช่แค่วันที่ลอยๆ
+    // เหมือน expText/actText) ให้ apexRoundsSummary() คำนวณยอดสั่งรวม/ส่งแล้ว/คงเหลือ ต่อรสได้
+    rounds:[
+      {date:'14 Sept 2026', items:[{f:'Peppermint',q:60000},{f:'Spearmint',q:30000}]},
+      {date:'8 Oct 2026', items:[{f:'Peppermint',q:40000},{f:'Spearmint',q:10000}]},
+      {date:'15 Oct 2026', items:[{f:'Peppermint',q:50000},{f:'Spearmint',q:20000}]},
+      {date:'28 Oct 2026', items:[{f:'Peppermint',q:30000},{f:'Spearmint',q:40000}]},
+      {date:'30 Oct 2026', items:[{f:'Peppermint',q:30000},{f:'Honey Lemon',q:15000},{f:'Berries',q:15000},{f:'Melon',q:15000}]},
+      {date:'13 Nov 2026', items:[{f:'Spearmint',q:20000},{f:'Fusion',q:20000}]},
+    ],
     remark:'PO Nude ตลับ USA รวม 395,000 ชิ้น (Peppermint 210,000 / Spearmint 120,000 / Fusion 20,000 / Honey Lemon 15,000 / Berries 15,000 / Melon 15,000) แบ่งส่ง 6 รอบ: 14 Sept 2026 Peppermint 60,000+Spearmint 30,000 (รับแล้ว) · 8 Oct 2026 Peppermint 40,000+Spearmint 10,000 · 15 Oct 2026 Peppermint 50,000+Spearmint 20,000 · 28 Oct 2026 Peppermint 30,000+Spearmint 40,000 · 30 Oct 2026 Peppermint 30,000+Honey Lemon 15,000+Berries 15,000+Melon 15,000 · 13 Nov 2026 Spearmint 20,000+Fusion 20,000 — จากชีต Customer requisition (23 Sep 2026, กรองเฉพาะแถว 01INT- ตามที่ Ji ขอ) ยกเลิกค่าประมาณ "28 Oct รอบเดียวที่เหลือทั้งหมด" แบบเดิมที่ไม่ละเอียดพอ'},
   // 10 Sep 2026: ชีต "Customer requisition" ละเอียดกว่าเผยว่า PO 053 จริงๆ มี 3 วันส่งของ
   // ไม่ใช่ 2 วัน (29/30 Sep) ที่เคย auto-extract จาก remark ของ APX Tracking ได้ — มีรอบ
@@ -855,6 +866,13 @@ const APEX_OVERRIDES = [
   // วันที่ 29 Sep — เลขจำนวนตรงกับที่เคยมี (352/79/447 ลัง × 240 ชิ้น/ลัง) ครบทุกตัว
   {apexPO:'PO 053', expText:'15 Sep 2026\n29 Sep 2026\n30 Sep 2026', expD:null,
     actText:'15 Sep 2026\n29 Sep 2026\n30 Sep 2026', actD:null,
+    // 23 Sep 2026: เพิ่ม `rounds` แบบเดียวกับ PO 054 (ดู apexRoundsSummary()) — ตัวเลขนี้มาจาก
+    // remark เดิมที่มีรายละเอียดต่อรอบอยู่แล้ว (352/228/219/79 ลัง × 240 ชิ้น/ลัง)
+    rounds:[
+      {date:'15 Sep 2026', items:[{f:'Peppermint',q:54720}]},
+      {date:'29 Sep 2026', items:[{f:'Variety',q:84480}]},
+      {date:'30 Sep 2026', items:[{f:'Peppermint',q:52560},{f:'Fusion',q:18960}]},
+    ],
     remark:'PO Nude USA Full Service: Variety Flavor (5-pack) 84,480 ชิ้น (352 ลัง) ส่ง 29 Sep · Mint Peppermint (10-pack) 54,720 ชิ้น (228 ลัง) ส่ง 15 Sep (ถึงไทยยันต้นก่อนเที่ยง) + 52,560 ชิ้น (219 ลัง) ส่ง 30 Sep · Fusion (10-pack) 18,960 ชิ้น (79 ลัง) ส่ง 30 Sep — จากชีต Customer requisition (10 Sep 2026) · 10 Sep 2026: sheet\'s own Actual Date column shows all 3 dates too (Expected Date cell itself only had 29/30) — mirrored into actText'},
   // 23 Sep 2026: PO 060/061 เป็น PO ใหม่ที่เจอครั้งแรกในชีต "Customer requisition" เท่านั้น
   // ยังไม่เคยเจอใน "APX Tracking" (ที่ syncApex() ใช้ sync สด) เลย — ใช้ field ใหม่
@@ -2162,6 +2180,80 @@ function roundListHtml(text){
     </div>`;
   }).join('')}</div>`;
 }
+// 23 Sep 2026 (Ji ขอ): "ช่วยให้เห็นว่ายอดที่สั่งทั้งหมดคือเท่าไหร่ ยอดที่เหลือคือเท่าไหร่ ส่งอีก
+// จะเป็นเท่าไหร่ ตอนนี้ได้ครบกี่ชิ้น" — เดิม roundListHtml() บอกได้แค่ "วันไหนมาแล้ว/ยังไม่มา"
+// ไม่มีตัวเลขจำนวนชิ้นเลย พอ PO มีหลายรอบ (เช่น PO 054 ตอนนี้ 6 รอบ) ก็ไล่นับเองไม่ไหว — ต้องมี
+// ข้อมูลจำนวนต่อรอบแบบเป็นโครงสร้างจริง (ไม่ใช่แค่ข้อความ remark เดา) ถึงจะคำนวณสรุปให้ได้
+// เพิ่ม field ใหม่ `rounds` ใน APEX_OVERRIDES/APEX_POS entry (array ของ {date, items:[{f,q}]})
+// เริ่มใช้กับ PO 053/054 ที่มีข้อมูลรายการต่อรอบอยู่แล้ว — PO อื่นที่ยังไม่มี `rounds` จะไม่ได้
+// สรุปตัวเลขนี้ (fallback กลับไปแบบเดิม) จนกว่าจะมีข้อมูลรายละเอียดพอจะใส่ให้ในอนาคต
+function apexRoundsSummary(p){
+  if(!p.rounds || !p.rounds.length) return null;
+  const now=Date.now();
+  const rounds = p.rounds.map(r=>{
+    const ds=parseFreeDates(r.date);
+    const ms = ds.length ? ds[0] : null;
+    const items = r.items||[];
+    const qty = items.reduce((s,it)=>s+(it.q||0),0);
+    // 23 Sep 2026: normalize the display string through msToDateStr() (parses the raw `date`
+    // string then reformats consistently) instead of using the hand-typed `date` field as-is —
+    // dates were typed inconsistently across POs ("14 Sept 2026" vs "8 Oct 2026", no fixed
+    // month-abbreviation rule), so always displaying via the same formatter keeps it uniform
+    // regardless of how the source data was entered. Falls back to the raw string if unparseable.
+    const dateStr = ms!=null ? msToDateStr(ms) : r.date;
+    return {date:dateStr, ms, items, qty, arrived: ms!=null && ms<=now};
+  }).sort((a,b)=>(a.ms||0)-(b.ms||0));
+  const totalsByFlavor={};
+  let totalOrdered=0, totalShipped=0;
+  rounds.forEach(r=>{
+    r.items.forEach(it=>{
+      if(!totalsByFlavor[it.f]) totalsByFlavor[it.f]={ordered:0,shipped:0};
+      totalsByFlavor[it.f].ordered+=it.q; totalOrdered+=it.q;
+      if(r.arrived){ totalsByFlavor[it.f].shipped+=it.q; totalShipped+=it.q; }
+    });
+  });
+  return {
+    rounds, totalsByFlavor, totalOrdered, totalShipped, totalRemaining: totalOrdered-totalShipped,
+    arrivedCount: rounds.filter(r=>r.arrived).length,
+    nextRound: rounds.find(r=>!r.arrived) || null,
+  };
+}
+// รายการรายรอบพร้อมจำนวนชิ้น — ใช้แทน roundListHtml() ในหน้าคลิกดูรายละเอียดเมื่อ PO นั้นมี
+// ข้อมูล rounds แบบมีโครงสร้าง (ละเอียดกว่าเดิมที่มีแค่วันที่)
+function apexRoundsListHtml(rs){
+  return `<div style="margin-top:4px">${rs.rounds.map((r,i)=>{
+    const itemsStr = r.items.map(it=>`${it.f} ${f(it.q)}`).join(' + ');
+    return `<div style="padding:4px 0;border-bottom:1px solid #eef1f4;font-size:12px">
+      <div style="display:flex;justify-content:space-between;gap:10px">
+        <span style="color:#8fa3b0">รอบ ${i+1}</span>
+        <span style="color:${r.arrived?'#155724':'#856404'};font-weight:${r.arrived?600:400}">${r.date} ${r.arrived?'✓':'⏳'}</span>
+      </div>
+      ${itemsStr?`<div style="color:#5b6b76;margin-top:2px">${itemsStr} <span style="color:#8fa3b0">(รวม ${f(r.qty)} ชิ้น)</span></div>`:''}
+    </div>`;
+  }).join('')}</div>`;
+}
+// สรุปยอดรวมทั้ง PO (สั่งทั้งหมด/ส่งแล้ว/คงเหลือ + แยกตามรส) พร้อม progress bar — ตอบคำถาม
+// Ji ตรงๆ ว่า "ตอนนี้ได้ครบ PO จำนวนกี่ชิ้น เหลือส่งอีกเท่าไหร่ รอบถัดไปจะส่งเท่าไหร่"
+function apexRoundsSummaryHtml(rs){
+  const pct = rs.totalOrdered ? Math.round(rs.totalShipped/rs.totalOrdered*100) : 0;
+  const flavorRows = Object.keys(rs.totalsByFlavor).map(flavor=>{
+    const t=rs.totalsByFlavor[flavor];
+    return `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px">
+      <span>${flavor}</span>
+      <span>${f(t.shipped)} / ${f(t.ordered)} ชิ้น <span style="color:#8fa3b0">(เหลือ ${f(t.ordered-t.shipped)})</span></span>
+    </div>`;
+  }).join('');
+  return `<div style="margin:0 16px 12px;padding:12px;background:#f4f6f9;border-radius:8px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:13px;margin-bottom:6px">
+      <span>ยอดรวมทั้ง PO</span><span>${f(rs.totalShipped)} / ${f(rs.totalOrdered)} ชิ้น (${pct}%)</span>
+    </div>
+    <div style="height:8px;background:#e2e8ee;border-radius:4px;overflow:hidden;margin-bottom:8px">
+      <div style="height:100%;width:${pct}%;background:#28a745"></div>
+    </div>
+    <div style="font-size:12px;color:#5b6b76;margin-bottom:8px">คงเหลือที่ต้องส่งอีก: <b>${f(rs.totalRemaining)} ชิ้น</b>${rs.nextRound?` · รอบถัดไป ${rs.nextRound.date} (${f(rs.nextRound.qty)} ชิ้น)`:' · ส่งครบทุกรอบแล้ว'}</div>
+    ${flavorRows}
+  </div>`;
+}
 // สร้างแถวเดียวของตาราง APEX PO Order Log — ใช้ร่วมกันทั้ง 2 ส่วน (ยังไม่มา/มาแล้ว)
 function apexRow(p){
   const actStr=apexDate(p,'act');
@@ -2169,16 +2261,24 @@ function apexRow(p){
   const nc={KR:'nkr',HK:'nhk',USA:'nusa'}[p.nat]||'';
   const statusBadge = `<span class="badge ${st.cls}">${st.label}</span>`;
   const exp=apexExpDisplay(p);
+  const roundsSum = apexRoundsSummary(p);
   const expSummary = exp.text ? multiDateSummary(exp.text) : null;
-  const expCell = expSummary
-    ? `${expSummary.headline}${exp.auto?' 🔎':''}<br><span style="font-size:11px;color:#8fa3b0">${expSummary.sub}</span>`
-    : (exp.text
-        ? `${nl2br(exp.text)}${exp.auto?` <span title="ดึงจากหมายเหตุ (Remark) อัตโนมัติ — ยังไม่ใช่ Expected Date ที่ยืนยันจาก APEX ตรงๆ คลิกแถวเพื่อดูรายละเอียดเต็ม" style="cursor:help">🔎</span>`:''}`
-        : '—');
+  // 23 Sep 2026 (Ji ขอเห็นตัวเลขจำนวน ไม่ใช่แค่วันที่): ถ้า PO นี้มีข้อมูล rounds แบบมีโครงสร้าง
+  // (items ต่อรอบ) ใช้สรุปนั้นแทน — Expected โชว์ "รอบถัดไป + จะส่งกี่ชิ้น", Actual โชว์
+  // "ส่งแล้ว/สั่งทั้งหมด" ตรงๆ ในตารางหลักเลย ไม่ต้องคลิกเข้าไปดูก็รู้คร่าวๆ ได้
+  const expCell = roundsSum
+    ? `${roundsSum.nextRound ? `รอบถัดไป ${roundsSum.nextRound.date} (${f(roundsSum.nextRound.qty)} ชิ้น)` : `ครบ ${roundsSum.rounds.length} รอบ`}<br><span style="font-size:11px;color:#8fa3b0">${roundsSum.arrivedCount}/${roundsSum.rounds.length} รอบมาแล้ว</span>`
+    : (expSummary
+        ? `${expSummary.headline}${exp.auto?' 🔎':''}<br><span style="font-size:11px;color:#8fa3b0">${expSummary.sub}</span>`
+        : (exp.text
+            ? `${nl2br(exp.text)}${exp.auto?` <span title="ดึงจากหมายเหตุ (Remark) อัตโนมัติ — ยังไม่ใช่ Expected Date ที่ยืนยันจาก APEX ตรงๆ คลิกแถวเพื่อดูรายละเอียดเต็ม" style="cursor:help">🔎</span>`:''}`
+            : '—'));
   const actSummary = actStr ? multiDateSummary(actStr) : null;
-  const actCell = actSummary
-    ? `${actSummary.headline}<br><span style="font-size:11px;color:#8fa3b0">${actSummary.sub}</span>`
-    : (nl2br(actStr) || '—');
+  const actCell = roundsSum
+    ? `${f(roundsSum.totalShipped)} / ${f(roundsSum.totalOrdered)} ชิ้น<br><span style="font-size:11px;color:#8fa3b0">เหลือ ${f(roundsSum.totalRemaining)} ชิ้น</span>`
+    : (actSummary
+        ? `${actSummary.headline}<br><span style="font-size:11px;color:#8fa3b0">${actSummary.sub}</span>`
+        : (nl2br(actStr) || '—'));
   return `<tr onclick="showAPEXSheet(this,${JSON.stringify(p).replace(/"/g,'&quot;')})"${st.cancelled?' style="opacity:.55;text-decoration:line-through"':''}>
       <td><span class="nat ${nc}">${p.nat}</span></td>
       <td style="font-weight:600">${p.apexPO}</td>
@@ -2664,13 +2764,17 @@ function showAPEXSheet(row, p){
   const actStr=apexDate(p,'act');
   const st=apexStatus(p);
   const exp=apexExpDisplay(p);
-  const expRounds = exp.text ? roundListHtml(exp.text) : null;
+  const roundsSum = apexRoundsSummary(p);
+  // 23 Sep 2026 (Ji ขอเห็นจำนวนชิ้นต่อรอบ ไม่ใช่แค่วันที่ ✓/⏳ เฉยๆ): ถ้า PO นี้มี `rounds`
+  // แบบมีโครงสร้าง ใช้ apexRoundsListHtml() แทน roundListHtml() เดิม — โชว์รายการ+จำนวนชิ้น
+  // ต่อรอบด้วยเลย ทั้งฝั่ง Expected และ Actual (ใช้ชุดข้อมูลเดียวกันเพราะวันที่ตรงกันอยู่แล้ว)
+  const expRounds = roundsSum ? apexRoundsListHtml(roundsSum) : (exp.text ? roundListHtml(exp.text) : null);
   const expHtml = expRounds
     ? `${expRounds}${exp.auto?`<div style="font-size:11px;color:#8fa3b0;margin-top:2px">🔎 ดึงจากหมายเหตุ (Remark) อัตโนมัติ — ยังไม่ใช่ Expected Date ที่ยืนยันจาก APEX ตรงๆ</div>`:''}`
     : (exp.text
         ? `${nl2br(exp.text)}${exp.auto?` <span title="ดึงจากหมายเหตุ (Remark) อัตโนมัติ — ยังไม่ใช่ Expected Date ที่ยืนยันจาก APEX ตรงๆ" style="cursor:help">🔎</span>`:''}`
         : '—');
-  const actRounds = actStr ? roundListHtml(actStr) : null;
+  const actRounds = roundsSum ? apexRoundsListHtml(roundsSum) : (actStr ? roundListHtml(actStr) : null);
   const actHtml = actRounds ? actRounds : (nl2br(actStr) || '⏳ รออยู่');
   const html=`
     <div class="sbox">
@@ -2683,6 +2787,7 @@ function showAPEXSheet(row, p){
       <div class="row"><span>สถานะ</span><span style="text-align:right"><span class="badge ${st.cls}">${st.label}</span></span></div>
       <div class="row"><span>ส่ง Customer</span><span style="text-align:right">${nl2br(apexDate(p,'toCust'))||'—'}</span></div>
     </div>
+    ${roundsSum ? apexRoundsSummaryHtml(roundsSum) : ''}
     ${p.remark?`<div style="margin:12px 16px;padding:10px;background:#f4f6f9;border-radius:6px;font-size:12px;color:#5b6b76">${nl2br(p.remark)}</div>`:''}`;
   openSheet(`${p.nat} · ${p.apexPO}`, html, row);
 }
