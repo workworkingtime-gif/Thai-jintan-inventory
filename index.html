@@ -172,6 +172,14 @@ tbody tr.sel td{background:#eef4ff}
 .sdate{font-size:11px;color:var(--muted);margin-bottom:1px}
 .sq{font-weight:700;white-space:nowrap}
 .sq.in{color:var(--good-tx)}.sq.out{color:var(--bad-tx)}.sq.pend{color:var(--info-tx)}
+/* 23 Sep 2026: Ji บอกว่ากล่องวัสดุแพ็ค APEX เดิม (ทุกอย่างยัดอยู่บรรทัดเดียวต่อรายการ) "อ่านยาก
+   ยังมีความเป็นแผง" — แยกแต่ละรอบเป็นการ์ดของตัวเอง + แยกชื่อวัสดุกับตัวเลขออกจากกันชัดเจน */
+.matcard{margin-bottom:8px;padding:10px 12px;background:var(--panel);border-radius:10px}
+.matcard:last-child{margin-bottom:0}
+.mat-item{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:5px 0;border-bottom:1px solid var(--line-soft)}
+.mat-item:last-child{border-bottom:none}
+.mat-item-name{font-size:12.5px;color:var(--ink);line-height:1.35}
+.mat-item-qty{font-size:12px;color:var(--ink-soft);white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
 /* editable stock */
 .edit-btn{background:none;border:1px solid var(--line);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--muted);cursor:pointer;margin-left:6px}
 .edit-btn:hover{background:var(--accent-tint);color:var(--ink)}
@@ -924,33 +932,39 @@ const APEX_OVERRIDES = [
 //     {date:'2026-09-20', items:[{item:'ซองใน', requestedQty:100000, sentQty:101500}], note:'ส่งรอบแรก'},
 //     {date:'2026-09-25', items:[{item:'ซองใน', requestedQty:5000,   sentQty:5010}],   note:'ขอเพิ่มเพราะของเสียระหว่างแพ็ค'},
 //   ],
-// (แก้ 23 Sep 2026 รอบสี่) Ji ส่งใบนำสินค้าออกนอกบริษัท (ใบส่งของจริง ลงนามแล้ว วันที่
-// 22/09/2026) มาเทียบ — ยอดกล่องใน/ซอง ตรงกับที่บันทึกไว้ครบทุกบรรทัด แต่ยอด "ลังนอก" (carton)
-// ส่งจริงได้แค่ 210 (10's) + 0 (5's) = 210 ชิ้น เพราะของไม่พอ (เป้าหมายเดิมคือ 251+116=367) —
-// Ji ยืนยันเองว่า "ส่งจริงคือ 210 กับ 0" กำลังสั่งของเพิ่มแล้วจะส่งส่วนที่ขาดตามไปทีหลัง — แก้
-// sentQty ของ carton ในรอบแรกให้ตรงกับยอดที่ส่งจริง (210) ไม่ใช่ยอดเป้าหมายเต็ม (367) อีกต่อไป
-// — inner/sachet ส่งครบเต็มจำนวนแล้วจริง ไม่ต้องแก้ (ยืนยันจากใบส่งของ: 6,012+5,527=11,539,
-// 60,116+27,634=87,750 ตรงกับเป้าหมายเป๊ะ) — ส่วนที่ยังขาดส่งของ carton จะคำนวณให้อัตโนมัติจาก
-// apexMaterialsSummary().byItem (ดูด้านล่าง) ไม่ต้องมานั่งลบเลขเองทุกครั้ง เมื่อ Ji ส่งของรอบ 2
-// (หลังสั่งของมาเพิ่ม) มาให้ค่อยเพิ่มเป็นรอบถัดไปในนี้
+// (แก้ 23 Sep 2026 รอบเจ็ด) Ji ชี้ให้เห็นว่ายอด "ลังนอก" ที่รวม 10's+5's เข้าด้วยกัน (367) มันบัง
+// ความจริงว่าสองไซส์นี้สถานการณ์ต่างกันมาก (10's ได้ไป 210/251 ≈ 84%, 5's ได้ไปแค่ 0/116 = 0%
+// เลย) — "ต้องแยกสิว่าเป็นลังนอกของอะไร ตอนนี้เธอให้ยอดลังนอกแบบรวมมา แต่ตัวเลขเป็นลังนอกแยก" —
+// แยกทุกชนิดวัสดุเป็น 10's/5's ตามที่ตารางต้นฉบับให้มาจริง (ไม่ใช่แค่ carton) ให้ตรงตามใบนำ
+// สินค้าออกนอกบริษัท 6 บรรทัดเป๊ะ — Ji ยังชี้แจงด้วยว่า "ภาพสีดำ (ตารางสรุป) เป็นจำนวนจริงที่
+// เค้าขอ" (คือ requestedQty ตรงๆ ไม่ต้องประมาณย้อนกลับจาก +1% อีกต่อไป) ส่วน "ภาพสีขาว (ใบส่งของ)
+// คือจำนวนที่เราจะส่งให้จริง" (sentQty) — inner/sachet ส่งครบเป๊ะตามที่ขอทั้งคู่ (0% ส่วนเกิน แต่
+// ไม่ใช่ปัญหา — ดู comment ที่ apexMaterialsSummary ด้านล่างเรื่องเกณฑ์ ok ที่ปรับใหม่) มีแค่ลังนอก
+// ที่ขาดจริง (10's ขาด 41, 5's ขาด 116 ครบทั้งไซส์)
 const APEX_MATERIALS_LOG = {
   'PO 060': [
     { date:'2026-09-22',
       items:[
-        {item:'กล่องนอก/ลัง (Carton)', requestedQty:362, sentQty:210},
-        {item:'กล่องใน (Inner box)', requestedQty:11426, sentQty:11539},
-        {item:'ซองใน (Sachet)', requestedQty:86880, sentQty:87750},
+        {item:'กล่องใน 10\'s (Inner box)', requestedQty:6012, sentQty:6012},
+        {item:'กล่องใน 5\'s (Inner box)', requestedQty:5527, sentQty:5527},
+        {item:'ลังนอก 10\'s (Carton)', requestedQty:251, sentQty:210},
+        {item:'ลังนอก 5\'s (Carton)', requestedQty:116, sentQty:0},
+        {item:'ซอง 10\'s (Sachet)', requestedQty:60116, sentQty:60116},
+        {item:'ซอง 5\'s (Sachet)', requestedQty:27634, sentQty:27634},
       ],
-      note:'ยอดรวมงาน PO 060 + PO 061 (สัดส่วนสินค้าเหมือนกันทั้งคู่) — ตามใบนำสินค้าออกนอกบริษัท 22/09/2026: กล่องใน/ซองส่งครบเต็มจำนวนแล้ว แต่ลังนอกส่งได้แค่ 210 จาก 367 เพราะของไม่พอ (Ji ยืนยัน "ส่งจริงคือ 210 กับ 0") — กำลังสั่งเพิ่มเพื่อส่งส่วนที่ขาดตามไป' },
+      note:'ยอดรวมงาน PO 060 + PO 061 (สัดส่วนสินค้าเหมือนกันทั้งคู่) — ตามใบนำสินค้าออกนอกบริษัท 22/09/2026: กล่องใน/ซองส่งครบเป๊ะตามที่ขอทั้ง 10\'s และ 5\'s แต่ลังนอกขาด — 10\'s ส่งได้ 210 จาก 251 (ขาด 41), 5\'s ส่งได้ 0 จาก 116 (ขาดทั้งหมด) เพราะของไม่พอ — กำลังสั่งเพิ่มเพื่อส่งส่วนที่ขาดตามไป' },
   ],
   'PO 061': [
     { date:'2026-09-22',
       items:[
-        {item:'กล่องนอก/ลัง (Carton)', requestedQty:362, sentQty:210},
-        {item:'กล่องใน (Inner box)', requestedQty:11426, sentQty:11539},
-        {item:'ซองใน (Sachet)', requestedQty:86880, sentQty:87750},
+        {item:'กล่องใน 10\'s (Inner box)', requestedQty:6012, sentQty:6012},
+        {item:'กล่องใน 5\'s (Inner box)', requestedQty:5527, sentQty:5527},
+        {item:'ลังนอก 10\'s (Carton)', requestedQty:251, sentQty:210},
+        {item:'ลังนอก 5\'s (Carton)', requestedQty:116, sentQty:0},
+        {item:'ซอง 10\'s (Sachet)', requestedQty:60116, sentQty:60116},
+        {item:'ซอง 5\'s (Sachet)', requestedQty:27634, sentQty:27634},
       ],
-      note:'ยอดรวมงาน PO 060 + PO 061 (สัดส่วนสินค้าเหมือนกันทั้งคู่) — ตามใบนำสินค้าออกนอกบริษัท 22/09/2026: กล่องใน/ซองส่งครบเต็มจำนวนแล้ว แต่ลังนอกส่งได้แค่ 210 จาก 367 เพราะของไม่พอ (Ji ยืนยัน "ส่งจริงคือ 210 กับ 0") — กำลังสั่งเพิ่มเพื่อส่งส่วนที่ขาดตามไป' },
+      note:'ยอดรวมงาน PO 060 + PO 061 (สัดส่วนสินค้าเหมือนกันทั้งคู่) — ตามใบนำสินค้าออกนอกบริษัท 22/09/2026: กล่องใน/ซองส่งครบเป๊ะตามที่ขอทั้ง 10\'s และ 5\'s แต่ลังนอกขาด — 10\'s ส่งได้ 210 จาก 251 (ขาด 41), 5\'s ส่งได้ 0 จาก 116 (ขาดทั้งหมด) เพราะของไม่พอ — กำลังสั่งเพิ่มเพื่อส่งส่วนที่ขาดตามไป' },
   ],
   // 23 Sep 2026: Ji แจ้งรายการที่ APEX ขอวัสดุทดแทนเพิ่มสำหรับ PO 053 (พบของเสีย/บกพร่องระหว่าง
   // แพ็คจริงจาก APEX เอง ไม่ใช่การประมาณยอดส่งตั้งต้นแบบ PO 060/061 ด้านบน) จะส่งให้ APEX วันที่
@@ -2055,16 +2069,22 @@ function apexMaterialsSummary(apexPO){
   }));
   Object.values(byItem).forEach(b=>{
     b.bufferPct = b.requested>0 ? (b.sent-b.requested)/b.requested*100 : null;
-    const rawRemaining = Math.max(0, Math.ceil(b.requested*1.01 - b.sent));
-    // เผื่อ noise เล็กน้อยจากการปัดเศษ (เช่น ยอด "ขอ" ที่คำนวณย้อนกลับจาก +1% แทนที่จะรู้ยอดจริง
-    // เป๊ะๆ) — ห่างจากเกณฑ์ไม่เกิน 3 ชิ้นถือว่าครบแล้ว ไม่ต้องขึ้นเตือนขาดส่งเป็น false alarm
-    b.remaining = rawRemaining<=3 ? 0 : rawRemaining;
+    // (แก้ 23 Sep 2026 รอบเจ็ด) เดิมเผื่อ noise ด้วย requested*1.01 กับ tolerance 3 ชิ้น เพราะตอนนั้น
+    // requestedQty เป็นค่าประมาณย้อนกลับจาก "ยอดส่งจริง +1%" — ตอนนี้ Ji ยืนยันแล้วว่าตัวเลขในตาราง
+    // (ภาพสีดำ) คือ "จำนวนจริงที่เค้าขอ" ตรงๆ ไม่ใช่ค่าประมาณ ส่วน +1% (ถ้ามี) ควรถูกรวมไว้ใน
+    // requestedQty เองแล้วตั้งแต่ต้น (เช่น จากตัวคำนวณยอดวัสดุ) ดังนั้นเกณฑ์ "ครบ" ที่ถูกต้องคือแค่
+    // ส่งจริง >= ขอจริง (ไม่ต้องเผื่อ 1% หรือ tolerance ซ้ำอีกชั้น) — ตรงกับพฤติกรรมจริงที่ Ji เตือน
+    // แค่เรื่องลังนอกที่ขาดจริง (210/251, 0/116) ไม่เคยติงกล่องใน/ซองที่ส่งพอดีเป๊ะ (0% ส่วนเกิน)
+    b.remaining = Math.max(0, b.requested - b.sent);
   });
   const bufferPct = totalRequested>0 ? (totalSent-totalRequested)/totalRequested*100 : null;
   return { rounds, count: rounds.length, totalRequested, totalSent, bufferPct, topups: rounds.length-1, byItem };
 }
-// ป้ายเปอร์เซ็นต์ส่วนเกิน — เขียว+✓ ถ้า ≥1% ตามกติกาที่ Ji ตั้งไว้ ("ต้องส่งเกิน 1% ของที่ขอ"),
-// แดง+⚠ ถ้าต่ำกว่า ช่วยเตือนตอนกรอกก่อนกดบันทึกด้วย ไม่ได้ห้ามบันทึกแค่เตือน (Ji อาจมีเหตุผล)
+// ป้ายเปอร์เซ็นต์ส่วนเกิน — เขียว+✓ ถ้าส่งครบหรือเกินยอดที่ขอ (sent>=requested), แดง+⚠ ถ้าส่งไม่ครบ
+// ช่วยเตือนตอนกรอกก่อนกดบันทึกด้วย ไม่ได้ห้ามบันทึกแค่เตือน (Ji อาจมีเหตุผล)
+// (แก้ 23 Sep 2026 รอบเจ็ด) เกณฑ์เดิมคือ pct>=1% (เผื่อ tolerance 3 ชิ้น) ซึ่งใช้ตอนที่ requestedQty
+// เป็นค่าประมาณ — ตอนนี้ requestedQty คือยอดขอจริงเป๊ะๆ แล้ว เกณฑ์ "ครบ" จึงง่ายลงเหลือแค่ sent>=requested
+// (pct>=0) — กล่องใน/ซองของ PO 060/061 ที่ส่งพอดี 100% (0% ส่วนเกิน) จะขึ้น ✓ ถูกต้อง ไม่ใช่ ⚠ เท็จอีกต่อไป
 // (แก้ 23 Sep 2026 รอบห้า) เจอเคสรอบทดแทนของเสียของ PO 053 ที่ requestedQty=sentQty เป๊ะทุกรายการ
 // (ไม่ใช่ยอดประมาณที่ต้องบวก 1% แบบรอบส่งตั้งต้น) ทำให้ % รวมออกมา 0% ต่ำกว่าเกณฑ์ทางเทคนิค ทั้งที่
 // จริงส่งครบตามที่นับได้แล้ว — เพิ่ม sent/requested (absolute) เป็น optional param ให้เช็คด้วย
@@ -2072,31 +2092,43 @@ function apexMaterialsSummary(apexPO){
 // กันไม่ให้ยอดจำนวนน้อยๆ (เช่น 20, 30 ชิ้น) โดน ⚠ เตือนเกินจริงจากการปัดเศษ % แค่นั้น
 function apexMaterialBufferBadge(pct, sent, requested){
   if(pct==null) return '<span style="color:#8fa3b0">—</span>';
-  let ok = pct>=1;
-  if(!ok && sent!=null && requested!=null && requested>0){
-    ok = (requested*1.01 - sent) <= 3;
-  }
-  return `<span style="color:${ok?'#155724':'#a23b3b'};font-weight:700">${pct>=0?'+':''}${pct.toFixed(1)}%</span> ${ok?'✓':'⚠ ต่ำกว่าเกณฑ์ 1%'}`;
+  const ok = pct>=0;
+  return `<span style="color:${ok?'#155724':'#a23b3b'};font-weight:700">${pct>=0?'+':''}${pct.toFixed(1)}%</span> ${ok?'✓':'⚠ ส่งไม่ครบยอดที่ขอ'}`;
 }
+// (แก้ 23 Sep 2026 รอบหก) Ji บอกว่าแบบเดิม "ยังมีความเป็นแผง อ่านยาก" — เปลี่ยนจากยัดทุกอย่าง
+// (ชื่อวัสดุ+ตัวเลข) ไว้บรรทัดเดียวกันแบบ inline เป็นการ์ดแยกต่อรอบ (.matcard) แต่ละรายการวัสดุ
+// เป็นแถวของตัวเอง (.mat-item) แยกชื่อวัสดุ (ซ้าย) กับตัวเลขขอ/ส่งจริง (ขวา ตัวเลขจัดคอลัมน์)
+// ให้กวาดตาดูชื่อรายการ หรือกวาดตาดูแค่ตัวเลขก็ทำได้สะดวกทั้งคู่ — พร้อมเครื่องหมาย ✓/⚠ ต่อ
+// รายการ อ้างอิงจากยอดสะสมทุกรอบรวมกัน (sum.byItem) ไม่ใช่แค่ยอดในรอบนั้นรอบเดียว เพราะวัสดุ
+// ชนิดเดียวกันอาจมีมากกว่า 1 รอบ (เช่น รอบแรกส่งขาด รอบสองส่งตามมาส่วนที่เหลือ)
 function apexMaterialsListHtml(apexPO){
-  const rounds = apexMaterialsFor(apexPO);
-  if(!rounds.length) return '<div style="color:#8fa3b0;font-size:13px;padding:6px 0">ยังไม่มีบันทึกการส่งวัสดุให้ APEX สำหรับ PO นี้ — ส่งตัวเลขมาทางแชทได้เลย เดี๋ยวอัปเดตให้</div>';
-  return rounds.map((r,i)=>{
+  const sum = apexMaterialsSummary(apexPO);
+  if(!sum) return '<div style="color:#8fa3b0;font-size:13px;padding:6px 0">ยังไม่มีบันทึกการส่งวัสดุให้ APEX สำหรับ PO นี้ — ส่งตัวเลขมาทางแชทได้เลย เดี๋ยวอัปเดตให้</div>';
+  return sum.rounds.map((r,i)=>{
     const items = r.items||[];
     const req = items.reduce((s,it)=>s+(Number(it.requestedQty)||0),0);
     const sent = items.reduce((s,it)=>s+(Number(it.sentQty)||0),0);
     const pct = req>0 ? (sent-req)/req*100 : null;
-    const itemLines = items.map(it=>{
+    const itemRows = items.map(it=>{
       const ir=Number(it.requestedQty)||0, is=Number(it.sentQty)||0;
-      return `<div style="font-size:12px;color:#5b6b76">${it.item||'—'}: ขอ ${f(ir)} → ส่งจริง ${f(is)}</div>`;
+      const cum = sum.byItem[it.item||'—'];
+      const mark = cum ? (cum.remaining>0 ? '<span style="color:#a23b3b">⚠</span>' : '<span style="color:#2e8b57">✓</span>') : '';
+      return `<div class="mat-item">
+        <div class="mat-item-name">${it.item||'—'}</div>
+        <div class="mat-item-qty">ขอ ${f(ir)} → ส่งจริง ${f(is)} ${mark}</div>
+      </div>`;
     }).join('');
-    return `<div class="srow" style="align-items:flex-start">
-      <div>
-        <div style="font-weight:600">รอบ ${i+1}${i>0?' · เพิ่มเติม':''}${r.date?` <span style="font-weight:400;color:#8fa3b0">· ${r.date}</span>`:''}</div>
-        ${itemLines}
-        <div style="font-size:12px;color:#5b6b76;margin-top:2px;font-weight:600">รวมรอบนี้: ขอ ${f(req)} → ส่งจริง ${f(sent)} (${apexMaterialBufferBadge(pct, sent, req)})</div>
-        ${r.note?`<div style="font-size:12px;color:#8fa3b0;margin-top:2px">📝 ${r.note}</div>`:''}
+    return `<div class="matcard">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
+        <span style="font-weight:700;font-size:12.5px;color:var(--ink)">รอบ ${i+1}${i>0?' · เพิ่มเติม':''}</span>
+        ${r.date?`<span style="font-size:11px;color:var(--muted)">${r.date}</span>`:''}
       </div>
+      ${itemRows}
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;padding-top:6px;border-top:1px solid var(--line-soft);font-size:12px;font-weight:700;color:var(--ink)">
+        <span>รวมรอบนี้</span>
+        <span>${f(req)} → ${f(sent)} (${apexMaterialBufferBadge(pct, sent, req)})</span>
+      </div>
+      ${r.note?`<div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.4">📝 ${r.note}</div>`:''}
     </div>`;
   }).join('');
 }
@@ -2113,9 +2145,14 @@ function apexMaterialsShortfallHtml(sum){
 function apexMaterialsSectionHtml(apexPO){
   const sum = apexMaterialsSummary(apexPO);
   const gid = apexMatKey(apexPO);
+  const overviewCard = sum ? `<div class="matcard" style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+    <span style="font-size:12px;color:var(--ink-soft)">รวมส่งแล้ว${sum.topups>0?` (${sum.topups+1} รอบ)`:''}</span>
+    <span style="font-size:13px;font-weight:700;color:var(--ink)">${f(sum.totalSent)} / ${f(sum.totalRequested)} ชิ้น <span style="font-weight:400">(${apexMaterialBufferBadge(sum.bufferPct, sum.totalSent, sum.totalRequested)})</span></span>
+  </div>` : '';
   return `<div class="ssect" id="apex_mat_sect_${gid}">
     <div class="ssect-t">📦 วัสดุแพ็ค (ซอง/กล่องใน) ที่ส่งให้ APEX</div>
-    ${sum ? `<div style="font-size:12px;color:#5b6b76;margin-bottom:8px">รวมส่งแล้ว ${f(sum.totalSent)} จากที่ขอทั้งหมด ${f(sum.totalRequested)} ชิ้น (${apexMaterialBufferBadge(sum.bufferPct, sum.totalSent, sum.totalRequested)})${sum.topups>0?` · ส่งเพิ่มเติมแล้ว ${sum.topups} รอบ`:''}</div>${apexMaterialsShortfallHtml(sum)}` : ''}
+    ${overviewCard}
+    ${sum ? apexMaterialsShortfallHtml(sum) : ''}
     <div id="apex_mat_list_${gid}">${apexMaterialsListHtml(apexPO)}</div>
     <div style="margin-top:8px;font-size:11px;color:#8fa3b0">มีตัวเลขใหม่ ส่งมาทางแชทได้เลย เดี๋ยวอัปเดตหน้านี้ให้</div>
   </div>`;
