@@ -2142,6 +2142,88 @@ function apexMaterialsShortfallHtml(sum){
   const lines = short.map(b=>`⚠ ${b.item} ยังขาดส่งอีกอย่างน้อย ${f(b.remaining)} ชิ้น (ส่งแล้ว ${f(b.sent)}/${f(b.requested)})`).join('<br>');
   return `<div style="font-size:12px;color:#a23b3b;background:#fdf1f1;border-radius:6px;padding:6px 8px;margin-bottom:8px;font-weight:600">${lines}</div>`;
 }
+// 23 Sep 2026 (Ji ขอ, รอบเก้า): "หมายถึง รอบการส่ง packaging component ให้ APEX หนะ" — section
+// วัสดุแพ็คที่ส่งให้ APEX เดิมฝังอยู่ล่างสุดของ detail sheet ต้องคลิกเข้าไปดูทีละ PO ถึงจะเห็น
+// (ดู showAPEXSheet ด้านล่างที่เรียก apexMaterialsSectionHtml ต่อท้าย) — Ji เลือกแบบ "section
+// แยกในหน้า APEX Orders" (ไม่ใช่แท็บใหม่ในเมนูหลัก, ไม่ใช่แค่เพิ่มเติมในหน้าเดิม) คือให้เห็น
+// ภาพรวมวัสดุที่ส่งให้ APEX ทุก PO ได้จากหน้า APEX Orders โดยตรง ไม่ต้องคลิกเข้าไปทีละใบ — เพิ่ม
+// แท็บย่อย "📦 วัสดุแพ็ค APEX" ในหน้านี้ (คนละแท็บกับ ยังไม่มา/มาแล้ว/ยกเลิก ที่กรองสถานะ PO)
+// กดแล้วเห็นการ์ดสรุปวัสดุของทุก PO ที่มีบันทึกพร้อมกันเลย — PO 060/061 เป็นงานเดียวกันที่ log
+// ตัวเลขชุดเดียวกันไว้ทั้งคู่ (ส่งพร้อมกันจริง) เลย group รวมเป็นการ์ดเดียว "PO 060 & PO 061"
+// แทนที่จะโชว์ข้อมูลซ้ำกันเป๊ะสองรอบ ให้ดูสับสน
+function apexMaterialsGroups(){
+  const keys = Object.keys(APEX_MATERIALS_LOG);
+  const used = new Set(); const groups = [];
+  keys.forEach(k=>{
+    if(used.has(k)) return;
+    const sig = JSON.stringify(APEX_MATERIALS_LOG[k]);
+    const mates = keys.filter(k2=>!used.has(k2) && JSON.stringify(APEX_MATERIALS_LOG[k2])===sig);
+    mates.forEach(m=>used.add(m));
+    groups.push(mates);
+  });
+  groups.sort((a,b)=>{
+    const pa = APEX_POS.find(p=>p.apexPO===a[0]);
+    const pb = APEX_POS.find(p=>p.apexPO===b[0]);
+    return apexPoSortKey(pb||{apexPO:b[0]}) - apexPoSortKey(pa||{apexPO:a[0]});
+  });
+  return groups;
+}
+// 23 Sep 2026 (Ji รอบสิบ: "อยากให้เธอทำเป็นตารางอ่านง่ายเป็นระเบียบหนะ ตอนนี้มันต้องอ่านซ้ำซ้อน
+// ไปหน่อย") — เดิมแท็บภาพรวมนี้ใช้ apexMaterialsSectionHtml() เดียวกับในหน้า detail sheet ทำให้
+// เห็นยอดรวมซ้ำสองที่ (การ์ดสรุปยอดรวมด้านบน + บรรทัด "รวมรอบนี้" ท้ายการ์ดรอบ ซึ่งเป็นตัวเลข
+// เดียวกันเป๊ะเมื่อ PO นั้นมีแค่รอบเดียว) — เขียนตัวแสดงผลใหม่เฉพาะแท็บนี้เป็นตาราง <table> จริงๆ
+// (ใช้ style .rt ที่มีอยู่แล้วในเว็บ — หัวตารางเข้ม อ่านง่าย, แถวสุดท้ายตัวหนา+พื้นเทาให้อัตโนมัติ)
+// 1 แถว = 1 ชนิดวัสดุ (ยอดสะสมทุกรอบรวมกันแล้ว ไม่แยกโชว์ทีละรอบอีก) + แถวท้ายเป็นยอดรวมทั้งหมด
+// ครั้งเดียว ไม่ซ้ำ — รายละเอียดราย "รอบ" (วันที่ส่งจริง/หมายเหตุเหตุผลของการขาดส่ง) ยังอยู่ครบ
+// แต่ย้ายไปเป็นข้อความสั้นๆ ต่อท้ายตาราง (ไม่ใช่การ์ดแยกต่อรอบเหมือนเดิม) — ส่วนหน้า detail sheet
+// รายตัว (คลิกแถว PO ในแท็บอื่น) ยังใช้ apexMaterialsSectionHtml() แบบการ์ดต่อรอบเดิม ไม่แตะ
+// เพราะที่นั่นมีที่ว่างพอและ Ji ไม่เคยติงเรื่องซ้ำซ้อนสำหรับหน้านั้น
+function apexMaterialsTableHtml(apexPO){
+  const sum = apexMaterialsSummary(apexPO);
+  if(!sum) return '<div style="color:#8fa3b0;font-size:13px;padding:4px 0 0">ยังไม่มีบันทึกการส่งวัสดุให้ APEX สำหรับ PO นี้ — ส่งตัวเลขมาทางแชทได้เลย เดี๋ยวอัปเดตให้</div>';
+  const rows = Object.values(sum.byItem).map(b=>{
+    const status = b.remaining>0
+      ? `<span class="need">⚠ ขาด ${f(b.remaining)}</span>`
+      : `<span class="ok">✓ ครบ</span>`;
+    return `<tr>
+      <td style="font-size:12.5px">${b.item}</td>
+      <td class="n" style="text-align:right">${f(b.requested)}</td>
+      <td class="n" style="text-align:right">${f(b.sent)}</td>
+      <td style="white-space:nowrap;font-size:12px">${status}</td>
+    </tr>`;
+  }).join('');
+  const totalRow = `<tr>
+      <td>รวมทั้งหมด${sum.topups>0?` (ส่งแล้ว ${sum.topups+1} รอบ)`:''}</td>
+      <td class="n" style="text-align:right">${f(sum.totalRequested)}</td>
+      <td class="n" style="text-align:right">${f(sum.totalSent)}</td>
+      <td style="white-space:nowrap;font-size:12px">${apexMaterialBufferBadge(sum.bufferPct, sum.totalSent, sum.totalRequested)}</td>
+    </tr>`;
+  const noteLines = sum.rounds.filter(r=>r.note||r.date).map((r,i)=>
+    `<div style="font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.4">${r.date?`<b>${i>0?'รอบเพิ่มเติม ':''}${r.date}</b> — `:''}${r.note?'📝 '+r.note:''}</div>`
+  ).join('');
+  return `<div class="tw"><table class="rt"><thead><tr>
+      <th>วัสดุ</th><th style="text-align:right">ขอ</th><th style="text-align:right">ส่งจริง</th><th>สถานะ</th>
+    </tr></thead><tbody>${rows}${totalRow}</tbody></table></div>
+    ${noteLines}
+    <div style="margin-top:8px;font-size:11px;color:#8fa3b0">มีตัวเลขใหม่ ส่งมาทางแชทได้เลย เดี๋ยวอัปเดตหน้านี้ให้</div>`;
+}
+function apexMaterialsOverviewHtml(){
+  const groups = apexMaterialsGroups();
+  if(!groups.length) return `<div class="card"><div class="card-body" style="text-align:center;color:#8fa3b0;padding:20px">ยังไม่มีบันทึกการส่งวัสดุให้ APEX เลย — ส่งตัวเลขมาทางแชทได้เลย เดี๋ยวอัปเดตให้</div></div>`;
+  return groups.map(g=>{
+    const primary = g[0];
+    const p = APEX_POS.find(x=>x.apexPO===primary);
+    const nc = p ? ({KR:'nkr',HK:'nhk',USA:'nusa',SG:'nsg',Philippines:'nph',France:'nfr',Italy:'nit'}[p.nat]||'') : '';
+    const label = g.join(' &amp; ');
+    const subtitle = p&&p.remark ? String(p.remark).split(' — ')[0].split(' · ')[0] : '';
+    return `<div class="card">
+      <div class="card-head" style="cursor:default">
+        <div><div class="cht">${p?`<span class="nat ${nc}" style="margin-right:6px">${p.nat}</span>`:''}${label}</div>${subtitle?`<div class="chm">${subtitle}</div>`:''}</div>
+      </div>
+      <div class="card-body" style="padding:14px 16px 16px">${apexMaterialsTableHtml(primary)}</div>
+    </div>`;
+  }).join('');
+}
 function apexMaterialsSectionHtml(apexPO){
   const sum = apexMaterialsSummary(apexPO);
   const gid = apexMatKey(apexPO);
@@ -2539,10 +2621,13 @@ function apexRow(p){
 // (10 Sep 2026, ตามที่ Ji ขอ): เปลี่ยนจาก 3 การ์ด accordion ที่กางค้างไว้พร้อมกันทั้งหมด
 // เป็นปุ่มแท็บกดสลับได้ (subnav) แบบเดียวกับหน้า Stock ที่กด ฮ่องกง/สิงคโปร์/เกาหลี —
 // กดดูได้ทีละกลุ่ม แสดงตารางเดียว ไม่ต้องพับ/ขยายการ์ดซ้อนกันอีกต่อไป
+// (23 Sep 2026 รอบเก้า) เพิ่มแท็บ 'materials' — ดูรอบการส่ง packaging component ให้ APEX ของ
+// ทุก PO พร้อมกันได้จากหน้านี้เลย ไม่ต้องคลิกเข้าไปทีละ PO อีกต่อไป (ดู apexMaterialsOverviewHtml)
 const APEX_SUBS = [
   {id:'pending', label:'⏳ ยังไม่มา'},
   {id:'arrived', label:'✓ มาแล้ว / รับไปแล้ว'},
   {id:'cancelled', label:'✗ ยกเลิก'},
+  {id:'materials', label:'📦 วัสดุแพ็ค APEX'},
 ];
 let APEX_SUB = 'pending';
 function setApexSub(id){ APEX_SUB=id; renderMain(); }
@@ -2556,7 +2641,8 @@ function pageAPEX(){
   const pending = sortedApexPos.filter(p=>!apexStatus(p).done && !apexStatus(p).cancelled);
   const arrived = sortedApexPos.filter(p=>apexStatus(p).done);
   const cancelled = sortedApexPos.filter(p=>apexStatus(p).cancelled);
-  const counts = {pending:pending.length, arrived:arrived.length, cancelled:cancelled.length};
+  const materialsGroupCount = apexMaterialsGroups().length;
+  const counts = {pending:pending.length, arrived:arrived.length, cancelled:cancelled.length, materials:materialsGroupCount};
   const lists = {pending, arrived, cancelled};
   const emptyMsgs = {
     pending:'ไม่มีรายการที่ยังไม่มา — ครบทุก PO แล้ว 🎉',
@@ -2564,11 +2650,23 @@ function pageAPEX(){
     cancelled:'ไม่มีรายการที่ถูกยกเลิก',
   };
   if(!APEX_SUBS.some(s=>s.id===APEX_SUB)) APEX_SUB='pending';
-  const list = lists[APEX_SUB];
-  const subnav = `<div class="subnav">${APEX_SUBS.map(s=>`<div class="sub-tab ${APEX_SUB===s.id?'active':''}" onclick="setApexSub('${s.id}')">${s.label} <span style="opacity:.65">(${counts[s.id]})</span></div>`).join('')}</div>`;
+  // 23 Sep 2026 (Ji ถาม "ถ้าหากว่าแยกออกมาเป็นอีกอันนึง จะอ่านง่ายกว่ามั้ย" พร้อมส่งสกรีนช็อต
+  // หัวข้อ+แท็บมาให้ดู): เดิมแท็บ (ยังไม่มา/มาแล้ว/ยกเลิก) เป็น pill ลอยอยู่บนพื้นหลังตรงๆ
+  // ติดกับหัวข้อ/บรรทัดอธิบายด้านบนแบบไม่มีกรอบคั่น ทำให้ดูเหมือนเป็นก้อนเดียวกับหัวข้อ —
+  // แยกเป็นการ์ดของตัวเอง (กรอบ+พื้นหลังต่างจากพื้นหน้าเว็บ) ให้เห็นชัดว่าเป็น "แถบตัวกรอง"
+  // คนละส่วนกับหัวข้อหน้า และคนละส่วนกับตารางด้านล่าง — 3 บล็อกแยกกันชัดเจน: หัวข้อ / แท็บกรอง / ตาราง
+  const subnav = `<div class="card" style="padding:12px 16px"><div class="subnav" style="margin-bottom:0">${APEX_SUBS.map(s=>`<div class="sub-tab ${APEX_SUB===s.id?'active':''}" onclick="setApexSub('${s.id}')">${s.label} <span style="opacity:.65">(${counts[s.id]})</span></div>`).join('')}</div></div>`;
   let html=`<div class="pt">APEX PO Order Log</div><div class="ps">ประวัติ Order ทั้งหมดที่ส่งให้ APEX (เรียงเลข PO ใหม่สุด→เก่าสุด) ${liveBadge('apex')}</div>
-  ${subnav}
-  <div class="card">
+  ${subnav}`;
+  // 23 Sep 2026 รอบเก้า: แท็บ "📦 วัสดุแพ็ค APEX" โชว์ apexMaterialsOverviewHtml() แทนตาราง Order
+  // ปกติ — Ji เลือกแบบนี้ ("section แยกในหน้า APEX Orders") แทนแท็บใหม่ในเมนูหลัก เพื่อให้ยังอยู่
+  // หน้าเดียวกับ order log แต่เห็นรอบส่งวัสดุของทุก PO พร้อมกันได้เลยไม่ต้องคลิกเข้าไปทีละใบ
+  if(APEX_SUB==='materials'){
+    html += apexMaterialsOverviewHtml();
+    return html;
+  }
+  const list = lists[APEX_SUB];
+  html += `<div class="card">
     <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด</div><div class="tw"><table>${THEAD}<tbody>
       ${list.length?list.map(apexRow).join(''):`<tr><td colspan="8" style="text-align:center;color:#8fa3b0;padding:20px">${emptyMsgs[APEX_SUB]}</td></tr>`}
     </tbody></table></div></div>
