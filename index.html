@@ -898,6 +898,10 @@ const APEX_OVERRIDES = [
   // 15 Sep เพิ่มอีกรอบสำหรับ Peppermint (10-pack) 54,720 ชิ้นแรก (ส่งถึงไทยยันต้นก่อนเที่ยง)
   // ก่อนอีก 52,560 ชิ้นที่เหลือจะตามไปวันที่ 30 Sep พร้อม Fusion — Variety Flavor แยกไปเดี่ยว
   // วันที่ 29 Sep — เลขจำนวนตรงกับที่เคยมี (352/79/447 ลัง × 240 ชิ้น/ลัง) ครบทุกตัว
+  // (23 Sep 2026 รอบสิบสาม) ไม่ใส่ orderItems ให้ PO 053 โดยตั้งใจ — Ji ยืนยันแล้วว่าบันทึกวัสดุที่มี
+  // อยู่ตอนนี้ของ PO 053 (275 ชิ้น) เป็นแค่ยอดของเสียที่ขอทดแทนเพิ่ม ไม่ใช่วัสดุเต็มทั้งออเดอร์
+  // (210,720 ชิ้น) ถ้าเอามาเทียบกับ apexMaterialsRequirement() จะเตือน "ส่งไม่พอ" ผิดๆ — Ji บอกให้
+  // เริ่มเช็คยอดสั่ง↔วัสดุนี้ "ตั้งแต่วันนี้เป็นต้นไปคือ PO 60" เท่านั้น ไม่ต้องย้อนแก้ PO 053
   {apexPO:'PO 053', expText:'15 Sep 2026\n29 Sep 2026\n30 Sep 2026', expD:null,
     actText:'15 Sep 2026\n29 Sep 2026\n30 Sep 2026', actD:null,
     // 23 Sep 2026: เพิ่ม `rounds` แบบเดียวกับ PO 054 (ดู apexRoundsSummary()) — ตัวเลขนี้มาจาก
@@ -914,9 +918,17 @@ const APEX_OVERRIDES = [
   // ก่อน กันไม่ให้หายไปทุกครั้งที่ sync สดล้าง APEX_POS ทั้งอาเรย์ — ยังไม่ใส่ actText เพราะ
   // ชีต Customer requisition ไม่มีคอลัมน์ Actual Date ให้เทียบ (มีแค่ Ship date/Expiration)
   // ต่างจาก PO 049/053/054 ที่เช็คแล้วจาก APX Tracking ตรงๆ ว่า Actual Date ถูกกรอกไว้ล่วงหน้า
+  // (เพิ่ม 23 Sep 2026 รอบสิบสาม) orderItems — ยอดสั่งจริงต่อ pack type ของ PO นี้ (ดึงจาก remark
+  // เดิมด้านล่าง) ใช้โดย apexMaterialsRequirement() เพื่อคำนวณว่า "สั่งเท่านี้ ต้องส่งวัสดุแพ็ค
+  // อย่างน้อยเท่าไหร่" ตามที่ Ji ขอ ("สั่งของไปเท่าไหร่ เราต้องส่ง packaging component ไปเท่านั้น
+  // ควรจะสัมพันธ์กัน") — ยืนยันสูตรแล้วว่าตรงกับตัวเลข requestedQty จริงของ PO 060/061 ทุกตัว
+  // (ดู comment เต็มที่ apexMaterialsRequirement()) — Ji บอกให้เริ่มเช็คนี้ "ตั้งแต่วันนี้เป็นต้นไป
+  // คือ PO 60" เท่านั้น ไม่ต้องย้อนไปแก้ PO 053 (ดู comment ที่ APEX_MATERIALS_LOG['PO 053'])
   {apexPO:'PO 060', newEntry:true, nat:'USA', expText:'16 Oct 2026',
+    orderItems:[{packType:'10-pack', qty:29760},{packType:'5-pack', qty:13680}],
     remark:'USA Apex pack full service — NUDE Capsule Mint Spearmint Flavor (10-pack) 29,760 ชิ้น + (5-pack) 13,680 ชิ้น = รวม 43,440 ชิ้น · จากชีต Customer requisition (23 Sep 2026) — ยังไม่เจอใน APX Tracking sheet'},
   {apexPO:'PO 061', newEntry:true, nat:'USA', expText:'26 Oct 2026',
+    orderItems:[{packType:'10-pack', qty:29760},{packType:'5-pack', qty:13680}],
     remark:'USA Apex pack full service — NUDE Capsule Mint Spearmint Flavor (10-pack) 29,760 ชิ้น + (5-pack) 13,680 ชิ้น = รวม 43,440 ชิ้น · จากชีต Customer requisition (23 Sep 2026) — ยังไม่เจอใน APX Tracking sheet'},
 ];
 // APEX_MATERIALS_LOG — บันทึกวัสดุแพ็ค (ซอง/กล่องใน/กล่องนอก) ที่ส่งให้ APEX ต่อ PO
@@ -968,21 +980,31 @@ const APEX_MATERIALS_LOG = {
   ],
   // 23 Sep 2026: Ji แจ้งรายการที่ APEX ขอวัสดุทดแทนเพิ่มสำหรับ PO 053 (พบของเสีย/บกพร่องระหว่าง
   // แพ็คจริงจาก APEX เอง ไม่ใช่การประมาณยอดส่งตั้งต้นแบบ PO 060/061 ด้านบน) จะส่งให้ APEX วันที่
-  // 26 Sep 2026 — เป็นยอดทดแทนตามจำนวนที่นับเจอจริง requestedQty=sentQty เท่ากันทุกรายการ (ไม่ใช่
-  // ยอดประมาณที่ต้องบวก +1% เหมือนการส่งวัสดุตั้งต้นก้อนแรก) ดังนั้น badge ที่ขึ้น "ต่ำกว่าเกณฑ์ 1%"
-  // สำหรับ PO นี้ไม่ได้แปลว่าส่งไม่พอ แค่เป็นรอบทดแทนของเสียที่นับเป๊ะแล้ว ไม่ใช่รอบส่งตั้งต้น
+  // 26 Sep 2026
+  // (แก้ 23 Sep 2026 รอบสิบสอง) Ji ส่งตัวเลขแก้ไขมาใหม่พร้อมชี้แจงชัดเจนว่า "ยอดส่งจริงคือ" (ตัวเลข
+  // ชุดเดิมที่เคยบันทึกไว้ — Berries 20/Melon 30/Spearmint 10/Honey Lemon 5/Peppermint 5-pack 40/
+  // Peppermint 10-pack 160/กล่องใน 10) ส่วน "ยอดที่เค้าขอคือ" (requestedQty ที่ถูกต้อง — ตัวเลขเป๊ะ
+  // ตามที่นับของเสียแยกตามสาเหตุจริงๆ ได้: Berries 20/Melon 22/Spearmint 8/Honey Lemon 3/Peppermint
+  // 5-pack 35/Peppermint 10-pack 159/กล่องใน 10 — น้อยกว่าหรือเท่ากับยอดส่งจริงทุกรายการ) เดิมเข้าใจ
+  // ผิดว่า requestedQty=sentQty ทุกรายการ (ยอดที่ Ji แจ้งครั้งแรกคือยอดที่จะส่งจริง ไม่ใช่ยอดขอ) —
+  // ถามยืนยันผ่าน AskUserQuestion แล้ว Ji ตอบชัดเจนอีกครั้งพร้อมแยกกำกับหัวข้อ "ยอดส่งจริงคือ" กับ
+  // "ยอดที่เค้าขอคือ" ให้ตรงกันทั้งสองฝั่งแล้ว — เก็บรายละเอียดแยกตามสาเหตุของเสีย (detail) ต่อ
+  // รายการที่ Ji แจ้งไว้ด้วย เพื่อให้ตรวจสอบย้อนกลับได้ว่ายอดขอรวมมาจากสาเหตุอะไรบ้าง (ผลรวม detail
+  // ตรงกับ requestedQty ทุกรายการ) — วันที่ส่งจริง (26 Sep 2026) ยังไม่ถึง ณ วันที่บันทึกนี้ (23 Sep
+  // 2026) ตัวเลข sentQty ที่นี่จึงเป็น "แผนที่จะส่ง" ไม่ใช่ยอดยืนยันส่งสำเร็จแล้ว — รอ Ji ยืนยันอีก
+  // ทีหลังวันที่ 26
   'PO 053': [
     { date:'2026-09-26',
       items:[
-        {item:'ซองพลาสติก — Variety 5-pack: Berries เสีย', requestedQty:20, sentQty:20},
-        {item:'ซองพลาสติก — Variety 5-pack: Melon เสีย', requestedQty:30, sentQty:30},
-        {item:'ซองพลาสติก — Variety 5-pack: Spearmint กระดาษลอก', requestedQty:10, sentQty:10},
-        {item:'ซองพลาสติก — Variety 5-pack: Honey Lemon มีจุดดำ', requestedQty:5, sentQty:5},
-        {item:'ซองพลาสติก — Variety 5-pack: Peppermint เสีย', requestedQty:40, sentQty:40},
-        {item:'ซองพลาสติก — Mint Peppermint 10-pack: Peppermint เสีย', requestedQty:160, sentQty:160},
+        {item:'ซองพลาสติก — Variety 5-pack: Berries เสีย', requestedQty:20, sentQty:20, detail:'กระดาษลอก 7 + จุดดำ 11 + ซองยับ 2'},
+        {item:'ซองพลาสติก — Variety 5-pack: Melon เสีย', requestedQty:22, sentQty:30, detail:'จุดดำ 7 + กระดาษลอก 15'},
+        {item:'ซองพลาสติก — Variety 5-pack: Spearmint กระดาษลอก', requestedQty:8, sentQty:10},
+        {item:'ซองพลาสติก — Variety 5-pack: Honey Lemon มีจุดดำ', requestedQty:3, sentQty:5},
+        {item:'ซองพลาสติก — Variety 5-pack: Peppermint เสีย', requestedQty:35, sentQty:40, detail:'ซองยับ 16 + กระดาษลอก 15 + ซองเป็นรอย 4'},
+        {item:'ซองพลาสติก — Mint Peppermint 10-pack: Peppermint เสีย', requestedQty:159, sentQty:160, detail:'ซองยับ 50 + ซองมีจุดดำ 49 + ซองกระดาษลอก 60'},
         {item:'กล่องใน — Mint Peppermint 10-pack: Peppermint ขาดบรรจุ (พบจากไลน์ผลิต)', requestedQty:10, sentQty:10},
       ],
-      note:'APEX แจ้งของเสีย/บกพร่องที่พบระหว่างแพ็ค NUDE Capsule ขอวัสดุทดแทนเพิ่ม — Ji แจ้ง 23 Sep 2026 ว่าจะส่งให้ APEX วันที่ 26 Sep 2026 (งาน Variety Flavor 5-pack: Berries/Melon/Spearmint/Honey Lemon/Peppermint และงาน Mint Peppermint Flavor 10-pack: ซอง Peppermint + กล่องใน Peppermint ขาดบรรจุ)' },
+      note:'APEX แจ้งของเสีย/บกพร่องที่พบระหว่างแพ็ค NUDE Capsule ขอวัสดุทดแทนเพิ่ม — วางแผนส่งให้ APEX วันที่ 26 Sep 2026 (งาน Variety Flavor 5-pack: Berries/Melon/Spearmint/Honey Lemon/Peppermint และงาน Mint Peppermint Flavor 10-pack: ซอง Peppermint + กล่องใน Peppermint ขาดบรรจุ) — ยอดขอ (requestedQty) คือจำนวนของเสียที่นับแยกตามสาเหตุจริง ส่วนยอดส่ง (sentQty) คือแผนที่จะส่งจริงซึ่งมากกว่าหรือเท่ากับยอดขอทุกรายการ (23 Sep 2026: Ji ยืนยันแยกยอด "ส่งจริง" กับ "ที่เค้าขอ" ชัดเจนแล้ว) — sentQty ยังเป็นแผน ไม่ใช่ยอดยืนยันว่าส่งสำเร็จ (กำหนดส่งจริง 26 Sep ยังไม่ถึง)' },
   ],
 };
 // 23 Sep 2026: ก่อนหน้านี้ override ทำได้แค่ "ทับ field ของ PO ที่มีอยู่แล้วใน APEX_POS เท่านั้น"
@@ -2063,9 +2085,12 @@ function apexMaterialsSummary(apexPO){
     const req=Number(it.requestedQty)||0, sent=Number(it.sentQty)||0;
     totalRequested += req; totalSent += sent;
     const key = it.item || '—';
-    if(!byItem[key]) byItem[key] = {item:key, requested:0, sent:0};
+    if(!byItem[key]) byItem[key] = {item:key, requested:0, sent:0, detail:null};
     byItem[key].requested += req;
     byItem[key].sent += sent;
+    // (23 Sep 2026 รอบสิบสอง) เก็บ detail (breakdown แยกตามสาเหตุของเสีย เช่น PO 053) ผ่านมาด้วย
+    // ถ้ามีหลายรอบสำหรับวัสดุชนิดเดียวกัน ใช้ตัวแรกที่เจอ (ปกติมีรอบเดียวต่อ item อยู่แล้ว)
+    if(it.detail && !byItem[key].detail) byItem[key].detail = it.detail;
   }));
   Object.values(byItem).forEach(b=>{
     b.bufferPct = b.requested>0 ? (b.sent-b.requested)/b.requested*100 : null;
@@ -2095,6 +2120,98 @@ function apexMaterialBufferBadge(pct, sent, requested){
   const ok = pct>=0;
   return `<span style="color:${ok?'#155724':'#a23b3b'};font-weight:700">${pct>=0?'+':''}${pct.toFixed(1)}%</span> ${ok?'✓':'⚠ ส่งไม่ครบยอดที่ขอ'}`;
 }
+// (เพิ่ม 23 Sep 2026 รอบสิบสาม) Ji: "2 หน้านี้จริงๆแล้วควรสัมพันธ์กันนะ โดยสั่งของไปเท่าไหร่ เราต้อง
+// ส่ง packaging component ไปเท่านั้น ควรจะสัมพันธ์กัน" — เลือกแบบ "เช็คและเตือนถ้าส่งไม่พอ" (เทียบ
+// ยอดสั่งจริงจากหน้า APEX Orders กับยอดวัสดุที่ log ไว้ในหน้านี้ ไม่ใช่แค่โชว์คู่กันเฉยๆ)
+// หาสูตรแปลง "ยอดสั่ง (ชิ้น)" → จำนวนลัง/กล่องใน/ซองที่ต้องส่ง โดยตรวจสอบย้อนกลับจากข้อมูลจริงที่มี
+// อยู่แล้ว (PO 060+061 รวมกัน: 10-pack 59,520 ชิ้น / 5-pack 27,360 ชิ้น) เทียบกับตัวเลขในตาราง
+// black-background ที่ Ji ยืนยันแล้วว่าเป็น "จำนวนจริงที่เค้าขอ" (กล่องใน 10's=6,012 / 5's=5,527,
+// ลังนอก 10's=251 / 5's=116, ซอง 10's=60,116 / 5's=27,634) — พบว่าตรงกับสูตรของ
+// anthropic-skills:packing-material-calculator เป๊ะทุกตัว (ปัดขึ้นเสมอ, เผื่อ 1% ต่อ SKU/คอลัมน์
+// แยกกัน ไม่รวมก่อนปัด): ซอง = ceil(ยอดสั่ง×1.01), กล่องใน = ceil(ยอดสั่ง/packSize×1.01) (packSize
+// =10 หรือ 5 ตาม "10-pack"/"5-pack"), ลังนอก = ceil(ยอดสั่ง/240×1.01) (240 ชิ้น/ลัง คงที่ทุก pack
+// type — ตรงกับที่ Ji เคยใช้คำนวณ PO 053 เองแล้ว "352/228/219/79 ลัง × 240 ชิ้น/ลัง")
+// ยืนยันตรงเป๊ะ 100% กับตัวเลขจริงทั้ง 6 ค่า จึงใช้สูตรนี้คำนวณ "ยอดที่ต้องส่งอย่างน้อยตามยอดสั่ง"
+// ได้เลยจากข้อมูล orderItems ที่ผูกไว้กับแต่ละ PO ใน APEX_POS (ดู PO 060/061 ด้านบน)
+// ⚠️ ใช้ได้เฉพาะ PO ที่มี orderItems กำกับไว้เท่านั้น (Ji ขอให้เริ่ม "ตั้งแต่วันนี้เป็นต้นไปคือ PO 60"
+// — PO ที่ไม่มี orderItems เช่น PO 053 จะข้ามการเช็คนี้ไปเฉยๆ ไม่เตือนอะไร เพราะ Ji ชี้ให้เห็นว่า
+// บันทึกวัสดุของ PO 053 เป็นแค่ยอดของเสียที่ขอทดแทนเพิ่ม ไม่ใช่วัสดุเต็มทั้งออเดอร์ ถ้าเอาไปเทียบจะ
+// เตือน "ส่งไม่พอ" ผิดๆ)
+const APEX_CARTON_CAPACITY = 240; // ชิ้นต่อลังนอก 1 ใบ คงที่ทุก pack type (ยืนยันจาก PO 053 + PO 060/061)
+function apexPackSizeFromLabel(label){
+  const m = String(label||'').match(/(\d+)\s*-?\s*pack/i);
+  return m ? Number(m[1]) : null;
+}
+function apexBufferCeil(n){ return Math.ceil(n*1.01); } // เผื่อ 1% ปัดขึ้นเสมอ ตาม standing rule ของ Ji
+function apexMaterialCategoryOf(itemName){
+  const s = String(itemName||'');
+  if(/ลังนอก|carton/i.test(s)) return 'carton';
+  if(/กล่องใน|inner/i.test(s)) return 'inner';
+  if(/ซอง|sachet/i.test(s)) return 'sachet';
+  return null;
+}
+function apexMaterialPackSizeOf(itemName){
+  const m = String(itemName||'').match(/(\d+)'s/);
+  return m ? Number(m[1]) : null;
+}
+// รวมยอดสั่ง (orderItems) จากทุก PO ใน group แล้วคำนวณยอดวัสดุที่ต้องส่งอย่างน้อยต่อ pack type
+// return null ถ้ามี PO ไหนใน group ที่ยังไม่มี orderItems กำกับไว้ (กันไม่ให้เดาสุ่ม/เตือนผิดๆ)
+function apexMaterialsRequirement(groupKeys){
+  const byPack = {};
+  for(const k of groupKeys){
+    const p = APEX_POS.find(x=>x.apexPO===k);
+    if(!p || !Array.isArray(p.orderItems) || !p.orderItems.length) return null;
+    p.orderItems.forEach(it=>{
+      if(!byPack[it.packType]) byPack[it.packType] = 0;
+      byPack[it.packType] += Number(it.qty)||0;
+    });
+  }
+  return Object.entries(byPack).map(([packType, qty])=>{
+    const packSize = apexPackSizeFromLabel(packType);
+    return {
+      packType, packSize, orderQty: qty,
+      cartonReq: apexBufferCeil(qty/APEX_CARTON_CAPACITY),
+      innerReq: packSize ? apexBufferCeil(qty/packSize) : null,
+      sachetReq: apexBufferCeil(qty),
+    };
+  });
+}
+// เหมือน apexMaterialsSummary() แต่เสริมการเช็คกับยอดสั่งจริงเข้าไปด้วย (apexMaterialsRequirement) —
+// ยอด "requested" ที่ใช้ตัดสิน remaining/badge จะกลายเป็น max(ยอดที่ log ไว้เอง, ยอดที่ต้องส่งตามคำ
+// สั่งซื้อจริง) กันเคสที่ Ji พิมพ์ยอดขอเองผิดพลาดต่ำกว่าที่ออเดอร์จริงต้องการ — ใช้เฉพาะหน้าตาราง
+// "วัสดุแพ็ค APEX" (ตัวสรุป+ตัวรายละเอียด) เท่านั้น ส่วนหน้า detail sheet เดิมที่เปิดผ่าน showAPEXSheet
+// (การ์ดต่อรอบ apexMaterialsListHtml/apexMaterialsSectionHtml) ยังใช้ apexMaterialsSummary() เฉยๆ
+// แบบเดิมไม่เปลี่ยน (คนละหน้า คนละจุดประสงค์)
+function apexMaterialsSummaryWithOrderCheck(groupKeys){
+  const primary = groupKeys[0];
+  const sum = apexMaterialsSummary(primary);
+  if(!sum) return null;
+  const requirement = apexMaterialsRequirement(groupKeys);
+  let totalEffectiveRequired = 0;
+  Object.values(sum.byItem).forEach(b=>{
+    let effectiveRequired = b.requested;
+    if(requirement){
+      const cat = apexMaterialCategoryOf(b.item);
+      const packSize = apexMaterialPackSizeOf(b.item);
+      const req = requirement.find(r=>r.packSize===packSize);
+      if(req && cat){
+        const reqQty = cat==='carton'?req.cartonReq : cat==='inner'?req.innerReq : cat==='sachet'?req.sachetReq : null;
+        if(reqQty!=null){
+          b.orderRequired = reqQty;
+          effectiveRequired = Math.max(b.requested, reqQty);
+        }
+      }
+    }
+    b.effectiveRequired = effectiveRequired;
+    b.remaining = Math.max(0, effectiveRequired - b.sent);
+    totalEffectiveRequired += effectiveRequired;
+  });
+  sum.hasOrderCheck = !!requirement;
+  sum.orderRequirement = requirement;
+  sum.totalEffectiveRequired = totalEffectiveRequired;
+  sum.bufferPct = totalEffectiveRequired>0 ? (sum.totalSent-totalEffectiveRequired)/totalEffectiveRequired*100 : sum.bufferPct;
+  return sum;
+}
 // (แก้ 23 Sep 2026 รอบหก) Ji บอกว่าแบบเดิม "ยังมีความเป็นแผง อ่านยาก" — เปลี่ยนจากยัดทุกอย่าง
 // (ชื่อวัสดุ+ตัวเลข) ไว้บรรทัดเดียวกันแบบ inline เป็นการ์ดแยกต่อรอบ (.matcard) แต่ละรายการวัสดุ
 // เป็นแถวของตัวเอง (.mat-item) แยกชื่อวัสดุ (ซ้าย) กับตัวเลขขอ/ส่งจริง (ขวา ตัวเลขจัดคอลัมน์)
@@ -2114,7 +2231,7 @@ function apexMaterialsListHtml(apexPO){
       const cum = sum.byItem[it.item||'—'];
       const mark = cum ? (cum.remaining>0 ? '<span style="color:#a23b3b">⚠</span>' : '<span style="color:#2e8b57">✓</span>') : '';
       return `<div class="mat-item">
-        <div class="mat-item-name">${it.item||'—'}</div>
+        <div class="mat-item-name">${it.item||'—'}${it.detail?`<div style="font-size:10.5px;color:var(--muted);margin-top:2px">${it.detail}</div>`:''}</div>
         <div class="mat-item-qty">ขอ ${f(ir)} → ส่งจริง ${f(is)} ${mark}</div>
       </div>`;
     }).join('');
@@ -2178,15 +2295,21 @@ function apexMaterialsGroups(){
 // แต่ย้ายไปเป็นข้อความสั้นๆ ต่อท้ายตาราง (ไม่ใช่การ์ดแยกต่อรอบเหมือนเดิม) — ส่วนหน้า detail sheet
 // รายตัว (คลิกแถว PO ในแท็บอื่น) ยังใช้ apexMaterialsSectionHtml() แบบการ์ดต่อรอบเดิม ไม่แตะ
 // เพราะที่นั่นมีที่ว่างพอและ Ji ไม่เคยติงเรื่องซ้ำซ้อนสำหรับหน้านั้น
-function apexMaterialsTableHtml(apexPO){
-  const sum = apexMaterialsSummary(apexPO);
+function apexMaterialsTableHtml(apexPO, groupKeys){
+  const gk = (groupKeys && groupKeys.length) ? groupKeys : [apexPO];
+  const sum = apexMaterialsSummaryWithOrderCheck(gk);
   if(!sum) return '<div style="color:#8fa3b0;font-size:13px;padding:4px 0 0">ยังไม่มีบันทึกการส่งวัสดุให้ APEX สำหรับ PO นี้ — ส่งตัวเลขมาทางแชทได้เลย เดี๋ยวอัปเดตให้</div>';
   const rows = Object.values(sum.byItem).map(b=>{
     const status = b.remaining>0
       ? `<span class="need">⚠ ขาด ${f(b.remaining)}</span>`
       : `<span class="ok">✓ ครบ</span>`;
+    // (23 Sep 2026 รอบสิบสาม) ถ้ายอดที่ต้องส่งตามยอดสั่งจริง (orderRequired) สูงกว่ายอดที่ log
+    // ไว้เอง (requested) ให้โชว์เตือนไว้ใต้ชื่อวัสดุ — เกิดเฉพาะตอนยอดขอเองต่ำกว่ายอดสั่งจริง
+    const orderHint = (b.orderRequired!=null && b.orderRequired>b.requested)
+      ? `<div style="font-size:11px;color:#a23b3b;margin-top:2px">📐 ตามยอดสั่ง APEX ต้องส่งอย่างน้อย ${f(b.orderRequired)}</div>`
+      : '';
     return `<tr>
-      <td style="font-size:12.5px">${b.item}</td>
+      <td style="font-size:12.5px">${b.item}${b.detail?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${b.detail}</div>`:''}${orderHint}</td>
       <td class="n" style="text-align:right">${f(b.requested)}</td>
       <td class="n" style="text-align:right">${f(b.sent)}</td>
       <td style="white-space:nowrap;font-size:12px">${status}</td>
@@ -2196,14 +2319,20 @@ function apexMaterialsTableHtml(apexPO){
       <td>รวมทั้งหมด${sum.topups>0?` (ส่งแล้ว ${sum.topups+1} รอบ)`:''}</td>
       <td class="n" style="text-align:right">${f(sum.totalRequested)}</td>
       <td class="n" style="text-align:right">${f(sum.totalSent)}</td>
-      <td style="white-space:nowrap;font-size:12px">${apexMaterialBufferBadge(sum.bufferPct, sum.totalSent, sum.totalRequested)}</td>
+      <td style="white-space:nowrap;font-size:12px">${apexMaterialBufferBadge(sum.bufferPct, sum.totalSent, sum.totalEffectiveRequired)}</td>
     </tr>`;
   const noteLines = sum.rounds.filter(r=>r.note||r.date).map((r,i)=>
     `<div style="font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.4">${r.date?`<b>${i>0?'รอบเพิ่มเติม ':''}${r.date}</b> — `:''}${r.note?'📝 '+r.note:''}</div>`
   ).join('');
+  // (23 Sep 2026 รอบสิบสาม) แสดงยอดสั่งที่ใช้เช็คไว้โปร่งใส เฉพาะ PO ที่มี orderItems (ดู
+  // apexMaterialsRequirement) — PO ที่ยังไม่มี (เช่น PO 053) จะไม่โชว์บรรทัดนี้เลย
+  const orderCheckLine = sum.hasOrderCheck
+    ? `<div style="font-size:11.5px;color:var(--ink-soft);margin-top:8px;padding-top:8px;border-top:1px solid var(--line-soft)">📐 เทียบกับยอดสั่ง APEX: ${sum.orderRequirement.map(r=>`${r.packType} ${f(r.orderQty)} ชิ้น`).join(' + ')} → ต้องส่งอย่างน้อย ${sum.orderRequirement.map(r=>`ลัง ${f(r.cartonReq)}${r.innerReq!=null?` / กล่องใน ${f(r.innerReq)}`:''} / ซอง ${f(r.sachetReq)}`).join(', ')}</div>`
+    : '';
   return `<div class="tw"><table class="rt"><thead><tr>
       <th>วัสดุ</th><th style="text-align:right">ขอ</th><th style="text-align:right">ส่งจริง</th><th>สถานะ</th>
     </tr></thead><tbody>${rows}${totalRow}</tbody></table></div>
+    ${orderCheckLine}
     ${noteLines}
     <div style="margin-top:8px;font-size:11px;color:#8fa3b0">มีตัวเลขใหม่ ส่งมาทางแชทได้เลย เดี๋ยวอัปเดตหน้านี้ให้</div>`;
 }
@@ -2218,7 +2347,7 @@ function apexMaterialsTableHtml(apexPO){
 // เดียวกับที่คลิกแถวตาราง Order log หลักเปิด showAPEXSheet
 function apexMaterialsSummaryRow(groupKeys){
   const primary = groupKeys[0];
-  const sum = apexMaterialsSummary(primary);
+  const sum = apexMaterialsSummaryWithOrderCheck(groupKeys);
   const p = APEX_POS.find(x=>x.apexPO===primary);
   const nc = p ? ({KR:'nkr',HK:'nhk',USA:'nusa',SG:'nsg',Philippines:'nph',France:'nfr',Italy:'nit'}[p.nat]||'') : '';
   const label = groupKeys.join(' & ');
@@ -2240,7 +2369,7 @@ function showApexMaterialsSheet(row, groupKeys){
   const label = groupKeys.join(' & ');
   const subtitle = p&&p.remark ? String(p.remark).split(' — ')[0].split(' · ')[0] : '';
   const html = `${subtitle?`<div style="padding:14px 16px 0;font-size:12px;color:var(--muted)">${subtitle}</div>`:''}
-    <div style="padding:${subtitle?'8px':'14px'} 16px 16px">${apexMaterialsTableHtml(primary)}</div>`;
+    <div style="padding:${subtitle?'8px':'14px'} 16px 16px">${apexMaterialsTableHtml(primary, groupKeys)}</div>`;
   openSheet(`${p?p.nat+' · ':''}${label}`, html, row);
 }
 function apexMaterialsOverviewHtml(){
