@@ -2182,10 +2182,16 @@ function apexMaterialsRequirement(groupKeys){
 // "วัสดุแพ็ค APEX" (ตัวสรุป+ตัวรายละเอียด) เท่านั้น ส่วนหน้า detail sheet เดิมที่เปิดผ่าน showAPEXSheet
 // (การ์ดต่อรอบ apexMaterialsListHtml/apexMaterialsSectionHtml) ยังใช้ apexMaterialsSummary() เฉยๆ
 // แบบเดิมไม่เปลี่ยน (คนละหน้า คนละจุดประสงค์)
-function apexMaterialsSummaryWithOrderCheck(groupKeys){
-  const primary = groupKeys[0];
-  const sum = apexMaterialsSummary(primary);
+// (แก้ 23 Sep 2026 รอบสิบสี่) เดิมพารามิเตอร์เดียว groupKeys ใช้ทั้งดึงข้อมูล log (primary=
+// groupKeys[0]) และคำนวณยอดสั่งรวม — ตอนนี้ Ji ขอให้ PO 060/061 แสดงแยกแถวกันในตารางสรุป (ดู
+// apexMaterialsSummaryRow) แต่ยอดสั่งที่ใช้เช็คยังต้องรวมทั้งกลุ่มเหมือนเดิม (เพราะเป็นวัสดุที่ส่ง
+// ร่วมชิปเมนต์เดียวกันจริง) เลยแยกเป็น 2 พารามิเตอร์: dataKey (PO ที่จะดึง log จริงๆ มาโชว์) กับ
+// requirementGroupKeys (กลุ่ม PO ที่ต้องรวม orderItems กันตอนคำนวณยอดสั่งขั้นต่ำ — ไม่ใส่ = เช็ค
+// แค่ตัวเอง)
+function apexMaterialsSummaryWithOrderCheck(dataKey, requirementGroupKeys){
+  const sum = apexMaterialsSummary(dataKey);
   if(!sum) return null;
+  const groupKeys = (requirementGroupKeys && requirementGroupKeys.length) ? requirementGroupKeys : [dataKey];
   const requirement = apexMaterialsRequirement(groupKeys);
   let totalEffectiveRequired = 0;
   Object.values(sum.byItem).forEach(b=>{
@@ -2295,9 +2301,8 @@ function apexMaterialsGroups(){
 // แต่ย้ายไปเป็นข้อความสั้นๆ ต่อท้ายตาราง (ไม่ใช่การ์ดแยกต่อรอบเหมือนเดิม) — ส่วนหน้า detail sheet
 // รายตัว (คลิกแถว PO ในแท็บอื่น) ยังใช้ apexMaterialsSectionHtml() แบบการ์ดต่อรอบเดิม ไม่แตะ
 // เพราะที่นั่นมีที่ว่างพอและ Ji ไม่เคยติงเรื่องซ้ำซ้อนสำหรับหน้านั้น
-function apexMaterialsTableHtml(apexPO, groupKeys){
-  const gk = (groupKeys && groupKeys.length) ? groupKeys : [apexPO];
-  const sum = apexMaterialsSummaryWithOrderCheck(gk);
+function apexMaterialsTableHtml(apexPO, requirementGroupKeys){
+  const sum = apexMaterialsSummaryWithOrderCheck(apexPO, requirementGroupKeys);
   if(!sum) return '<div style="color:#8fa3b0;font-size:13px;padding:4px 0 0">ยังไม่มีบันทึกการส่งวัสดุให้ APEX สำหรับ PO นี้ — ส่งตัวเลขมาทางแชทได้เลย เดี๋ยวอัปเดตให้</div>';
   const rows = Object.values(sum.byItem).map(b=>{
     const status = b.remaining>0
@@ -2345,40 +2350,54 @@ function apexMaterialsTableHtml(apexPO, groupKeys){
 // ยอดรวมขอ/ส่งจริง + badge สถานะ (✓ ครบ / ⚠ ขาด) ให้เห็นภาพรวมทั้งหมดในสายตาเดียวไม่ต้องเลื่อนยาว
 // — กดแถวแล้วค่อยเปิด sheet รายละเอียดเต็ม (ตาราง apexMaterialsTableHtml เดิมจากรอบสิบ) แบบ
 // เดียวกับที่คลิกแถวตาราง Order log หลักเปิด showAPEXSheet
-function apexMaterialsSummaryRow(groupKeys){
-  const primary = groupKeys[0];
-  const sum = apexMaterialsSummaryWithOrderCheck(groupKeys);
-  const p = APEX_POS.find(x=>x.apexPO===primary);
+// (แก้ 23 Sep 2026 รอบสิบสี่) Ji: "60 61 ควรแยกออกจากกัน ส่งรอบเดียวกันก็จริง แต่ก็ควรระบุแยกกัน"
+// — เดิม (รอบสิบเอ็ด) PO ที่ log ตัวเลขชุดเดียวกันเป๊ะ (เช่น PO 060/061 ที่ส่งพร้อมกันจริง) จะถูก
+// apexMaterialsGroups() รวมเป็นแถวเดียว "PO 060 & PO 061" เพื่อไม่ให้ดูซ้ำซ้อน — Ji แจ้งว่าถึงจะ
+// ส่งพร้อมกันก็ตาม แต่ละ PO ก็ควรระบุ/มองเห็นแยกกันในตารางสรุป (เพื่อ traceability ตาม PO เป็น
+// รายใบ) — เปลี่ยนกลับให้ **1 แถว = 1 PO เสมอ** (เลิกรวมแถวแล้ว) แต่ยังใช้ apexMaterialsGroups()
+// เบื้องหลังเพื่อรู้ว่า PO ไหนอยู่ในชิปเมนต์เดียวกันบ้าง (ส่งให้ apexMaterialsSummaryWithOrderCheck
+// ใช้รวม orderItems ตอนคำนวณยอดสั่งขั้นต่ำ — ดู apexMaterialsOverviewHtml ด้านล่าง) พร้อมโชว์
+// ข้อความเล็กๆ กำกับไว้ว่า "ส่งพร้อมกับ PO ..." ให้รู้ว่าตัวเลขที่ซ้ำกันมาจากชิปเมนต์เดียวกันจริง
+// ไม่ใช่การกรอกผิดซ้ำ
+function apexMaterialsSummaryRow(poKey, shipmentGroup){
+  const gk = (shipmentGroup && shipmentGroup.length) ? shipmentGroup : [poKey];
+  const sum = apexMaterialsSummaryWithOrderCheck(poKey, gk);
+  const p = APEX_POS.find(x=>x.apexPO===poKey);
   const nc = p ? ({KR:'nkr',HK:'nhk',USA:'nusa',SG:'nsg',Philippines:'nph',France:'nfr',Italy:'nit'}[p.nat]||'') : '';
-  const label = groupKeys.join(' & ');
+  const mates = gk.filter(k=>k!==poKey);
+  const sharedNote = mates.length ? ` <span style="font-size:11px;color:#8fa3b0">(ส่งพร้อมกับ ${mates.join(', ')})</span>` : '';
   const matShort = sum ? Object.values(sum.byItem||{}).some(b=>b.remaining>0) : false;
   const statusBadge = !sum ? '—' : (matShort
     ? `<span class="badge br">⚠ ขาด</span>`
     : `<span class="badge bg">✓ ครบ</span>`);
-  return `<tr onclick="showApexMaterialsSheet(this,${JSON.stringify(groupKeys).replace(/"/g,'&quot;')})">
+  return `<tr onclick="showApexMaterialsSheet(this,${JSON.stringify(poKey).replace(/"/g,'&quot;')},${JSON.stringify(gk).replace(/"/g,'&quot;')})">
       <td>${p?`<span class="nat ${nc}">${p.nat}</span>`:''}</td>
-      <td style="font-weight:600">${label}</td>
+      <td style="font-weight:600">${poKey}${sharedNote}</td>
       <td class="n" style="text-align:right">${sum?f(sum.totalRequested):'—'}</td>
       <td class="n" style="text-align:right">${sum?f(sum.totalSent):'—'}</td>
       <td style="white-space:nowrap">${statusBadge}${sum&&sum.topups>0?` <span style="font-size:11px;color:#8fa3b0">(${sum.topups+1} รอบ)</span>`:''}</td>
     </tr>`;
 }
-function showApexMaterialsSheet(row, groupKeys){
-  const primary = groupKeys[0];
-  const p = APEX_POS.find(x=>x.apexPO===primary);
-  const label = groupKeys.join(' & ');
+function showApexMaterialsSheet(row, poKey, shipmentGroup){
+  const gk = (shipmentGroup && shipmentGroup.length) ? shipmentGroup : [poKey];
+  const p = APEX_POS.find(x=>x.apexPO===poKey);
   const subtitle = p&&p.remark ? String(p.remark).split(' — ')[0].split(' · ')[0] : '';
   const html = `${subtitle?`<div style="padding:14px 16px 0;font-size:12px;color:var(--muted)">${subtitle}</div>`:''}
-    <div style="padding:${subtitle?'8px':'14px'} 16px 16px">${apexMaterialsTableHtml(primary, groupKeys)}</div>`;
-  openSheet(`${p?p.nat+' · ':''}${label}`, html, row);
+    <div style="padding:${subtitle?'8px':'14px'} 16px 16px">${apexMaterialsTableHtml(poKey, gk)}</div>`;
+  openSheet(`${p?p.nat+' · ':''}${poKey}`, html, row);
 }
+// (แก้ 23 Sep 2026 รอบสิบสี่) เดิม 1 กลุ่ม PO ที่ log ตัวเลขเดียวกัน (เช่น PO 060/061) รวมเป็น
+// 1 แถว "PO 060 & PO 061" — Ji ขอให้แยกแถวรายตัว PO เสมอ (ดู comment ที่ apexMaterialsSummaryRow)
+// เลย flatten ทุก PO ในทุกกลุ่มให้เป็นแถวของตัวเอง แต่ยังส่ง group (g) ทั้งกลุ่มเข้าไปด้วยเพื่อให้
+// การเช็คยอดสั่ง/ป้าย "ส่งพร้อมกับ..." ยังทำงานถูกต้อง
 function apexMaterialsOverviewHtml(){
   const groups = apexMaterialsGroups();
   if(!groups.length) return `<div class="card"><div class="card-body" style="text-align:center;color:#8fa3b0;padding:20px">ยังไม่มีบันทึกการส่งวัสดุให้ APEX เลย — ส่งตัวเลขมาทางแชทได้เลย เดี๋ยวอัปเดตให้</div></div>`;
   const THEAD = `<thead><tr><th>Nat.</th><th>APEX PO</th><th style="text-align:right">ขอทั้งหมด</th><th style="text-align:right">ส่งจริงทั้งหมด</th><th>สถานะ</th></tr></thead>`;
+  const rowsHtml = groups.map(g=>g.map(poKey=>apexMaterialsSummaryRow(poKey, g)).join('')).join('');
   return `<div class="card">
     <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียดวัสดุแต่ละชนิด</div><div class="tw"><table>${THEAD}<tbody>
-      ${groups.map(apexMaterialsSummaryRow).join('')}
+      ${rowsHtml}
     </tbody></table></div></div>
   </div>`;
 }
