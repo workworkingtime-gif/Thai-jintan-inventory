@@ -3585,17 +3585,37 @@ function showAPEXSheet(row, p){
   openSheet(`${p.nat} · ${p.apexPO||'—'}`, html, row);
 }
 // ─── INCOMING ─────────────────────────────────────────────────────────────
+// 24 Sep 2026 (รอบยี่สิบสี่): Ji เห็นปฏิทินแล้วถามว่า "PO56 + 53 ทำไมถึงไม่ขึ้นแจ้งเตือนด้านบน"
+// (แถบ "📬 กำลังจะมาส่ง" สติ๊กที่หัวเว็บ) — ตรวจโค้ดพบว่าแถบนี้ตั้งแต่แรกดึงข้อมูลจาก Supplier PO
+// (D.pos) อย่างเดียวเท่านั้น ไม่เคยครอบคลุม APEX PO เลย — Ji ยืนยันให้ "ดึงแจ้งเตือนจาก APEX PO
+// ช่อง actual มาด้วย" — เพิ่มฟังก์ชันนี้ให้หา APEX PO ที่ยังไม่ "มาแล้ว" ครบ (apexStatus ไม่ done —
+// ครอบคลุมทั้ง "⏳ รออยู่" และ "🔶 มาบางส่วน") พร้อมหาวันที่ actual รอบถัดไปที่ยังไม่ถึง (ถ้ามี)
+// ไว้ใช้คำนวณ "อีกกี่วัน" แบบเดียวกับ Supplier PO — PO ที่ยกเลิกแล้ว (cancelled) ไม่นับ
+function apexPendingList(){
+  return APEX_POS.filter(p=>!p.cancelled && !apexStatus(p).done).map(p=>{
+    const actStr = apexDate(p,'act');
+    const future = parseFreeDates(actStr).filter(d=>d>Date.now()).sort((a,b)=>a-b);
+    return { p, apexPO: p.apexPO||p.custPO||'APEX', nextMs: future.length?future[0]:null };
+  });
+}
 function renderIncBar(){
-  const pending=D.pos.filter(p=>!poArrived(p));
+  const pendingPO=D.pos.filter(p=>!poArrived(p));
+  const pendingApex=apexPendingList();
   const bar=document.getElementById('inc-bar');
-  if(!pending.length){ bar.style.display='none'; return; }
+  const total=pendingPO.length+pendingApex.length;
+  if(!total){ bar.style.display='none'; return; }
   bar.style.display='block';
-  document.getElementById('inc-count').textContent=pending.length;
-  const nearest=pending.filter(p=>p.expMs).sort((a,b)=>a.expMs-b.expMs)[0];
-  const days=nearest?daysFrom(nearest.expMs):null;
+  document.getElementById('inc-count').textContent=total;
+  // หา "ใกล้สุด" รวมทั้งฝั่ง Supplier PO (Expected) และ APEX PO (Actual) เทียบกันด้วยวันที่จริง
+  const candidates=[
+    ...pendingPO.filter(p=>p.expMs).map(p=>({ms:p.expMs, text:`${p.vendor} ${p.product}`})),
+    ...pendingApex.filter(x=>x.nextMs).map(x=>({ms:x.nextMs, text:`APEX ${x.apexPO}`})),
+  ].sort((a,b)=>a.ms-b.ms);
+  const nearest=candidates[0];
+  const days=nearest?daysFrom(nearest.ms):null;
   document.getElementById('inc-text').textContent= days!==null
-    ?`กำลังจะมาส่ง · ใกล้สุด: ${nearest.vendor} ${nearest.product} ${days<=0?'วันนี้/เลยกำหนด':'อีก '+days+' วัน'}`
-    :`กำลังจะมาส่ง ${pending.length} รายการ`;
+    ?`กำลังจะมาส่ง · ใกล้สุด: ${nearest.text} ${days<=0?'วันนี้/เลยกำหนด':'อีก '+days+' วัน'}`
+    :`กำลังจะมาส่ง ${total} รายการ`;
 }
 function toggleInc(){
   incOpen=!incOpen;
@@ -3604,23 +3624,40 @@ function toggleInc(){
   if(incOpen) renderIncList();
 }
 function renderIncList(){
-  const pending=D.pos.filter(p=>!poArrived(p));
+  const pendingPO=D.pos.filter(p=>!poArrived(p)).map(p=>({kind:'po', ms:p.expMs, p}));
+  const pendingApex=apexPendingList().map(x=>({kind:'apex', ms:x.nextMs, p:x.p, apexPO:x.apexPO}));
+  const combined=[...pendingPO, ...pendingApex];
   const sort=document.getElementById('inc-sort')?.value||'asc';
-  const sorted=[...pending].sort((a,b)=>{
-    const da=a.expMs||(sort==='asc'?Infinity:-Infinity);
-    const db=b.expMs||(sort==='asc'?Infinity:-Infinity);
+  const sorted=[...combined].sort((a,b)=>{
+    const da=a.ms||(sort==='asc'?Infinity:-Infinity);
+    const db=b.ms||(sort==='asc'?Infinity:-Infinity);
     return sort==='asc'?da-db:db-da;
   });
-  document.getElementById('inc-count-lbl').textContent=`${pending.length} รายการ`;
-  document.getElementById('inc-list').innerHTML=sorted.map(p=>{
-    const days=daysFrom(p.expMs);
+  document.getElementById('inc-count-lbl').textContent=`${combined.length} รายการ`;
+  document.getElementById('inc-list').innerHTML=sorted.map(x=>{
+    const days=daysFrom(x.ms);
     const dstr=days===null?'—':days<0?`${Math.abs(days)} วันที่แล้ว`:days===0?'วันนี้':`อีก ${days} วัน`;
     const dcls=days===null?'':days<=3?'ds':days<=7?'dm':'df';
-    const isum=p.items&&p.items.filter(i=>i.f).length?p.items.filter(i=>i.f).map(i=>i.f+(i.q?' '+f(i.q):'')).join(' · '):'';
+    if(x.kind==='po'){
+      const p=x.p;
+      const isum=p.items&&p.items.filter(i=>i.f).length?p.items.filter(i=>i.f).map(i=>i.f+(i.q?' '+f(i.q):'')).join(' · '):'';
+      return `<div class="inc-item">
+        <div class="inc-info">
+          <div class="inc-name"><span class="vtag v-${p.vendor.toLowerCase()}">${p.vendor}</span>&nbsp; ${p.product} · ${p.nat}</div>
+          <div class="inc-meta">${p.po}${p.exp?' · '+p.exp:''}${isum?' · '+isum:''}</div>
+        </div>
+        <div class="inc-days"><div class="dn ${dcls}">${dstr}</div></div>
+      </div>`;
+    }
+    // APEX PO — ใช้ badge สี "nat" เดียวกับตาราง APEX Orders ให้แยกออกจาก Supplier PO ได้ทันที
+    const p=x.p;
+    const nc={KR:'nkr',HK:'nhk',USA:'nusa',SG:'nsg',Philippines:'nph',France:'nfr',Italy:'nit'}[p.nat]||'';
+    const st=apexStatus(p);
+    const subtitle=p.remark?String(p.remark).split(' — ')[0].split(' · ')[0]:'';
     return `<div class="inc-item">
       <div class="inc-info">
-        <div class="inc-name"><span class="vtag v-${p.vendor.toLowerCase()}">${p.vendor}</span>&nbsp; ${p.product} · ${p.nat}</div>
-        <div class="inc-meta">${p.po}${p.exp?' · '+p.exp:''}${isum?' · '+isum:''}</div>
+        <div class="inc-name"><span class="nat ${nc}">${p.nat||'—'}</span>&nbsp; APEX ${x.apexPO}${st.partial?' · 🔶 มาบางส่วน':''}</div>
+        <div class="inc-meta">${subtitle}</div>
       </div>
       <div class="inc-days"><div class="dn ${dcls}">${dstr}</div></div>
     </div>`;
