@@ -3108,8 +3108,23 @@ function calEvents(){
   // นั้นไม่มีวันที่เดี่ยว (…D) แต่มีข้อความอิสระ (…Text เช่น "24 Jul 2026\n31 Jul 2026" หรือ
   // "6, 7, 16 July 2026") ให้ดึงวันที่ทุกตัวที่ parse ได้ออกมาแปะเป็นจุดบนปฏิทินให้ครบ แทนที่
   // จะโดนดีดไปอยู่แค่ในลิสต์ "หลายวันที่ปนกันในช่องเดียว" ด้านล่างเฉยๆ เหมือนก่อนหน้านี้
+  // 24 Sep 2026 (รอบยี่สิบสาม): Ji ดูปฏิทินแล้วเห็น "PO 054" โผล่ซ้ำกันหลายวัน (8/15/28/30 Oct
+  // ฯลฯ) แล้วถามว่า "PO54 มันมี 6 รอบ อยากให้ใส่เป็นรอบที่ 1 1/6 2/6 ไปเรื่อยๆให้อ่านแล้วเห็น
+  // เข้าใจได้มั้ย" — เดิม pushMulti() แปะทุกวันที่ที่ parse ได้ด้วย short label เดียวกันเป๊ะ (แค่
+  // "PO 054" ซ้ำทุกจุด) เลยแยกไม่ออกว่าจุดไหนคือรอบที่เท่าไหร่จากทั้งหมดกี่รอบ — แก้โดยให้
+  // pushMulti() นับลำดับวันที่ที่ parse ได้จากข้อความเดียวกัน (เรียงตามลำดับที่เขียนไว้ใน …Text
+  // ซึ่งเป็นลำดับเวลาอยู่แล้ว) แล้วต่อท้าย short label เป็น "N/ทั้งหมด" (เช่น "PO 054 1/6",
+  // "PO 054 2/6", …) เฉพาะตอนที่มีมากกว่า 1 วันที่ในข้อความเดียวกันเท่านั้น (ถ้ามีวันเดียวไม่ต้อง
+  // ใส่เลขให้รก) — ใช้ได้ทั่วไปกับทุก PO ที่มีหลายรอบ ไม่ใช่เฉพาะ PO 054 — ใส่คำว่า "(รอบ N/ทั้งหมด)"
+  // ต่อท้าย label ยาวด้วยเช่นกัน ให้ตรงกับ short label ตอนเปิดดูรายละเอียดในช่อง "วันที่เลือก"
   const pushMulti=(text,cat,label,sub,short)=>{
-    parseFreeDates(text).forEach(ms=>push(ms,cat,label,sub,short));
+    const dates=parseFreeDates(text);
+    dates.forEach((ms,i)=>{
+      const isMulti = dates.length>1;
+      const roundLabel = isMulti ? `${label} (รอบ ${i+1}/${dates.length})` : label;
+      const roundShort = isMulti ? `${short} ${i+1}/${dates.length}` : short;
+      push(ms,cat,roundLabel,sub,roundShort);
+    });
   };
   D.pos.forEach(p=>{
     push(p.expMs,'po-exp', `${p.vendor} ${p.po} — Expected`, p.product, `${p.vendor} ${p.po}`);
