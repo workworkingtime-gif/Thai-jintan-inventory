@@ -3054,26 +3054,48 @@ const MONTH_NAMES=['January','February','March','April','May','June','July','Aug
 // เยอะมาก ฉะนั้นทำให้มันชัดกว่านี้ได้มั้ย" พร้อมยกตัวอย่างสีที่อยากให้ใช้ (แดง/ชมพู/เขียว/ม่วง/
 // น้ำเงิน/เหลือง/ฟ้า) — จุดอ่อนเดิมคือ 3 หมวดของ APEX ใช้สีส้มเหมือนกันหมดเป๊ะ ต่างกันแค่รูปทรง/
 // fill ซึ่งบนจุดเล็กๆ ในปฏิทิน (8px) แยกยากมากด้วยตาเปล่า โดยเฉพาะกลวง/ทึบที่ต้องซูมดูใกล้ๆ
-// ถึงจะเห็นต่าง — แก้โดยให้ทั้ง 6 หมวดใช้ "สีคนละสี" ไปเลย (ไม่ใช้สีซ้ำกันแม้แต่คู่เดียว) โดย
-// เลือกจากชุดสีมาตรฐาน 8 สีที่ผ่านการตรวจสอบแล้วว่าแยกออกจากกันได้ดีที่สุดสำหรับสายตาปกติและ
-// สายตาที่บอดสีบางส่วน (protanopia/deuteranopia) เมื่อวางเรียงติดกัน — หยิบมา 6 จาก 8 สี
-// (น้ำเงิน/ส้ม/ฟ้าอมเขียว/เหลือง/ม่วง/แดง) ตรงกับที่ Ji อยากได้เกือบทั้งหมด ยังคงรูปทรง+fill
-// เดิมไว้เป็นตัวช่วยแยกอีกชั้น (ไม่ได้ตัดออก) เผื่อกรณีสีสองสีที่อยู่ติดกันจริงๆ ยังแยกยากสำหรับ
-// คนตาบอดสีบางประเภท — ทุกจุดในเว็บก็ยังมีตัวหนังสือ/อีโมจิกำกับเสมอ ไม่ได้ให้อ่านจากสีอย่างเดียว
+// ถึงจะเห็นต่าง — แก้ (ครั้งแรก) โดยให้ทั้ง 6 หมวดใช้ "สีคนละสี" ไปเลย เลือกจากชุดสีมาตรฐาน 8 สี
+// ที่ผ่านการตรวจสอบแล้วว่าแยกออกจากกันได้ดีที่สุดสำหรับสายตาปกติและสายตาที่บอดสีบางส่วน
+// (protanopia/deuteranopia) — หยิบมา 6 จาก 8 สี (น้ำเงิน/ส้ม/ฟ้าอมเขียว/เหลือง/ม่วง/แดง)
+// 24 Sep 2026 (รอบยี่สิบเอ็ด) — หลัง deploy สีชุดใหม่แล้ว Ji ยังบอกว่า "ไม่เห็นตรงกับสีที่บอก
+// เลย" พอถามว่าเห็นเป็นสีอะไรจริงๆ Ji ตอบว่าเห็นแค่ 3 สี ("เขียวส้มน้ำเงิน") จากทั้งหมด 6 จุด —
+// คือเหลือง/แดงถูกมองรวมเป็นกลุ่มเดียวกับส้ม และม่วงถูกมองรวมเป็นกลุ่มเดียวกับน้ำเงิน (รูปแบบที่
+// พบได้บ่อยในสายตาที่แยกโทนแดง-เหลือง-เขียวได้ยาก) แปลว่าปัญหาไม่ได้อยู่ที่ "เลือกเฉดสีผิด" แต่
+// อยู่ที่การพึ่งสีเป็นตัวแยกหลักตั้งแต่ต้น — ไม่ว่าจะสลับเฉดสีไปทางไหนก็จะเจอปัญหาเดิมอีก เพราะ
+// การตรวจสอบสีสำหรับตาบอดสี (validate_palette.js) ทำได้แค่จำลอง protanopia/deuteranopia แบบ
+// มาตรฐาน ไม่ได้ครอบคลุมการมองเห็นสีจริงของทุกคน — เสนอ Ji เปลี่ยนตัวช่วยแยกหลักจาก "สี" เป็น
+// "รูปทรง" แทน (ใช้ได้กับทุกคนไม่ว่าจะมองเห็นสีแบบไหน) Ji ตอบตกลง ("ได้") แก้โดย:
+// ให้ทั้ง 6 หมวดมีรูปทรง (silhouette) ที่ต่างกันชัดเจนไปเลย ไม่ใช้ซ้ำกันแม้แต่คู่เดียว — วาดด้วย
+// inline SVG แทน CSS border-radius เดิม (คมชัดกว่าที่ขนาดเล็ก 6-10px และวาดสามเหลี่ยม/ดาว/
+// หกเหลี่ยมได้): วงกลม(po-exp) / เพชร(po-act) / สี่เหลี่ยม(apex-sent, ไม่เปลี่ยนจากเดิม) /
+// สามเหลี่ยม(apex-exp) / ดาว(apex-act) / หกเหลี่ยม(apex-cust) — สียังคงเดิมไว้ทั้งหมดเป็นตัวช่วย
+// เสริมสำหรับคนที่แยกสีได้ปกติ (ไม่ได้ตัดสีออก แค่ไม่ใช่ตัวตัดสินหลักอีกต่อไป) กลวง/ทึบ (fill)
+// ก็ยังคงไว้เป็นชั้นที่ 3 เหมือนเดิม (คาดว่าจะ=กลวง, เกิดขึ้นแล้ว=ทึบ) — ทุกจุดในเว็บยังมีตัวหนังสือ/
+// อีโมจิกำกับเสมอเช่นเดิม ไม่ได้ให้อ่านจากรูปทรง/สีอย่างเดียว
 const CAL_CAT_LABEL={
-  'po-exp':   {label:'Supplier PO — คาดว่าจะมา', emoji:'🚚', color:'#2a78d6', fill:'hollow', shape:'circle'}, // น้ำเงิน
-  'po-act':   {label:'Supplier PO — รับแล้ว',     emoji:'🚚', color:'#1baf7a', fill:'solid',  shape:'circle'}, // ฟ้าอมเขียว
-  'apex-sent':{label:'ส่ง PO ให้ APEX แล้ว',       emoji:'✈️', color:'#eb6834', fill:'solid',  shape:'square'}, // ส้ม
-  'apex-exp': {label:'APEX — คาดว่าจะส่งมา',       emoji:'✈️', color:'#eda100', fill:'hollow', shape:'circle'}, // เหลือง
-  'apex-act': {label:'APEX — ส่งมาแล้ว',           emoji:'✈️', color:'#e34948', fill:'solid',  shape:'circle'}, // แดง
-  'apex-cust':{label:'ส่งลูกค้าแล้ว',              emoji:'📤', color:'#4a3aa7', fill:'solid',  shape:'circle'}, // ม่วง
+  'po-exp':   {label:'Supplier PO — คาดว่าจะมา', emoji:'🚚', color:'#2a78d6', fill:'hollow', shape:'circle'},   // น้ำเงิน · วงกลม
+  'po-act':   {label:'Supplier PO — รับแล้ว',     emoji:'🚚', color:'#1baf7a', fill:'solid',  shape:'diamond'},  // ฟ้าอมเขียว · เพชร
+  'apex-sent':{label:'ส่ง PO ให้ APEX แล้ว',       emoji:'✈️', color:'#eb6834', fill:'solid',  shape:'square'},   // ส้ม · สี่เหลี่ยม
+  'apex-exp': {label:'APEX — คาดว่าจะส่งมา',       emoji:'✈️', color:'#eda100', fill:'hollow', shape:'triangle'}, // เหลือง · สามเหลี่ยม
+  'apex-act': {label:'APEX — ส่งมาแล้ว',           emoji:'✈️', color:'#e34948', fill:'solid',  shape:'star'},     // แดง · ดาว
+  'apex-cust':{label:'ส่งลูกค้าแล้ว',              emoji:'📤', color:'#4a3aa7', fill:'solid',  shape:'hexagon'},  // ม่วง · หกเหลี่ยม
+};
+// จุดศูนย์กลาง/ขนาดอิงกรอบ 24x24 เสมอ (สเกลเท่ากันไม่ว่า shape ไหน) แล้วค่อยย่อผ่าน width/height ของ <svg>
+const CAL_SHAPE_PATH={
+  circle:   c=>`<circle cx="12" cy="12" r="9.5" ${c}/>`,
+  square:   c=>`<rect x="3" y="3" width="18" height="18" rx="2.5" ${c}/>`,
+  diamond:  c=>`<polygon points="12,1.5 22.5,12 12,22.5 1.5,12" ${c}/>`,
+  triangle: c=>`<polygon points="12,2 22.5,20.5 1.5,20.5" ${c}/>`,
+  star:     c=>`<polygon points="12,1 15,9 23,9.3 16.5,14.5 19,22.5 12,17.8 5,22.5 7.5,14.5 1,9.3 9,9" ${c}/>`,
+  hexagon:  c=>`<polygon points="12,1.5 21,6.75 21,17.25 12,22.5 3,17.25 3,6.75" ${c}/>`,
 };
 function calDotHtml(cat,size){
   const c=CAL_CAT_LABEL[cat]; const s=size||8;
-  const radius = c.shape==='square' ? '2px' : '50%';
-  return c.fill==='solid'
-    ? `<span style="width:${s}px;height:${s}px;border-radius:${radius};background:${c.color};display:inline-block;flex-shrink:0"></span>`
-    : `<span style="width:${s}px;height:${s}px;border-radius:${radius};background:#fff;border:2px solid ${c.color};box-sizing:border-box;display:inline-block;flex-shrink:0"></span>`;
+  const attrs = c.fill==='solid'
+    ? `fill="${c.color}"`
+    : `fill="#fff" stroke="${c.color}" stroke-width="2.75"`;
+  const shapeSvg = CAL_SHAPE_PATH[c.shape](attrs);
+  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="flex-shrink:0;display:inline-block" aria-hidden="true">${shapeSvg}</svg>`;
 }
 let CAL_VIEW = null; // {y,m} currently displayed month (m: 0-11)
 let CAL_SEL = null;  // selected day, ms timestamp
