@@ -262,11 +262,27 @@ const REORDER = {
   SG:{Peppermint:2000,'Honey lemon':2000,default:1000},
   KR_INNER:{default:10000}, KR_CARTON:{default:1000}
 };
+// (24 Sep 2026 รอบสิบเก้า) Ji บอกว่ารสชาติในตาราง Stock ดู "กระจัดกระจาย" — ลำดับเดิมคือลำดับที่
+// เคยพิมพ์เข้าระบบครั้งแรก ไม่ได้เรียงตามอะไรเลย — เปลี่ยนมาเรียงตามลำดับความสำคัญ/ยอดขายที่ Ji
+// ให้มา (มาก→น้อย) แทน — HK ตัด Grapefruit ออกจากลิสต์ไปเลยตามที่ Ji ยืนยันว่าเลิกขายแล้ว (ดู
+// migration ที่ลบ Grapefruit ออกจาก D.hk/D.hkOuter ใน applyLoadedState_ ด้านล่าง) — อาร์เรย์นี้
+// เป็นตัวกำหนดลำดับการแสดงผลจริงทั้งหน้า Stock (ผ่าน sortByFlavorOrder) และหน้าคำนวณ (ใช้ FLAVORS
+// ตรงๆ อยู่แล้ว) ไม่ต้องไปแก้ลำดับใน DEF_HK/DEF_SG ที่เก็บ default stock ก็ได้ผลลัพธ์เดียวกัน
 const FLAVORS = {
-  HK:['Peppermint','Raspberry','Honey lemon','Melon','Black Spearmint','Grapefruit','Donki','Hongkong edition','Pride'],
-  SG:['Peppermint','Spearmint','Melon','Honey lemon','Raspberry','Fusion','Pride','Grapefruit','Party'],
+  HK:['Peppermint','Black Spearmint','Melon','Honey lemon','Raspberry','Pride','Donki','Hongkong edition'],
+  SG:['Peppermint','Spearmint','Melon','Honey lemon','Raspberry','Fusion','Pride','Party','Grapefruit'],
   KR:['Peppermint','Spearmint']
 };
+// เรียงอาร์เรย์ของรายการที่มี .flavor ตามลำดับที่กำหนดไว้ใน FLAVORS[mktKey] — รสชาติที่ไม่อยู่ใน
+// ลิสต์ (เผื่อกรณี sync สดเพิ่มรสใหม่ที่ยังไม่ได้จัดลำดับ) จะถูกเรียงไปต่อท้ายสุด โดยคงลำดับเดิม
+// ระหว่างกันไว้ (Array.prototype.sort เป็น stable sort) ไม่หายไปจากตาราง
+function sortByFlavorOrder(arr, mktKey){
+  const order = FLAVORS[mktKey] || [];
+  return [...arr].sort((a,b)=>{
+    const ia = order.indexOf(a.flavor), ib = order.indexOf(b.flavor);
+    return (ia<0?999:ia) - (ib<0?999:ib);
+  });
+}
 function xl(n){ if(!n||isNaN(n))return null; return new Date(Date.UTC(1899,11,30)+n*86400000).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
 function xlMs(n){ return n?new Date(Date.UTC(1899,11,30)+n*86400000).getTime():null; }
 function f(n){ return (Number(n)||0).toLocaleString(); }
@@ -281,21 +297,30 @@ function tsNow(){ return new Date().toLocaleString('en-GB'); }
 function serialToMs(n){ return n?Date.UTC(1899,11,30)+n*86400000:null; }
 // ─── DEFAULT DATA ─────────────────────────────────────────────────────────
 const DEF_HK = [
-  {flavor:'Peppermint',apex:610,ku:637},{flavor:'Raspberry',apex:0,ku:3613},
-  {flavor:'Honey lemon',apex:1558,ku:875},{flavor:'Melon',apex:634,ku:3823},
+  {flavor:'Peppermint',apex:610,ku:637},
   {flavor:'Black Spearmint',apex:379,ku:1644},
-  {flavor:'Grapefruit',apex:0,ku:0},{flavor:'Donki',apex:0,ku:0},
-  {flavor:'Hongkong edition',apex:0,ku:6986},{flavor:'Pride',apex:1538,ku:0}
+  {flavor:'Melon',apex:634,ku:3823},
+  {flavor:'Honey lemon',apex:1558,ku:875},
+  {flavor:'Raspberry',apex:0,ku:3613},
+  {flavor:'Pride',apex:1538,ku:0},
+  {flavor:'Donki',apex:0,ku:0},
+  {flavor:'Hongkong edition',apex:0,ku:6986}
+  // Grapefruit ถูกตัดออกแล้ว (24 Sep 2026 รอบสิบเก้า, Ji ยืนยันเลิกขาย — เคยมี apex:0,ku:0
+  // มาตลอด ไม่เคยมีสต็อกจริง) ผู้ใช้ที่มีข้อมูลเก่าค้างอยู่จะถูกลบให้อัตโนมัติผ่าน migration ใน
+  // applyLoadedState_()
 ];
 // Outer box (ลังนอก) stock for HK — separate packaging tier from Inner box
 // above, entered manually by Ji via chat (not live-synced). null = "ยังไม่มี
 // ข้อมูล" (no number given yet), shown as a dash, distinct from confirmed 0.
 const DEF_HK_OUTER = [
-  {flavor:'Peppermint',apex:null,ku:null},{flavor:'Raspberry',apex:19,ku:null},
-  {flavor:'Honey lemon',apex:null,ku:null},{flavor:'Melon',apex:27,ku:null},
+  {flavor:'Peppermint',apex:null,ku:null},
   {flavor:'Black Spearmint',apex:null,ku:null},
-  {flavor:'Grapefruit',apex:null,ku:null},{flavor:'Donki',apex:null,ku:null},
-  {flavor:'Hongkong edition',apex:null,ku:null},{flavor:'Pride',apex:null,ku:null}
+  {flavor:'Melon',apex:27,ku:null},
+  {flavor:'Honey lemon',apex:null,ku:null},
+  {flavor:'Raspberry',apex:19,ku:null},
+  {flavor:'Pride',apex:null,ku:null},
+  {flavor:'Donki',apex:null,ku:null},
+  {flavor:'Hongkong edition',apex:null,ku:null}
 ];
 // ─── PATCH SYSTEM — ตัดสต็อกครั้งเดียวจาก APEX PO / PO ใหม่ ─────────────
 const PATCHES = [
@@ -434,14 +459,14 @@ const DEF_SG = [
   {flavor:'Peppermint',apex:null,ku:0},{flavor:'Spearmint',apex:null,ku:0},
   {flavor:'Melon',apex:null,ku:0},{flavor:'Honey lemon',apex:null,ku:0},
   {flavor:'Raspberry',apex:null,ku:0},{flavor:'Fusion',apex:null,ku:0},{flavor:'Pride',apex:null,ku:0},
-  {flavor:'Grapefruit',apex:null,ku:0},{flavor:'Party',apex:null,ku:0}
+  {flavor:'Party',apex:null,ku:0},{flavor:'Grapefruit',apex:null,ku:0}
 ];
 // Outer box (ลังนอก) stock for SG — separate packaging tier from Inner box above.
 const DEF_SG_OUTER = [
   {flavor:'Peppermint',apex:null,ku:0},{flavor:'Spearmint',apex:null,ku:0},
   {flavor:'Melon',apex:null,ku:0},{flavor:'Honey lemon',apex:null,ku:186},
   {flavor:'Raspberry',apex:null,ku:0},{flavor:'Fusion',apex:null,ku:0},{flavor:'Pride',apex:null,ku:0},
-  {flavor:'Grapefruit',apex:null,ku:0},{flavor:'Party',apex:null,ku:95}
+  {flavor:'Party',apex:null,ku:95},{flavor:'Grapefruit',apex:null,ku:0}
 ];
 const DEF_KR = [
   {flavor:'Peppermint',type:'Inner box',apex:722,newQty:20900,newPO:'JRS PO003'},
@@ -1200,6 +1225,22 @@ function applyLoadedState_(d){
     D.hkOuter = D.hkOuter.filter(x=>x.flavor!=='Spearmint');
     patched = true;
   }
+  // ลบ Grapefruit ออกจาก HK ทั้งระบบ (24 Sep 2026 รอบสิบเก้า) — Ji ยืนยันเลิกขายแล้ว ตอนตอบคำถาม
+  // เรื่องจัดระเบียบลำดับรสชาติในตาราง Stock (สต็อกเป็น 0/0 มาตลอด ไม่เคยขายจริง) — ใครก็ตามที่มี
+  // ข้อมูลเก่า (state ที่เคย sync ไว้แล้วก่อนรอบนี้) ค้าง Grapefruit อยู่ จะถูกลบให้อัตโนมัติทุกครั้ง
+  // ที่โหลดหน้า ถ้าเผื่อมีสต็อกค้างอยู่ไม่เท่ากับ 0 (ไม่ควรมี แต่กันไว้) จะบันทึกลง audit log ก่อนลบ
+  // ให้เห็นว่าตัวเลขหายไปไหน ไม่ใช่หายไปเงียบๆ
+  const hkGrapefruit = D.hk.find(x=>x.flavor==='Grapefruit');
+  if(hkGrapefruit){
+    const totalBefore = (hkGrapefruit.apex||0)+(hkGrapefruit.ku||0);
+    if(totalBefore!==0){
+      logAudit('stock_update','Grapefruit','เลิกขาย (HK)', `-${f(totalBefore)}`, totalBefore, 0,
+        'Ji ยืนยัน 24 Sep 2026 ว่า HK เลิกขาย Grapefruit แล้ว — ลบออกจากระบบ (มีสต็อกค้างอยู่ก่อนลบ ควรตรวจสอบว่าตัวเลขนี้ย้ายไปที่ไหน)', 'HK');
+    }
+    D.hk = D.hk.filter(x=>x.flavor!=='Grapefruit');
+    D.hkOuter = D.hkOuter.filter(x=>x.flavor!=='Grapefruit');
+    patched = true;
+  }
   PATCHES.forEach(p=>{
     if(!D.patches_applied.includes(p.id)){ applyPatch(p); D.patches_applied.push(p.id); patched = true; }
   });
@@ -1782,7 +1823,7 @@ function renderMain(){
 function pageStock(){
   const subnav = `<div class="subnav">${STOCK_SUBS.map(s=>`<div class="sub-tab ${STOCK_SUB===s.id?'active':''}" onclick="setStockSub('${s.id}')">${s.label}</div>`).join('')}</div>`;
   let body='';
-  if(STOCK_SUB==='hk') body = pageMarket('hk','🇭🇰 ฮ่องกง — Nude','Inner box · 9 รสชาติ · APEX + Thai Jintan',D.hk,'HK') + pageOuterBox(D.hkOuter,'HK');
+  if(STOCK_SUB==='hk') body = pageMarket('hk','🇭🇰 ฮ่องกง — Nude',`Inner box · ${FLAVORS.HK.length} รสชาติ · APEX + Thai Jintan`,D.hk,'HK') + pageOuterBox(D.hkOuter,'HK');
   if(STOCK_SUB==='sg') body = pageMarket('sg','🇸🇬 สิงคโปร์ — Nuke','Inner box · APEX + Thai Jintan <span class="badge" style="font-size:10px;background:#eef1f5;color:#5a6b78">📝 อัปเดตผ่านแชทเท่านั้น (ไม่ sync อัตโนมัติ)</span>',D.sg,'SG') + pageOuterBox(D.sgOuter,'SG');
   if(STOCK_SUB==='kr') body = pageKR();
   return subnav + body;
@@ -2376,9 +2417,14 @@ function apexMaterialsTableHtml(apexPO, shipmentGroup){
   const showBreakdown = sum.hasOrderCheck;
   const group = (shipmentGroup && shipmentGroup.length) ? shipmentGroup : [apexPO];
   const isShared = group.length>1;
+  // (แก้ 24 Sep 2026 รอบสิบเจ็ด) Ji ถามว่าหน้านี้คนอื่นอ่านแล้วจะเข้าใจมั้ย — พบว่ายอด "ขาด" ที่โชว์
+  // ในแต่ละแถวของ PO ที่ log วัสดุร่วมชิปเมนต์ (เช่น PO 061) จริงๆ คือยอดขาดของ "ทั้งชิปเมนต์รวมกัน"
+  // (APEX ส่งวัสดุมาให้ไม่พอสำหรับทั้ง 2 PO จริง) แต่ waterfall ยกยอดขาดทั้งหมดไปกอง PO ที่มาทีหลัง
+  // ในลำดับ (PO 061) ทำให้คนอ่านที่เห็นแค่แถวนี้เข้าใจผิดว่า "PO 061 เจาะจงขาดวัสดุ" ทั้งที่จริงคือ
+  // ขาดของทั้งชิปเมนต์ — เติมเครื่องหมาย * กำกับกรณีนี้ (อธิบายที่ป้ายด้านบนตาราง + legend ท้ายตาราง)
   const rows = Object.values(sum.byItem).map(b=>{
     const status = b.remaining>0
-      ? `<span class="need">⚠ ขาด ${f(b.remaining)}</span>`
+      ? `<span class="need">⚠ ขาด ${f(b.remaining)}${isShared?'*':''}</span>`
       : `<span class="ok">✓ ครบ</span>`;
     const nameCell = `<td style="font-size:12.5px">${b.item}${b.detail?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${b.detail}</div>`:''}</td>`;
     if(showBreakdown && b.orderRequiredPreBuf!=null){
@@ -2399,13 +2445,13 @@ function apexMaterialsTableHtml(apexPO, shipmentGroup){
       <td style="white-space:nowrap;font-size:12px">${status}</td>
     </tr>`;
   }).join('');
-  const totalRow = showBreakdown ? `<tr>
-      <td>รวมทั้งหมด${sum.topups>0?` (ส่งแล้ว ${sum.topups+1} รอบ)`:''}</td>
-      <td class="n" style="text-align:right;color:var(--muted)">${f(sum.totalPreBuf)}</td>
-      <td class="n" style="text-align:right;font-weight:600">${f(sum.totalRequested)}</td>
-      <td class="n" style="text-align:right">${f(sum.totalSent)}</td>
-      <td style="white-space:nowrap;font-size:12px">${apexMaterialBufferBadge(sum.bufferPct, sum.totalSent, sum.totalEffectiveRequired)}</td>
-    </tr>` : `<tr>
+  // (แก้ 24 Sep 2026 รอบสิบเจ็ด) Ji ถามว่าหน้านี้อ่านแล้วคนอื่นจะเข้าใจมั้ย — พบว่าแถว "รวมทั้งหมด"
+  // ของตารางแบบ breakdown (showBreakdown) เอาตัวเลขคนละหน่วยกันมาบวกกัน (ลัง หลักร้อย + กล่องใน/ซอง
+  // หลักหมื่น) แล้วคิด % เดียว ทำให้ยอดซอง/กล่องในที่ครบเกือบหมดกลบปัญหาลังนอกที่ขาดจริงถึง ~54% จน
+  // ดูเหมือนแทบไม่มีปัญหา (Ji ยืนยันให้ตัดออก) — ตารางแบบ breakdown เลยไม่มีแถวรวม/% รวมอีกต่อไป ให้
+  // ดูสถานะแยกรายวัสดุแทน (ถูกต้องกว่าอยู่แล้ว) — ตารางแบบเดิม (ไม่มี breakdown เช่น PO 053) ไม่ได้
+  // มีปัญหานี้ (ของเสียหน่วยใกล้เคียงกัน) เลยยังคงแถวรวม/% เดิมไว้ไม่เปลี่ยน
+  const totalRow = showBreakdown ? '' : `<tr>
       <td>รวมทั้งหมด${sum.topups>0?` (ส่งแล้ว ${sum.topups+1} รอบ)`:''}</td>
       <td class="n" style="text-align:right">${f(sum.totalRequested)}</td>
       <td class="n" style="text-align:right">${f(sum.totalSent)}</td>
@@ -2415,14 +2461,28 @@ function apexMaterialsTableHtml(apexPO, shipmentGroup){
     `<div style="font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.4">${r.date?`<b>${i>0?'รอบเพิ่มเติม ':''}${r.date}</b> — `:''}${r.note?'📝 '+r.note:''}</div>`
   ).join('');
   // (แก้ 23 Sep 2026 รอบสิบหก) เดิมบรรทัดนี้อ้างอิงยอดสั่งรวมทั้งกลุ่ม (เช่น PO 060+061 รวมกัน) —
-  // เปลี่ยนเป็นยอดสั่งของ PO ตัวเองล้วนๆ (ตามที่ Ji ยืนยัน) แล้วเสริมคำอธิบายเรื่องการแบ่งยอดส่งจริง
-  // เมื่อ PO นี้ log วัสดุร่วมชิปเมนต์กับ PO อื่น (isShared) ให้ Ji เข้าใจที่มาของตัวเลข "ส่งจริง"
+  // เปลี่ยนเป็นยอดสั่งของ PO ตัวเองล้วนๆ (ตามที่ Ji ยืนยัน) — (แก้ 24 Sep 2026 รอบสิบเจ็ด) ย้าย
+  // คำอธิบายเรื่องแบ่งยอดส่งจริงร่วมชิปเมนต์ขึ้นไปเป็นป้ายเด่นด้านบนสุด (sharedBanner) แทนแล้ว บรรทัด
+  // นี้เลยเหลือแค่ตัวเลขอ้างอิงล้วนๆ (ก่อน/หลังเผื่อ 1%) ไม่ต้องพูดซ้ำเรื่องชิปเมนต์อีก
   const orderCheckLine = sum.hasOrderCheck
-    ? `<div style="font-size:11.5px;color:var(--ink-soft);margin-top:8px;padding-top:8px;border-top:1px solid var(--line-soft)">📐 ยอดสั่งของ ${apexPO} เอง: ${sum.orderRequirement.map(r=>`${r.packType} ${f(r.orderQty)} ชิ้น`).join(' + ')} → ก่อนเผื่อของเสีย 1% ต้องส่ง ${sum.orderRequirement.map(r=>`ลัง ${f(r.cartonReqNoBuf)}${r.innerReqNoBuf!=null?` / กล่องใน ${f(r.innerReqNoBuf)}`:''} / ซอง ${f(r.sachetReqNoBuf)}`).join(', ')} — หลังเผื่อ 1% (ขั้นต่ำที่ต้องส่งจริง) ${sum.orderRequirement.map(r=>`ลัง ${f(r.cartonReq)}${r.innerReq!=null?` / กล่องใน ${f(r.innerReq)}`:''} / ซอง ${f(r.sachetReq)}`).join(', ')}${isShared?`<br>📦 PO นี้ log วัสดุร่วมชิปเมนต์เดียวกับ ${group.filter(k=>k!==apexPO).join(', ')} — ยอด "ส่งจริง" ด้านบนคือส่วนที่แบ่งให้ ${apexPO} เท่านั้น (เติมยอดที่ ${apexPO} ต้องการให้เต็มก่อน เหลือเท่าไหร่ค่อยยกให้ PO ถัดไปในชิปเมนต์)`:''}</div>`
+    ? `<div style="font-size:11.5px;color:var(--ink-soft);margin-top:8px;padding-top:8px;border-top:1px solid var(--line-soft)">📐 ยอดสั่งของ ${apexPO} เอง: ${sum.orderRequirement.map(r=>`${r.packType} ${f(r.orderQty)} ชิ้น`).join(' + ')} → ก่อนเผื่อของเสีย 1% ต้องส่ง ${sum.orderRequirement.map(r=>`ลัง ${f(r.cartonReqNoBuf)}${r.innerReqNoBuf!=null?` / กล่องใน ${f(r.innerReqNoBuf)}`:''} / ซอง ${f(r.sachetReqNoBuf)}`).join(', ')} — หลังเผื่อ 1% (ขั้นต่ำที่ต้องส่งจริง) ${sum.orderRequirement.map(r=>`ลัง ${f(r.cartonReq)}${r.innerReq!=null?` / กล่องใน ${f(r.innerReq)}`:''} / ซอง ${f(r.sachetReq)}`).join(', ')}</div>`
     : '';
-  return `<div class="tw"><table class="rt"><thead><tr>
+  // (เพิ่ม 24 Sep 2026 รอบสิบเจ็ด) ป้ายเด่นด้านบนสุด อธิบายว่ายอด "ขาด" ของ PO นี้ (ถ้ามี) เป็นยอด
+  // ขาดของ "ทั้งชิปเมนต์รวมกัน" จริง (APEX ส่งวัสดุมาไม่พอสำหรับทั้ง 2 PO) ไม่ใช่แค่ปัญหาการจัดสรร —
+  // เพียงแต่ waterfall ยกยอดขาดทั้งหมดไปกอง PO ที่มาทีหลังในลำดับ (PO นี้) เพื่อไม่ให้คนอ่านที่เห็น
+  // แค่ตาราง (ไม่เลื่อนลงไปอ่านหมายเหตุท้ายตาราง) เข้าใจผิดว่า PO นี้เจาะจงมีปัญหาคนเดียว
+  const hasShortfall = Object.values(sum.byItem).some(b=>b.remaining>0);
+  const priorityPO = group[0];
+  const sharedBanner = (showBreakdown && isShared)
+    ? `<div style="margin-bottom:12px;padding:10px 12px;background:#fff7e6;border:1px solid #f0c36d;border-radius:8px;font-size:12.5px;color:#7a5c14;line-height:1.5">📦 PO นี้ส่งวัสดุพร้อมกับ <b>${group.filter(k=>k!==apexPO).join(', ')}</b> ในชิปเมนต์เดียวกัน (ยอด "ส่งจริง" ที่ log ไว้เป็นตัวเลขเดียวกันสำหรับทั้งชิปเมนต์) — ระบบเติมให้ ${priorityPO} เต็มความต้องการก่อน เหลือเท่าไหร่ค่อยยกให้ PO ถัดไป${hasShortfall?`<br>⚠ แถวที่ขึ้น "ขาด" ด้านล่าง (มี * กำกับ) คือ<b>ยอดขาดของทั้งชิปเมนต์รวมกัน</b> (APEX ส่งวัสดุมาไม่พอสำหรับทั้ง 2 PO จริง) ไม่ใช่ปัญหาเฉพาะ ${apexPO} เพียงลำพัง — เพียงแต่ระบบยกยอดขาดทั้งหมดมาแสดงที่ PO ที่อยู่ลำดับหลังในชิปเมนต์`:''}</div>`
+    : '';
+  const shortfallLegend = (showBreakdown && isShared && hasShortfall)
+    ? `<div style="margin-top:6px;font-size:11px;color:#8fa3b0">* ยอดขาดนับรวมทั้งชิปเมนต์ (ไม่ใช่ขาดเฉพาะ PO นี้คนเดียว — ดูคำอธิบายด้านบน)</div>`
+    : '';
+  return `${sharedBanner}<div class="tw"><table class="rt"><thead><tr>
       <th>วัสดุ</th>${showBreakdown?'<th style="text-align:right">ก่อนเผื่อ 1%</th><th style="text-align:right">หลังเผื่อ 1%</th>':'<th style="text-align:right">ขอ</th>'}<th style="text-align:right">ส่งจริง</th><th>สถานะ</th>
     </tr></thead><tbody>${rows}${totalRow}</tbody></table></div>
+    ${shortfallLegend}
     ${orderCheckLine}
     ${noteLines}
     <div style="margin-top:8px;font-size:11px;color:#8fa3b0">มีตัวเลขใหม่ ส่งมาทางแชทได้เลย เดี๋ยวอัปเดตหน้านี้ให้</div>`;
@@ -2555,7 +2615,9 @@ function pageMarket(mktId, title, sub, data, key){
       <span class="chm">${data.length} รสชาติ<span class="chev">▾</span></span></div>
     <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด · "กำลังจะมา" คือยอดจาก Supplier PO ที่สั่งแล้วแต่ยังไม่ได้รับ (ไม่รวมในคงเหลือรวมจนกว่าจะยืนยันรับของจริง) · "เตรียมตัดออก" คือ APEX PO ที่ Ji แจ้งว่ากำลังจะส่ง แต่ยังไม่ยืนยันว่าส่งจริง (พรีวิว ยังไม่ตัดสต็อกจริง)</div>
     <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>Thai Jintan</th><th>คงเหลือรวม</th><th>กำลังจะมา</th><th>รวมคาดการณ์</th><th>เตรียมตัดออก</th><th>คาดว่าจะเหลือ</th><th>สถานะ</th></tr></thead><tbody>`;
-  data.forEach(r=>{
+  // (24 Sep 2026 รอบสิบเก้า) เรียงตามลำดับความสำคัญ/ยอดขายที่ Ji กำหนด (FLAVORS[key]) แทนลำดับ
+  // ดิบที่เคยพิมพ์เข้าระบบครั้งแรก — ดู sortByFlavorOrder ด้านบน
+  sortByFlavorOrder(data, key).forEach(r=>{
     const total = (r.apex||0)+(r.ku||0);
     const inc = incoming[r.flavor]||0;
     const projected = total+inc;
@@ -2900,7 +2962,7 @@ function apexRow(p){
     : '';
   return `<tr onclick="showAPEXSheet(this,${JSON.stringify(p).replace(/"/g,'&quot;')})"${st.cancelled?' style="opacity:.55;text-decoration:line-through"':''}>
       <td><span class="nat ${nc}">${p.nat}</span></td>
-      <td style="font-weight:600">${p.apexPO}</td>
+      <td style="font-weight:600">${p.apexPO||'—'}</td>
       <td style="font-size:12px">${p.custPO||'—'}<br><span style="color:#8fa3b0">${p.inv||''}</span></td>
       <td style="font-size:12px">${nl2br(apexDate(p,'sent'))||'—'}</td>
       <td style="font-size:12px">${expCell}</td>
@@ -2959,8 +3021,11 @@ function pageAPEX(){
     return html;
   }
   const list = lists[APEX_SUB];
+  // (แก้ 24 Sep 2026 รอบสิบแปด) Ji ทักว่าไอคอน 📝/📦 ในคอลัมน์ Remark ไม่มีคำอธิบายเลย ต้อง
+  // hover หรือกดเข้าไปดูก่อนถึงจะรู้ความหมาย (บนมือถือ hover ใช้ไม่ได้ด้วย) — เพิ่ม legend สั้นๆ
+  // ไว้เหนือตารางเลย ให้เห็นความหมายได้ทันทีโดยไม่ต้องกด
   html += `<div class="card">
-    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด</div><div class="tw"><table>${THEAD}<tbody>
+    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด · 📝 มีหมายเหตุเพิ่มเติม · 📦 มีบันทึกวัสดุแพ็คที่ส่งให้ APEX แล้ว (สีแดง = ยังส่งไม่ครบบางรายการ)</div><div class="tw"><table>${THEAD}<tbody>
       ${list.length?list.map(apexRow).join(''):`<tr><td colspan="8" style="text-align:center;color:#8fa3b0;padding:20px">${emptyMsgs[APEX_SUB]}</td></tr>`}
     </tbody></table></div></div>
   </div>`;
@@ -3039,10 +3104,17 @@ function pageCalendar(){
   // 7 Aug 2026: ตอนนี้ pushMulti() ใน calEvents() ดึงวันที่ที่ parse ได้จาก …Text ไปแปะ
   // บนปฏิทินให้แล้ว เหลือแค่เคสที่ parse ไม่ได้เลยจริงๆ (เช่น "Jul + Oct" ที่ไม่มีรูปแบบ
   // "D Month Year" ให้จับ) เท่านั้นที่ยังต้องมาอยู่ในลิสต์นี้ — ใช้ parseFreeDates() เช็คซ้ำ
+  // (แก้ 24 Sep 2026 รอบสิบแปด) Ji ทักว่าส่วนนี้เขียนย่อเกินไป ("exp: Jul + Oct",
+  // "toCust: 8,9 Jul/10 Sep") คนนอกอ่านไม่รู้เรื่อง — เปลี่ยนรหัสฟิลด์ (sent/exp/act/toCust)
+  // เป็นวลีเต็มภาษาไทย ให้เป็นประโยคที่อ่านแล้วเข้าใจได้เลยโดยไม่ต้องรู้จักโครงสร้างข้อมูลภายใน
+  const UNSCHEDULED_FIELD_LABEL = {
+    sent:'วันที่ส่ง PO ให้ APEX', exp:'วันที่คาดว่าจะส่งมา (Expected)',
+    act:'วันที่ส่งมาจริง (Actual)', toCust:'วันที่ส่งให้ลูกค้า'
+  };
   APEX_POS.forEach(p=>{
     if(p.cancelled) return; // ยกเลิกแล้ว ไม่ต้องมาปนอยู่ในลิสต์ "ยังไม่ได้กำหนดวัน" ด้วย
     ['sent','exp','act','toCust'].forEach(fld=>{
-      if(!p[fld+'D'] && p[fld+'Text'] && parseFreeDates(p[fld+'Text']).length===0) unscheduled.push(`${p.apexPO||p.custPO||'APEX'} — ${fld}: ${p[fld+'Text']}`);
+      if(!p[fld+'D'] && p[fld+'Text'] && parseFreeDates(p[fld+'Text']).length===0) unscheduled.push(`${p.apexPO||p.custPO||'APEX'} — ${UNSCHEDULED_FIELD_LABEL[fld]}: ${p[fld+'Text']}`);
     });
   });
   const now=new Date();
@@ -3080,7 +3152,7 @@ function pageCalendar(){
       </div>
     </div></div>
     ${unscheduled.length?`<div class="card"><div class="card-body">
-      <div class="hint">รายการที่มีหลายวันที่ปนกันในช่องเดียว (วางจุดเดียวบนปฏิทินไม่ได้) — ${unscheduled.length} รายการ</div>
+      <div class="hint">📌 ${unscheduled.length} รายการที่มีวันที่หลายช่วงปนกันในข้อมูลเดิม (เช่น ทยอยส่งหลายรอบ คนละเดือน) เลยระบุเป็นจุดเดียวบนปฏิทินด้านบนไม่ได้ — ดูรายละเอียดวันที่ตรงนี้แทน</div>
       <div style="padding:10px 18px;font-size:12px;color:#5b6b76">${unscheduled.map(u=>`<div style="padding:4px 0">${u}</div>`).join('')}</div>
     </div></div>`:''}`;
 }
@@ -3193,14 +3265,21 @@ function clearCalc(){
   document.getElementById('rw').style.display='none';
 }
 // ─── AUDIT PAGE ───────────────────────────────────────────────────────────
+// (24 Sep 2026 รอบสิบแปด ข้อ 5) Ji แจ้งว่าหน้า Audit Trail อ่านเข้าใจยากสำหรับคนไม่คุ้นเคย —
+// พบ 2 จุด: (1) ประเภท "po_edit" (แก้ไขข้อมูล Supplier PO ผ่านหน้าเว็บ) หลุดจาก typeLabel map
+// ด้านล่าง เลยโชว์เป็นคำอังกฤษดิบๆ "po_edit" ตรงๆ ในตาราง ไม่ได้แปลเป็นไทยเหมือนประเภทอื่น —
+// เพิ่มเข้า map ให้ครบ (2) คอลัมน์ "จำนวน" ใช้สีเขียว/แดง/เทาบอกเพิ่ม/ลด/ไม่เปลี่ยน โดยไม่มี
+// คำอธิบายเลยว่าสีไหนหมายถึงอะไร — เพิ่ม hint สั้นๆ ใต้หัวข้อ (ไม่ได้ทำ PIN กั้นการเข้าดูหน้านี้
+// ตามที่ Ji ตัดสินใจ เพราะ PIN ของเว็บนี้ตรวจสอบจริงได้แค่ตอนบันทึกข้อมูลที่ฝั่ง GAS server เท่านั้น
+// ทำเช็คฝั่งหน้าเว็บเฉยๆ จะเป็นแค่ด่านกั้นหลอกๆ ไม่ใช่การป้องกันจริง — ดู workflow-notes.md รอบ 18)
 function pageAudit(){
-  let html=`<div class="pt">📋 บันทึก Audit Trail</div><div class="ps">ทุกการกระทำในระบบจะถูกบันทึกไว้ที่นี่</div>`;
+  let html=`<div class="pt">📋 บันทึก Audit Trail</div><div class="ps">ทุกการกระทำในระบบจะถูกบันทึกไว้ที่นี่ · <span style="color:#1a7a3c">สีเขียว</span> = เพิ่มขึ้น · <span style="color:#a23b3b">สีแดง</span> = ลดลง/ตัดออก · สีเทา = ไม่มีการเปลี่ยนจำนวน</div>`;
   if(!D.audit.length) return html+'<div style="padding:40px;text-align:center;color:#8fa3b0">ยังไม่มีบันทึก</div>';
   html+=`<div class="card"><div class="card-body"><div class="tw"><table><thead><tr>
     <th>เวลา</th><th>ประเภท</th><th>รายละเอียด</th><th>จำนวน</th>
   </tr></thead><tbody>`;
   D.audit.forEach(a=>{
-    const typeLabel={receive_po:'รับ PO',stock_update:'แก้ไขสต็อก',calc:'คำนวณ',mark_recv:'รับสินค้า',deduct:'ตัดสต็อก',receive:'บวกสต็อก',milestone:'อัปเดตสถานะ'}[a.type]||a.type;
+    const typeLabel={receive_po:'รับ PO',stock_update:'แก้ไขสต็อก',calc:'คำนวณ',mark_recv:'รับสินค้า',deduct:'ตัดสต็อก',receive:'บวกสต็อก',milestone:'อัปเดตสถานะ',po_edit:'แก้ไขข้อมูล PO'}[a.type]||a.type;
     const qtyStr=(a.qty!=null?String(a.qty):'');
     const qc=qtyStr.trim().startsWith('-')?'nn':(qtyStr.trim().startsWith('+')?'np':'nz');
     html+=`<tr><td style="font-size:11px;color:#8fa3b0;white-space:nowrap">${a.ts}</td>
@@ -3288,7 +3367,8 @@ function pageOuterBox(data, mktKey){
       <span class="chm">${withStock}/${data.length} มีสต็อก<span class="chev">▾</span></span></div>
     <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด/แก้ไข · กรอกเอง ไม่ sync อัตโนมัติ · "เตรียมตัดออก" คือ APEX PO ที่ Ji แจ้งว่ากำลังจะส่ง แต่ยังไม่ยืนยันว่าส่งจริง (พรีวิว ยังไม่ตัดสต็อกจริง)</div>
     <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>Thai Jintan</th><th>คงเหลือรวม</th><th>เตรียมตัดออก</th><th>คาดว่าจะเหลือ</th></tr></thead><tbody>`;
-  data.forEach(r=>{
+  // (24 Sep 2026 รอบสิบเก้า) เรียงตามลำดับความสำคัญ/ยอดขายเดียวกับตาราง Inner box ด้านบน
+  sortByFlavorOrder(data, mktKey).forEach(r=>{
     const total=(r.apex||0)+(r.ku||0);
     const nc=total>0?'np':total<0?'nn':'nz';
     const pend = pendingCartonTotal(mktKey.toLowerCase(), r.flavor);
@@ -3443,7 +3523,7 @@ function showAPEXSheet(row, p){
   const actHtml = actRounds ? actRounds : (nl2br(actStr) || '⏳ รออยู่');
   const html=`
     <div class="sbox">
-      <div class="row"><span>APEX PO</span><span style="font-weight:700">${p.apexPO}</span></div>
+      <div class="row"><span>APEX PO</span><span style="font-weight:700">${p.apexPO||'—'}</span></div>
       <div class="row"><span>Customer PO</span><span>${p.custPO||'—'}</span></div>
       <div class="row"><span>INV/PI</span><span>${p.inv||'—'}</span></div>
       <div class="row"><span>วันที่ส่ง PO</span><span style="text-align:right">${nl2br(apexDate(p,'sent'))||'—'}</span></div>
@@ -3455,7 +3535,7 @@ function showAPEXSheet(row, p){
     ${roundsSum ? apexRoundsSummaryHtml(roundsSum) : ''}
     ${p.remark?`<div style="margin:12px 16px;padding:10px;background:#f4f6f9;border-radius:6px;font-size:12px;color:#5b6b76">${nl2br(p.remark)}</div>`:''}
     ${apexMaterialsSectionHtml(p.apexPO)}`;
-  openSheet(`${p.nat} · ${p.apexPO}`, html, row);
+  openSheet(`${p.nat} · ${p.apexPO||'—'}`, html, row);
 }
 // ─── INCOMING ─────────────────────────────────────────────────────────────
 function renderIncBar(){
