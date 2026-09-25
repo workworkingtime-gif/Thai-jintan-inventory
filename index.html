@@ -67,6 +67,7 @@ body{background:var(--bg);color:var(--ink);font-size:14px;min-height:100vh}
 .inc-bar-inner{display:flex;align-items:center;gap:12px;height:38px;cursor:pointer;user-select:none}
 .inc-bar-text{font-size:13px;font-weight:600;color:#0c5460;flex:1}
 .inc-badge{background:var(--accent);color:#fff;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700}
+.ready-badge{background:#dc3545;color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
 .inc-arrow{font-size:11px;color:var(--muted);transition:transform .2s}
 .inc-arrow.open{transform:rotate(180deg)}
 .inc-drop{background:var(--card);border-bottom:2px solid var(--accent);display:none}
@@ -225,6 +226,7 @@ tbody tr.sel td{background:#eef4ff}
   <div class="inc-bar-inner" onclick="toggleInc()">
     <span>📬</span>
     <span class="inc-bar-text" id="inc-text">กำลังจะมาส่ง</span>
+    <span class="ready-badge" id="ready-badge" style="display:none">✅ พร้อมตัดสต็อก <b id="ready-count">0</b></span>
     <span class="inc-badge" id="inc-count">0</span>
     <span class="inc-arrow" id="inc-arrow">▼</span>
   </div>
@@ -1071,7 +1073,7 @@ const APEX_POS = [
 ];
 applyApexOverrides(); // ครอบค่า fallback ตั้งแต่ตอน parse หน้าเว็บครั้งแรก ก่อน live sync จะทำงาน
 // ─── STATE ────────────────────────────────────────────────────────────────
-let D = { hk:[], hkOuter:[], sg:[], sgOuter:[], kr:[], pos:[], audit:[], received:{}, patches_applied:[], poOverrides:{} };
+let D = { hk:[], hkOuter:[], sg:[], sgOuter:[], kr:[], pos:[], audit:[], received:{}, patches_applied:[], poOverrides:{}, apexDrawsConfirmed:[] };
 let TAB = 'stock';
 let STOCK_SUB = 'hk'; // which country is shown inside the merged Stock tab: 'hk' | 'sg' | 'kr'
 let incOpen = false;
@@ -1109,10 +1111,10 @@ async function saveAll(opts){
   opts = opts || {};
   const interactive = opts.interactive !== false;
   try{
-    await storage.set('inv_v1', JSON.stringify({hk:D.hk,hkOuter:D.hkOuter,sg:D.sg,sgOuter:D.sgOuter,kr:D.kr,received:D.received,audit:D.audit,patches_applied:D.patches_applied||[],poOverrides:D.poOverrides||{}}));
+    await storage.set('inv_v1', JSON.stringify({hk:D.hk,hkOuter:D.hkOuter,sg:D.sg,sgOuter:D.sgOuter,kr:D.kr,received:D.received,audit:D.audit,patches_applied:D.patches_applied||[],poOverrides:D.poOverrides||{},apexDrawsConfirmed:D.apexDrawsConfirmed||[]}));
   }catch(e){ console.error('local save failed',e); }
   if(!LIVE_BACKEND_ENABLED) return;
-  const payload = {hk:D.hk,hkOuter:D.hkOuter,sg:D.sg,sgOuter:D.sgOuter,kr:D.kr,received:D.received,audit:D.audit,patches_applied:D.patches_applied||[],poOverrides:D.poOverrides||{}};
+  const payload = {hk:D.hk,hkOuter:D.hkOuter,sg:D.sg,sgOuter:D.sgOuter,kr:D.kr,received:D.received,audit:D.audit,patches_applied:D.patches_applied||[],poOverrides:D.poOverrides||{},apexDrawsConfirmed:D.apexDrawsConfirmed||[]};
   // If we give up on pushing an interactive (user-initiated) edit — wrong PIN
   // entered too many times, or the user cancels the PIN prompt — the local
   // screen already shows the edit applied (optimistic UI, same as before this
@@ -1188,13 +1190,19 @@ function applyLoadedState_(d){
     // ไม่ใช้ id เพราะ id ของ entry ที่มาจาก live sync เปลี่ยนได้ถ้าเลื่อนไปเป็น static entry
     // ทีหลัง) sync ผ่าน backend เดียวกับสต็อก ใช้ได้ทุกคนที่เปิดลิงก์ ไม่ต้องแก้โค้ดอีกต่อไป
     D.poOverrides = d.poOverrides || {};
+    // 25 Sep 2026 (รอบยี่สิบหก, Ji ขอ "ทำให้ระบบงานของฉันมันเกิดขึ้นบนเว็บนี้"): เดิม Ji ต้อง
+    // พิมพ์บอก Claude ในแชทว่า "ตัดออกไปได้เลย" ทุกครั้งที่ของ APEX มาถึงจริง แล้ว Claude ต้อง
+    // แก้โค้ด (ย้าย entry จาก APEX_PENDING_DRAWS ไป APEX_DRAWS) + deploy ใหม่ทุกรอบ — apexDrawsConfirmed
+    // เก็บ id ของ APEX_PENDING_DRAWS ที่ Ji กดปุ่ม "ยืนยันตัดสต็อกจริง" บนเว็บแล้ว (แทนการแก้โค้ด)
+    // sync ผ่าน backend เดียวกับสต็อก ใช้ได้ทุกคนที่เปิดลิงก์เหมือนกัน
+    D.apexDrawsConfirmed = d.apexDrawsConfirmed || [];
   } else {
     D.hk = JSON.parse(JSON.stringify(DEF_HK));
     D.hkOuter = JSON.parse(JSON.stringify(DEF_HK_OUTER));
     D.sg = JSON.parse(JSON.stringify(DEF_SG));
     D.sgOuter = JSON.parse(JSON.stringify(DEF_SG_OUTER));
     D.kr = JSON.parse(JSON.stringify(DEF_KR));
-    D.received = {}; D.audit = []; D.patches_applied = []; D.poOverrides = {};
+    D.received = {}; D.audit = []; D.patches_applied = []; D.poOverrides = {}; D.apexDrawsConfirmed = [];
   }
   // ensure Black Spearmint exists in HK stock (migration)
   if(!D.hk.find(x=>x.flavor==='Black Spearmint')){
@@ -1525,6 +1533,13 @@ async function syncApex(){
     LIVE.apex.status='error';
   }
   if(TAB==='apex'||TAB==='cal') renderMain();
+  // 24 Sep 2026 (รอบยี่สิบห้า): Ji แจ้งว่าแถบ "กำลังจะมาส่ง" บนหัวเว็บยังโชว์ค่าเดิม
+  // (PPP Carton) ค้างอยู่ ทั้งที่ไม่ใช่ตัวที่ใกล้สุดแล้ว — พบว่า renderIncBar() ไม่เคย
+  // ถูกเรียกซ้ำหลัง syncApex() ดึงข้อมูล APEX PO สดจาก Google Sheet สำเร็จเลย (เดิม
+  // เรียกแค่ตอน loadAll() ครั้งแรกตอนโหลดหน้า ซึ่งใช้ APEX_POS ก่อน sync สด) ทำให้แถบนี้
+  // ค้างแสดงผลจากข้อมูลตอนโหลดหน้าตลอดไป ไม่เคยอัปเดตตามข้อมูล APEX ที่ sync สดมาใหม่ทุก
+  // 3 นาทีเลย — เรียกไม่มีเงื่อนไข TAB เพราะแถบนี้ตรึงอยู่บนหัวเว็บทุกหน้าเสมอ
+  renderIncBar();
 }
 async function syncSingapore(){
   LIVE.sg.status='loading'; if(TAB==='stock' && STOCK_SUB==='sg') renderMain();
@@ -1732,6 +1747,10 @@ async function syncSupplierPOs(){
     LIVE.supplier.status='error';
   }
   if(TAB==='po') renderMain();
+  // 24 Sep 2026 (รอบยี่สิบห้า): เหตุผลเดียวกับใน syncApex() ด้านบน — renderIncBar()
+  // ไม่เคยถูกเรียกซ้ำหลัง sync PO ผู้ผลิตสดสำเร็จเลย เผื่อวันที่คาดว่าจะมา (Expected)
+  // ของ Supplier PO เปลี่ยนจากที่ sync สดมาใหม่ ก็ควรอัปเดตแถบแจ้งเตือนด้วยเช่นกัน
+  renderIncBar();
 }
 function syncAllLive(){ syncApex(); syncSupplierPOs(); }
 // ─── STOCK STATUS ─────────────────────────────────────────────────────────
@@ -1876,25 +1895,25 @@ function apexDrawCard(market, flavors){
       </div>
     </div></div>`;
 }
-// performApexDraw = แกนหลักของ "สั่ง APEX แล้วตัดสต็อก" — ใช้ร่วมกันทั้งปุ่มบนหน้าเว็บ
-// (drawToApex, อ่านค่าจากฟอร์ม) และรายการ APEX_DRAWS (ตอน Ji บอกทางแชท Claude เพิ่ม
-// entry แล้วโค้ดใช้ฟังก์ชันนี้ตัดสต็อกให้อัตโนมัติตอนโหลดหน้า — คำนวณเหมือนกันทุกจุด)
-function performApexDraw(market, flavor, unit, qty, poRef){
-  qty = parseInt(qty)||0;
-  if(!flavor || qty<=0 || !poRef) return {ok:false};
-  const cartonQty = unit==='carton' ? qty : 0;
-  const innerQty = unit==='carton' ? qty*IPC : qty;
+// applyApexDrawAmounts = แกนหลักจริงๆ ของ "ตัดสต็อกให้ APEX" — รับ cartonQty/innerQty
+// ที่คำนวณมาแล้วตรงๆ (เลขทศนิยมได้ ไม่ปัดเป็นจำนวนเต็ม) กันเคสหารไม่ลงตัวพอดี — ใช้ร่วมกัน
+// ทั้ง performApexDraw() (ปุ่มฟอร์ม/APEX_DRAWS แบบเดิม ปัดเป็นจำนวนเต็มก่อนเรียก) และ
+// confirmApexPendingDraw() (ปุ่ม "ยืนยันตัดสต็อก" ใหม่ รอบยี่สิบหก — ต้องตัดตรงเป๊ะกับตัวเลข
+// พรีวิว "เตรียมตัดออก" ที่เคยโชว์ไว้ ไม่ปัดเป็นจำนวนเต็มจนเพี้ยนจากพรีวิว)
+// isCartonCalc: true ถ้า cartonQty/innerQty มาจากการแปลงหน่วยลัง (โชว์ "หักตาม X ลัง × 12 = Y
+// กล่องใน" ในบันทึก) — false ถ้า innerQty มาจากฟอร์มที่กรอกกล่องในตรงๆ (ไม่มีการแปลงหน่วย)
+function applyApexDrawAmounts(market, flavor, cartonQty, innerQty, poRef, isCartonCalc){
   const cartonLbl = market==='kr' ? 'ลัง' : 'ลังนอก';
   if(market==='kr'){
     if(cartonQty>0){
       const row=D.kr.find(x=>x.flavor===flavor && x.type==='Carton');
       if(row){ const before=row.apex||0; row.apex=before-cartonQty;
-        logAudit('deduct',flavor,poRef,`-${f(cartonQty)}`,before,row.apex,`เบิกให้ APEX ${f(cartonQty)} ${cartonLbl}`,'KR-Carton'); }
+        logAudit('deduct',flavor,poRef,`-${fc(cartonQty)}`,before,row.apex,`เบิกให้ APEX ${fc(cartonQty)} ${cartonLbl}`,'KR-Carton'); }
     }
     if(innerQty>0){
       const row=D.kr.find(x=>x.flavor===flavor && x.type==='Inner box');
       if(row){ const before=row.apex||0; row.apex=before-innerQty;
-        logAudit('deduct',flavor,poRef,`-${f(innerQty)}`,before,row.apex, unit==='carton'?`หักตาม ${f(cartonQty)} ${cartonLbl} × ${IPC} = ${f(innerQty)} กล่องใน`:`เบิกให้ APEX ${f(innerQty)} กล่องใน`,'KR-Inner box'); }
+        logAudit('deduct',flavor,poRef,`-${f(innerQty)}`,before,row.apex, isCartonCalc?`หักตาม ${fc(cartonQty)} ${cartonLbl} × ${IPC} = ${f(innerQty)} กล่องใน`:`เบิกให้ APEX ${f(innerQty)} กล่องใน`,'KR-Inner box'); }
     }
   } else {
     const innerArr = market==='hk'?D.hk:D.sg;
@@ -1913,21 +1932,32 @@ function performApexDraw(market, flavor, unit, qty, poRef){
       row.apex=newApex; row.ku=newKu;
       const apexUsed=beforeApex-newApex, kuUsed=beforeKu-newKu;
       let breakdown;
-      if(apexUsed>0 && kuUsed>0) breakdown=`หักจาก APEX ${f(apexUsed)} (${f(beforeApex)}→${f(newApex)}) + Thai Jintan ${f(kuUsed)} (${f(beforeKu)}→${f(newKu)}) เพราะ APEX ไม่พอ`;
-      else if(apexUsed>0) breakdown=`หักจาก APEX ทั้งหมด (${f(beforeApex)}→${f(newApex)}) · Thai Jintanไม่กระทบ (${f(newKu)})`;
-      else breakdown=`หักจาก Thai Jintanทั้งหมด เพราะ APEX ไม่พอ/หมด (${f(beforeApex)}→${f(newApex)}) · Thai Jintan (${f(beforeKu)}→${f(newKu)})`;
+      if(apexUsed>0 && kuUsed>0) breakdown=`หักจาก APEX ${fc(apexUsed)} (${fc(beforeApex)}→${fc(newApex)}) + Thai Jintan ${fc(kuUsed)} (${fc(beforeKu)}→${fc(newKu)}) เพราะ APEX ไม่พอ`;
+      else if(apexUsed>0) breakdown=`หักจาก APEX ทั้งหมด (${fc(beforeApex)}→${fc(newApex)}) · Thai Jintanไม่กระทบ (${fc(newKu)})`;
+      else breakdown=`หักจาก Thai Jintanทั้งหมด เพราะ APEX ไม่พอ/หมด (${fc(beforeApex)}→${fc(newApex)}) · Thai Jintan (${fc(beforeKu)}→${fc(newKu)})`;
       return {beforeTotal, afterTotal:newApex+newKu, breakdown};
     };
     if(cartonQty>0){
       const r=spend(outerArr,cartonQty);
-      if(r) logAudit('deduct',flavor,poRef,`-${f(cartonQty)}`,r.beforeTotal,r.afterTotal,`เบิกให้ APEX ${f(cartonQty)} ${cartonLbl} · ${r.breakdown}`,mktKey+'-Outer');
+      if(r) logAudit('deduct',flavor,poRef,`-${fc(cartonQty)}`,r.beforeTotal,r.afterTotal,`เบิกให้ APEX ${fc(cartonQty)} ${cartonLbl} · ${r.breakdown}`,mktKey+'-Outer');
     }
     if(innerQty>0){
       const r=spend(innerArr,innerQty);
-      const calcNote = unit==='carton'?`หักตาม ${f(cartonQty)} ${cartonLbl} × ${IPC} = ${f(innerQty)} กล่องใน`:`เบิกให้ APEX ${f(innerQty)} กล่องใน`;
+      const calcNote = isCartonCalc?`หักตาม ${fc(cartonQty)} ${cartonLbl} × ${IPC} = ${f(innerQty)} กล่องใน`:`เบิกให้ APEX ${f(innerQty)} กล่องใน`;
       if(r) logAudit('deduct',flavor,poRef,`-${f(innerQty)}`,r.beforeTotal,r.afterTotal, `${calcNote} · ${r.breakdown}`,mktKey);
     }
   }
+}
+// performApexDraw = ใช้ร่วมกันทั้งปุ่มบนหน้าเว็บ (drawToApex, อ่านค่าจากฟอร์ม) และรายการ
+// APEX_DRAWS (ตอน Ji บอกทางแชท Claude เพิ่ม entry แล้วโค้ดใช้ฟังก์ชันนี้ตัดสต็อกให้
+// อัตโนมัติตอนโหลดหน้า) — ปัด qty เป็นจำนวนเต็มก่อนเสมอ (ฟอร์ม/แชทให้มาเป็นเลขกลมอยู่แล้ว)
+function performApexDraw(market, flavor, unit, qty, poRef){
+  qty = parseInt(qty)||0;
+  if(!flavor || qty<=0 || !poRef) return {ok:false};
+  const cartonQty = unit==='carton' ? qty : 0;
+  const innerQty = unit==='carton' ? qty*IPC : qty;
+  const cartonLbl = market==='kr' ? 'ลัง' : 'ลังนอก';
+  applyApexDrawAmounts(market, flavor, cartonQty, innerQty, poRef, unit==='carton');
   return {ok:true, cartonQty, innerQty, cartonLbl};
 }
 function drawToApex(market){
@@ -1997,8 +2027,13 @@ const APEX_PENDING_DRAWS = [
 ];
 function pendingInner(pcs){ return (pcs||0)/IPU; }
 function pendingCartons(pcs){ return pendingInner(pcs)/IPC; }
+// 25 Sep 2026 (รอบยี่สิบหก): กรอง entry ที่ Ji กดยืนยันตัดสต็อกจริงไปแล้ว (D.apexDrawsConfirmed)
+// ออกจากพรีวิว "เตรียมตัดออก" เสมอ — พอกดยืนยันแล้วสต็อกจริงถูกหักไปแล้ว (ดู
+// confirmApexPendingDraw ด้านล่าง) ถ้ายังโชว์เป็นพรีวิวค้างอยู่จะกลายเป็นหักซ้ำสองครั้งในสายตา
+// (ทั้งจากของจริงที่หักไปแล้ว และจากพรีวิวที่ยังค้างแสดงผลอยู่)
 function pendingDrawsFor(market, flavor){
-  return APEX_PENDING_DRAWS.filter(d=>d.market===market && d.flavor===flavor);
+  const confirmed = D.apexDrawsConfirmed||[];
+  return APEX_PENDING_DRAWS.filter(d=>d.market===market && d.flavor===flavor && !confirmed.includes(d.id));
 }
 function pendingInnerTotal(market, flavor){
   return pendingDrawsFor(market,flavor).reduce((s,d)=>s+pendingInner(d.pcs),0);
@@ -2010,6 +2045,49 @@ function pendingTooltip(market, flavor){
   return pendingDrawsFor(market,flavor)
     .map(d=>`${d.apexPO} (${d.jobName}): ${f(d.pcs)} ชิ้น = -${f(pendingInner(d.pcs))} กล่องใน / -${fc(pendingCartons(d.pcs))} ลัง`)
     .join('\n');
+}
+// ─── เตรียมตัดสต็อก → ยืนยันตัดจริง (รอบยี่สิบหก) ───────────────────────────
+// Ji ขอ 25 Sep 2026: "พอสั่งเปิด PO กับทาง APEX แล้ว ก็ต้องมีแจ้งเตือนเตรียมตัดสต็อกอยู่ใน
+// เว็บแล้วขึ้นสถานะเตรียมตัดสต็อก พอของมาถึงก็ทำเป็นตัดสต็อคให้เลยอัตโนมัติ ทีนี้ก็ขึ้นแจ้งเตือน
+// ว่า ของจะมาในอีกกี่วัน" — อยากให้ 3 ส่วน (เปิด PO → เตรียมตัดสต็อก → ของมาถึง → ตัดสต็อก →
+// นับถอยหลัง) เป็นระบบเดียวกันในเว็บ ไม่ต้องพึ่ง Claude แก้โค้ดทุกครั้งที่ของมาถึง — ถามยืนยัน
+// ผ่าน AskUserQuestion 2 ข้อก่อนแก้ (กระทบการตัดสต็อกจริง ต้องแน่ใจก่อน): (1) ยอดจำนวนต่อ PO
+// ยังให้พิมพ์บอก Claude ในแชทเหมือนเดิมหรือไม่ (ไม่มีคอลัมน์จำนวนใน sheet ที่ sync สด มีแค่
+// วันที่/remark เป็นข้อความอิสระ) — Ji ยืนยัน "ให้พิมพ์บอก Claude ในแชทเหมือนเดิม" (2) ตอนของ
+// มาถึงจริง อยากให้ตัดอัตโนมัติทันทีเลย หรือเตือนแล้วให้กดยืนยันก่อน — Ji เลือก "เตือนแล้วให้
+// กดยืนยันก่อนตัดจริง" (ปลอดภัยกว่า เผื่อวันที่ sync คลาดเคลื่อน) — สรุปสิ่งที่เปลี่ยน: ขั้นตอน
+// "เปิด PO → เตรียมตัดสต็อก" (พรีวิว) ยังทำเหมือนเดิม (Claude เพิ่ม entry ใน APEX_PENDING_DRAWS
+// ตามที่ Ji บอกในแชท) แต่ขั้นตอน "ของมาถึง → ยืนยันตัดสต็อกจริง" เปลี่ยนจาก "Ji บอกในแชท →
+// Claude แก้โค้ด → deploy ใหม่" เป็น "เว็บตรวจจับเองจากวันที่ Actual ที่ sync สด (apexStatus
+// done) แล้วขึ้นเตือนให้ Ji กดปุ่มยืนยันบนเว็บ" — ไม่ต้องแก้โค้ด/deploy ใหม่อีกต่อไปสำหรับ
+// ขั้นตอนนี้
+// หา APEX PO ที่ตรงกับ pending draw (จับคู่ด้วย apexPO string ตรงๆ เหมือนจุดอื่นในไฟล์)
+function apexPendingDrawPO(d){
+  return APEX_POS.find(p=>p.apexPO===d.apexPO);
+}
+// พร้อมยืนยันตัดจริงเมื่อ: ยังไม่เคยกดยืนยัน + หา APEX PO คู่กันเจอ + ไม่ถูกยกเลิก + ของมา
+// "ครบแล้ว" จริง (apexStatus done — ไม่ใช้ partial เพราะ pending draw เก็บยอดรวมทั้ง PO เป็น
+// ก้อนเดียว ยังแบ่งตัดตามรอบไม่ได้ ต้องรอของมาครบทุกรอบก่อนถึงจะเสนอให้ตัดทั้งก้อน)
+function apexPendingReady(d){
+  if((D.apexDrawsConfirmed||[]).includes(d.id)) return false;
+  const p = apexPendingDrawPO(d);
+  if(!p || p.cancelled) return false;
+  return apexStatus(p).done===true;
+}
+function apexReadyDrawsList(){
+  return APEX_PENDING_DRAWS.filter(apexPendingReady);
+}
+// ปุ่ม "✅ ยืนยันตัดสต็อกจริง" — ตัดตรงเป๊ะกับตัวเลขพรีวิว "เตรียมตัดออก" ที่เคยโชว์ไว้ทุก
+// ประการ (ใช้สูตรเดียวกัน pendingInner/pendingCartons) กัน "พรีวิวบอกอย่าง ตัดจริงอีกอย่าง"
+function confirmApexPendingDraw(id){
+  const d = APEX_PENDING_DRAWS.find(x=>x.id===id);
+  if(!d) return;
+  D.apexDrawsConfirmed = D.apexDrawsConfirmed || [];
+  if(D.apexDrawsConfirmed.includes(id)) return; // กันกดซ้ำ/ตัดซ้ำสอง
+  const innerQty = pendingInner(d.pcs), cartonQty = pendingCartons(d.pcs);
+  applyApexDrawAmounts(d.market, d.flavor, cartonQty, innerQty, `${d.apexPO} (${d.jobName})`, true);
+  D.apexDrawsConfirmed.push(id);
+  saveAll(); closeSheet(); renderMain(); renderIncBar();
 }
 // (10 ก.ค. 2026 ตามที่ Ji ขอ: "@Chumseang I will tell you later but please
 // show it's in the tap on the screen" — ตัวเลขฝั่ง APEX เพิ่งอัปเดตจากการนับ
@@ -2960,6 +3038,16 @@ function apexRow(p){
   const matIcon = matSum
     ? `<span title="วัสดุแพ็คส่งให้ APEX: ${f(matSum.totalSent)}/${f(matSum.totalRequested)} ชิ้น (${matSum.bufferPct!=null?(matSum.bufferPct>=0?'+':'')+matSum.bufferPct.toFixed(1)+'%':'—'})${matSum.topups>0?' · ส่งเพิ่มเติมแล้ว '+matSum.topups+' รอบ':''}${matShort?' · ยังขาดส่งบางรายการ':''}" style="cursor:help;color:${matShort?'#a23b3b':'inherit'}">📦${matSum.topups>0?matSum.topups:''}</span>`
     : '';
+  // 25 Sep 2026 (รอบยี่สิบหก, Ji ขอเห็นสถานะ "เตรียมตัดสต็อก" เชื่อมกับ PO นี้ตรงๆ ในตาราง
+  // หลักเลย ไม่ใช่แค่ฝังอยู่ใน tooltip ของหน้า Stock): ไอคอน 🔻 ขึ้นเมื่อ PO นี้มี pending
+  // draw ที่ยังไม่ถูกตัดจริง (ดู APEX_PENDING_DRAWS ด้านบน) — เปลี่ยนเป็นสีแดง (นอกจาก
+  // hover-tooltip ที่บอกเป็นตัวหนังสือชัดเจนอยู่แล้ว) เมื่อของมาถึงแล้วพร้อมให้กดยืนยันตัด
+  // (ดูปุ่มยืนยันตัวจริงในแถบแจ้งเตือน "✅ พร้อมตัดสต็อก" ด้านบนสุดของเว็บ)
+  const pendDraws = APEX_PENDING_DRAWS.filter(d=>d.apexPO===p.apexPO && !(D.apexDrawsConfirmed||[]).includes(d.id));
+  const pendReady = pendDraws.some(apexPendingReady);
+  const drawIcon = pendDraws.length
+    ? `<span title="เตรียมตัดสต็อก: ${pendDraws.map(d=>`${d.flavor} ${f(d.pcs)} ชิ้น`).join(', ')}${pendReady?' · ของมาถึงแล้ว พร้อมยืนยันตัดสต็อกจริง (ดูแถบแจ้งเตือนด้านบน)':' · ยังไม่ตัดสต็อกจริง (พรีวิว)'}" style="cursor:help;color:${pendReady?'#dc3545':'inherit'}">🔻</span>`
+    : '';
   return `<tr onclick="showAPEXSheet(this,${JSON.stringify(p).replace(/"/g,'&quot;')})"${st.cancelled?' style="opacity:.55;text-decoration:line-through"':''}>
       <td><span class="nat ${nc}">${p.nat}</span></td>
       <td style="font-weight:600">${p.apexPO||'—'}</td>
@@ -2968,7 +3056,7 @@ function apexRow(p){
       <td style="font-size:12px">${expCell}</td>
       <td style="font-size:12px;font-weight:${st.done?600:400};color:${st.done?'#155724':st.partial?'#856404':'inherit'}">${actCell}</td>
       <td style="white-space:nowrap">${statusBadge}</td>
-      <td style="white-space:nowrap">${p.remark?`<span title="${String(p.remark).replace(/"/g,'&quot;')}" style="cursor:help">📝</span>`:''} ${matIcon}</td>
+      <td style="white-space:nowrap">${p.remark?`<span title="${String(p.remark).replace(/"/g,'&quot;')}" style="cursor:help">📝</span>`:''} ${matIcon} ${drawIcon}</td>
     </tr>`;
 }
 // (20 Jul 2026, ตามที่ Ji ขอ) แยกตาราง APEX PO Order Log เป็นกลุ่มชัดเจน —
@@ -3025,7 +3113,7 @@ function pageAPEX(){
   // hover หรือกดเข้าไปดูก่อนถึงจะรู้ความหมาย (บนมือถือ hover ใช้ไม่ได้ด้วย) — เพิ่ม legend สั้นๆ
   // ไว้เหนือตารางเลย ให้เห็นความหมายได้ทันทีโดยไม่ต้องกด
   html += `<div class="card">
-    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด · 📝 มีหมายเหตุเพิ่มเติม · 📦 มีบันทึกวัสดุแพ็คที่ส่งให้ APEX แล้ว (สีแดง = ยังส่งไม่ครบบางรายการ)</div><div class="tw"><table>${THEAD}<tbody>
+    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด · 📝 มีหมายเหตุเพิ่มเติม · 📦 มีบันทึกวัสดุแพ็คที่ส่งให้ APEX แล้ว (สีแดง = ยังส่งไม่ครบบางรายการ) · 🔻 เตรียมตัดสต็อกไว้แล้ว (สีแดง = ของมาถึงแล้ว พร้อมยืนยันตัดสต็อกจริง — ดูแถบแจ้งเตือนด้านบนสุด)</div><div class="tw"><table>${THEAD}<tbody>
       ${list.length?list.map(apexRow).join(''):`<tr><td colspan="8" style="text-align:center;color:#8fa3b0;padding:20px">${emptyMsgs[APEX_SUB]}</td></tr>`}
     </tbody></table></div></div>
   </div>`;
@@ -3089,11 +3177,19 @@ const CAL_SHAPE_PATH={
   star:     c=>`<polygon points="12,1 15,9 23,9.3 16.5,14.5 19,22.5 12,17.8 5,22.5 7.5,14.5 1,9.3 9,9" ${c}/>`,
   hexagon:  c=>`<polygon points="12,1.5 21,6.75 21,17.25 12,22.5 3,17.25 3,6.75" ${c}/>`,
 };
-function calDotHtml(cat,size){
+// 25 Sep 2026 (รอบยี่สิบเจ็ด): Ji ส่งภาพปฏิทินที่ PO 056 ขึ้นดาว "✈️PO 056" สีเข้มเต็มบนวันที่
+// 26 Sep (ยังไม่ถึง — วันนั้นเป็นพรุ่งนี้) แล้วทักว่า "อันที่ขึ้นเป็น actual date ให้สีอ่อนหน่อย
+// ถ้ายังไม่ถึงวันดังกล่าวได้มั้ย เพราะว่ามันทำให้ผู้อ่านอาจเข้าใจผิดได้ว่า ทำไมของที่มาจริงดัน
+// มาล่วงหน้าหละ" — จุดที่เป็น fill:'solid' (po-act/apex-sent/apex-act/apex-cust — ความหมายคือ
+// "เกิดขึ้นแล้ว") ถ้าวันที่ยังไม่ถึงจริง (เป็นแค่วันที่กรอกล่วงหน้าไว้ตอนยืนยันรอบส่ง) ควรทำให้
+// จางกว่าปกติ เพื่อไม่ให้อ่านผิดว่า "ของมาแล้วล่วงหน้า" — เพิ่มพารามิเตอร์ muted: จางสี fill/
+// stroke ลง (fill-opacity/stroke-opacity) แต่ยังคงรูปทรง/อีโมจิ/ตัวหนังสือเดิมไว้ทุกจุด (ไม่ได้
+// ใช้สีเป็นตัวบอกความหมายหลักคนเดียว — มีข้อความ "ยังไม่ถึงวันนี้" กำกับเสมอที่จุดเรียกใช้)
+function calDotHtml(cat,size,muted){
   const c=CAL_CAT_LABEL[cat]; const s=size||8;
   const attrs = c.fill==='solid'
-    ? `fill="${c.color}"`
-    : `fill="#fff" stroke="${c.color}" stroke-width="2.75"`;
+    ? (muted ? `fill="${c.color}" fill-opacity="0.32"` : `fill="${c.color}"`)
+    : `fill="#fff" stroke="${c.color}" stroke-width="2.75"${muted?' stroke-opacity="0.4"':''}`;
   const shapeSvg = CAL_SHAPE_PATH[c.shape](attrs);
   return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="flex-shrink:0;display:inline-block" aria-hidden="true">${shapeSvg}</svg>`;
 }
@@ -3103,7 +3199,10 @@ function dayKey(ms){ const d=new Date(ms); return `${d.getFullYear()}-${d.getMon
 function calEvents(){
   const evs=[];
   // short = ข้อความสั้นๆ (เลข PO/รหัส) สำหรับโชว์ตรงในช่องปฏิทินเลย ไม่ต้องกดเข้าไปดู
-  const push=(ms,cat,label,sub,short)=>{ if(!ms) return; evs.push({ms,cat,label,sub,short:short||label}); };
+  // future: วันที่นี้ยังไม่ถึงจริง (ms > ตอนนี้) — ใช้ตัดสินว่าจุด "เกิดขึ้นแล้ว" (fill:'solid')
+  // ควรแสดงแบบจางลง (ดู calDotHtml) หรือไม่ ที่จุดเรียกใช้ (ไม่ทำที่นี่ เพราะ po-exp/apex-exp
+  // เป็น fill:'hollow' อยู่แล้ว ไม่ต้องจางซ้ำ)
+  const push=(ms,cat,label,sub,short)=>{ if(!ms) return; evs.push({ms,cat,label,sub,short:short||label,future:ms>Date.now()}); };
   // 7 Aug 2026 (Ji ขอ "ทุกวันที่ที่มีบันทึกว่าของจะเข้า ก็แจ้งไว้บนปฏิทินเลยสิ"): ถ้า field
   // นั้นไม่มีวันที่เดี่ยว (…D) แต่มีข้อความอิสระ (…Text เช่น "24 Jul 2026\n31 Jul 2026" หรือ
   // "6, 7, 16 July 2026") ให้ดึงวันที่ทุกตัวที่ parse ได้ออกมาแปะเป็นจุดบนปฏิทินให้ครบ แทนที่
@@ -3185,7 +3284,7 @@ function pageCalendar(){
         </div>
         <button class="bg2" style="margin:0" onclick="calToday()">Today</button>
       </div>
-      <div class="hint" style="padding:0 0 10px;background:none;border:none">คลิกวันที่ในปฏิทินเพื่อดูรายการของวันนั้น</div>
+      <div class="hint" style="padding:0 0 10px;background:none;border:none">คลิกวันที่ในปฏิทินเพื่อดูรายการของวันนั้น · จุดสีจาง = ยังไม่ถึงวันที่ตามกำหนด (กรอกล่วงหน้าไว้ ยังไม่เกิดขึ้นจริง)</div>
       <div style="margin-bottom:10px;display:flex;flex-wrap:wrap">${legend}</div>
       ${grid}
     </div></div>
@@ -3194,7 +3293,8 @@ function pageCalendar(){
         <div style="font-weight:700;font-size:13px;margin-bottom:8px">${new Date(CAL_SEL).toLocaleDateString('en-GB',{weekday:'long',day:'2-digit',month:'short',year:'numeric'})}</div>
         ${selEvs.length? selEvs.map(e=>{
           const c=CAL_CAT_LABEL[e.cat];
-          return `<div class="srow"><div style="display:flex;align-items:flex-start;gap:8px">${calDotHtml(e.cat,10)}<div><span class="badge" style="font-size:10px;background:${c.color}1a;color:${c.color}">${c.emoji} ${c.label}</span><div style="margin-top:4px">${e.label}${e.sub?` <span style="color:#8fa3b0">· ${e.sub}</span>`:''}</div></div></div></div>`;
+          const muted = e.future && c.fill==='solid';
+          return `<div class="srow"><div style="display:flex;align-items:flex-start;gap:8px">${calDotHtml(e.cat,10,muted)}<div><span class="badge" style="font-size:10px;background:${c.color}1a;color:${muted?'#8fa3b0':c.color}">${c.emoji} ${c.label}${muted?' · ยังไม่ถึงวันนี้':''}</span><div style="margin-top:4px${muted?';color:#8fa3b0':''}">${e.label}${e.sub?` <span style="color:#8fa3b0">· ${e.sub}</span>`:''}</div></div></div></div>`;
         }).join('') : '<div style="color:#8fa3b0;font-size:13px;padding:6px 0">ไม่มีกำหนดการวันนี้</div>'}
       </div>
     </div></div>
@@ -3220,9 +3320,12 @@ function calGrid(y,m,evs){
     // 23 Sep 2026 (Ji: "บนตารางมันโชว์แค่จุด...ไม่รู้ว่าเลขไหน PO ใด"): โชว์เลข PO/รหัสสั้นๆ
     // ตรงในช่องเลย (สูงสุด 3 บรรทัด) แทนจุดเปล่าๆ — ใช้ e.short ที่เตรียมไว้ใน calEvents()
     const MAXLINES=3;
-    const lines=dayEvs.slice(0,MAXLINES).map(e=>
-      `<div title="${(e.label+(e.sub?' · '+e.sub:'')).replace(/"/g,'&quot;')}" style="display:flex;align-items:center;gap:3px;overflow:hidden;margin-top:2px">${calDotHtml(e.cat,6)}<span style="font-size:9px;color:#1a2633;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${CAL_CAT_LABEL[e.cat].emoji}${e.short}</span></div>`
-    ).join('');
+    const lines=dayEvs.slice(0,MAXLINES).map(e=>{
+      const c=CAL_CAT_LABEL[e.cat];
+      const muted = e.future && c.fill==='solid';
+      const title=(e.label+(e.sub?' · '+e.sub:'')+(muted?' · ยังไม่ถึงวันนี้ (กรอกล่วงหน้าไว้)':'')).replace(/"/g,'&quot;');
+      return `<div title="${title}" style="display:flex;align-items:center;gap:3px;overflow:hidden;margin-top:2px">${calDotHtml(e.cat,6,muted)}<span style="font-size:9px;color:${muted?'#adb8c2':'#1a2633'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.emoji}${e.short}</span></div>`;
+    }).join('');
     const more=dayEvs.length>MAXLINES?`<div style="font-size:9px;color:#8fa3b0;margin-top:2px">+${dayEvs.length-MAXLINES} เพิ่มเติม</div>`:'';
     cells+=`<div onclick="calSelect(${ms})" title="คลิกเพื่อดูรายการวันนี้" style="min-height:${dayEvs.length?'92px':'64px'};border:1px solid ${isSel?'#1a2633':'#eef1f5'};border-radius:6px;padding:5px;cursor:pointer;background:${isToday?'#eef4ff':'#fff'};overflow:hidden">
       <div style="font-size:11px;font-weight:${isToday?700:500};color:${isToday?'#1a2633':'#5b6b76'}">${d}</div>
@@ -3552,6 +3655,24 @@ function confirmReceive(id, vendor, po){
 // 22 Sep 2026: หน้ารายละเอียดนี้คือที่เดียวที่จะโชว์วันที่ครบทุกรอบแบบละเอียด (ตารางหลัก
 // ย่อไว้แค่สรุปแล้ว ตาม Ji ขอ "อ่านง่ายขึ้น") — ถ้า Expected/Actual มีมากกว่า 1 รอบ ให้ขึ้น
 // เป็นลิสต์ "รอบ 1/2/3 ..." พร้อมเครื่องหมาย ✓/⏳ ต่อรอบแทนการโชว์แค่วันที่ล่าสุดเฉยๆ
+// 25 Sep 2026 (รอบยี่สิบหก): แบนเนอร์ "เตรียมตัดสต็อก" ในหน้ารายละเอียด PO — โชว์ยอดพรีวิว
+// เสมอถ้ามี pending draw ผูกกับ PO นี้ แล้วถ้าของมาถึงแล้ว (apexPendingReady) เพิ่มปุ่ม
+// "ยืนยันตัดสต็อกจริง" ตรงนี้เลย (อีกทางเลือกนอกจากกดจากแถบแจ้งเตือนด้านบนสุด)
+function apexPendingDrawBannerHtml(p){
+  const draws = APEX_PENDING_DRAWS.filter(d=>d.apexPO===p.apexPO && !(D.apexDrawsConfirmed||[]).includes(d.id));
+  if(!draws.length) return '';
+  return draws.map(d=>{
+    const innerQty=pendingInner(d.pcs), cartonQty=pendingCartons(d.pcs);
+    const ready = apexPendingReady(d);
+    const bg = ready ? '#fdf1f1' : '#fff8e6';
+    const border = ready ? '#dc3545' : '#eda100';
+    return `<div style="margin:12px 16px;padding:10px 12px;background:${bg};border:1px solid ${border};border-radius:8px;font-size:12px">
+      <div style="font-weight:700;color:${ready?'#a23b3b':'#8a6300'}">${ready?'✅ ของมาถึงแล้ว — พร้อมตัดสต็อกจริง':'🔻 เตรียมตัดสต็อก (พรีวิว — ยังไม่ตัดสต็อกจริง)'}</div>
+      <div style="margin-top:4px;color:#5b6b76">${d.flavor} · ${f(d.pcs)} ชิ้น = -${f(innerQty)} กล่องใน / -${fc(cartonQty)} ${d.market==='kr'?'ลัง':'ลังนอก'}</div>
+      ${ready?`<button class="btn-recv" style="background:#dc3545;color:#fff;margin-top:8px" onclick="confirmApexPendingDraw('${d.id}')">ยืนยันตัดสต็อก</button>`:''}
+    </div>`;
+  }).join('');
+}
 function showAPEXSheet(row, p){
   const actStr=apexDate(p,'act');
   const st=apexStatus(p);
@@ -3580,6 +3701,7 @@ function showAPEXSheet(row, p){
       <div class="row"><span>ส่ง Customer</span><span style="text-align:right">${nl2br(apexDate(p,'toCust'))||'—'}</span></div>
     </div>
     ${roundsSum ? apexRoundsSummaryHtml(roundsSum) : ''}
+    ${apexPendingDrawBannerHtml(p)}
     ${p.remark?`<div style="margin:12px 16px;padding:10px;background:#f4f6f9;border-radius:6px;font-size:12px;color:#5b6b76">${nl2br(p.remark)}</div>`:''}
     ${apexMaterialsSectionHtml(p.apexPO)}`;
   openSheet(`${p.nat} · ${p.apexPO||'—'}`, html, row);
@@ -3601,9 +3723,18 @@ function apexPendingList(){
 function renderIncBar(){
   const pendingPO=D.pos.filter(p=>!poArrived(p));
   const pendingApex=apexPendingList();
+  // 25 Sep 2026 (รอบยี่สิบหก): APEX PO ที่ของ "มาถึงแล้ว" (apexStatus done) หลุดออกจาก
+  // apexPendingList() โดยธรรมชาติอยู่แล้ว (ไม่ใช่ "รออยู่" อีกต่อไป) จึงไม่ซ้ำกับ readyDraws
+  // ด้านล่างเลย — เป็นคนละสถานะ ไม่มีทางนับซ้ำกัน
+  const readyDraws=apexReadyDrawsList();
   const bar=document.getElementById('inc-bar');
   const total=pendingPO.length+pendingApex.length;
-  if(!total){ bar.style.display='none'; return; }
+  const readyBadge=document.getElementById('ready-badge');
+  if(readyBadge){
+    if(readyDraws.length){ readyBadge.style.display='inline-flex'; document.getElementById('ready-count').textContent=readyDraws.length; }
+    else readyBadge.style.display='none';
+  }
+  if(!total && !readyDraws.length){ bar.style.display='none'; return; }
   bar.style.display='block';
   document.getElementById('inc-count').textContent=total;
   // หา "ใกล้สุด" รวมทั้งฝั่ง Supplier PO (Expected) และ APEX PO (Actual) เทียบกันด้วยวันที่จริง
@@ -3613,9 +3744,13 @@ function renderIncBar(){
   ].sort((a,b)=>a.ms-b.ms);
   const nearest=candidates[0];
   const days=nearest?daysFrom(nearest.ms):null;
-  document.getElementById('inc-text').textContent= days!==null
-    ?`กำลังจะมาส่ง · ใกล้สุด: ${nearest.text} ${days<=0?'วันนี้/เลยกำหนด':'อีก '+days+' วัน'}`
-    :`กำลังจะมาส่ง ${total} รายการ`;
+  if(!total && readyDraws.length){
+    document.getElementById('inc-text').textContent=`✅ พร้อมตัดสต็อกจริง ${readyDraws.length} รายการ`;
+  } else {
+    document.getElementById('inc-text').textContent= days!==null
+      ?`กำลังจะมาส่ง · ใกล้สุด: ${nearest.text} ${days<=0?'วันนี้/เลยกำหนด':'อีก '+days+' วัน'}`
+      :`กำลังจะมาส่ง ${total} รายการ`;
+  }
 }
 function toggleInc(){
   incOpen=!incOpen;
@@ -3633,8 +3768,23 @@ function renderIncList(){
     const db=b.ms||(sort==='asc'?Infinity:-Infinity);
     return sort==='asc'?da-db:db-da;
   });
-  document.getElementById('inc-count-lbl').textContent=`${combined.length} รายการ`;
-  document.getElementById('inc-list').innerHTML=sorted.map(x=>{
+  // 25 Sep 2026 (รอบยี่สิบหก): รายการ "พร้อมตัดสต็อกจริง" ขึ้นก่อนเสมอ (ไม่ว่าจะเรียงแบบไหน)
+  // เพราะเป็นสิ่งที่ต้องกดยืนยัน ไม่ใช่แค่ดูนับถอยหลังเฉยๆ — ใส่กรอบสีแดงให้ต่างจากรายการอื่น
+  // ชัดเจน (ไม่ได้พึ่งสีอย่างเดียว มีคำว่า "✅ ...มาถึงแล้ว" + ปุ่มกำกับด้วยตามกฎห้ามใช้สีสื่อ
+  // ความหมายหลัก รอบยี่สิบสอง)
+  const readyDraws=apexReadyDrawsList();
+  const readyHtml=readyDraws.map(d=>{
+    const innerQty=pendingInner(d.pcs), cartonQty=pendingCartons(d.pcs);
+    return `<div class="inc-item" style="background:#fdf1f1;border-left:3px solid #dc3545">
+      <div class="inc-info">
+        <div class="inc-name">✅ ${d.apexPO} — ${d.jobName} มาถึงแล้ว</div>
+        <div class="inc-meta">${d.flavor} · ${f(d.pcs)} ชิ้น = -${f(innerQty)} กล่องใน / -${fc(cartonQty)} ${d.market==='kr'?'ลัง':'ลังนอก'}</div>
+      </div>
+      <button class="btn-recv" style="background:#dc3545;color:#fff" onclick="confirmApexPendingDraw('${d.id}')">ยืนยันตัดสต็อก</button>
+    </div>`;
+  }).join('');
+  document.getElementById('inc-count-lbl').textContent=`${readyDraws.length+combined.length} รายการ`;
+  document.getElementById('inc-list').innerHTML=readyHtml+sorted.map(x=>{
     const days=daysFrom(x.ms);
     const dstr=days===null?'—':days<0?`${Math.abs(days)} วันที่แล้ว`:days===0?'วันนี้':`อีก ${days} วัน`;
     const dcls=days===null?'':days<=3?'ds':days<=7?'dm':'df';
