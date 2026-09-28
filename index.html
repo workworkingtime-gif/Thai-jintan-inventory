@@ -2008,6 +2008,12 @@ const APEX_DRAWS = [
   // เพราะตัดเรียบร้อยแล้ว" — โปรโมทจากพรีวิวใน APEX_PENDING_DRAWS (ด้านล่าง) มาตัดสต็อก
   // จริงแล้ว (ลบ entry เดิมออกจาก pending ด้วย กันตัดซ้ำสองครั้ง) — 1,355 ลัง Spearmint
   {id:'apex_po049_kr_spearmint_draw', market:'kr', flavor:'Spearmint', unit:'carton', qty:1355, poRef:'APEX PO 049 (Duo Burster เกาหลี)'},
+  // 28 Sep 2026 (รอบยี่สิบเก้า): Ji ส่งภาพ banner "PO 056 ... มาถึงแล้ว" (พรีวิว -3,000
+  // กล่องใน / -250 ลัง) แล้วพิมพ์ในแชทว่า "ตัดเลย" — ปุ่มยืนยันตัดสต็อกบนเว็บถูกปิดไปแล้ว
+  // (รอบยี่สิบแปด) จึงใช้วิธีเดิม (แจ้งทางแชท → Claude เพิ่ม entry ตรงนี้) แทน — โปรโมทจาก
+  // พรีวิวใน APEX_PENDING_DRAWS (ด้านล่าง) มาตัดสต็อกจริงแล้ว (ลบ entry เดิมออกจาก pending
+  // ด้วย กันตัดซ้ำสองครั้ง) — 250 ลัง × 12 กล่องใน/ลัง = 3,000 กล่องใน ตรงกับพรีวิวเป๊ะ
+  {id:'apex_po056_kr_peppermint_draw', market:'kr', flavor:'Peppermint', unit:'carton', qty:250, poRef:'APEX PO 056 (Dong-A Peppermint Anpanman เกาหลี)'},
 ];
 function applyApexDraw(d){
   performApexDraw(d.market, d.flavor, d.unit, d.qty, d.poRef);
@@ -2040,7 +2046,8 @@ const APEX_PENDING_DRAWS = [
   // ที่ Actual Date เขียนว่า "cancel" ตรงกับที่มาร์คไว้เป็นยกเลิกแล้วพอดี) — เชื่อสกรีนช็อต
   // ของจริงเป็นหลัก (เหมือนกรณี PO 049 ก่อนหน้านี้) พรีวิวเท่านั้น ยังไม่ตัดสต็อกจริง
   // 60,000 ชิ้น ÷ 20 ชิ้น/กล่องใน ÷ 12 กล่องใน/ลัง = 250 ลัง ตรงกับ remark เป๊ะ
-  {id:'apex_po056_kr_peppermint', market:'kr', apexPO:'PO 056', jobName:'Dong-A Peppermint Anpanman (เกาหลี)', flavor:'Peppermint', pcs:60000},
+  // 28 Sep 2026: Ji ยืนยันของมาถึงแล้ว พิมพ์ "ตัดเลย" ในแชท — โปรโมทไปตัดสต็อกจริงแล้ว
+  // (ดู APEX_DRAWS ด้านบน) จึงลบออกจากพรีวิวตรงนี้ กันไม่ให้โดนหักซ้ำสองครั้ง
 ];
 function pendingInner(pcs){ return (pcs||0)/IPU; }
 function pendingCartons(pcs){ return pendingInner(pcs)/IPC; }
