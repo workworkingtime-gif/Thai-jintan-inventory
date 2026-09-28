@@ -1101,6 +1101,11 @@ const storage = (window.storage && typeof window.storage.get==='function')
         async get(key){ return { value: _mem[key] }; },
         async set(key, value){ _mem[key] = value; }
       };
+// 28 Sep 2026 — ย้อนกลับการแก้รอบก่อนหน้า (ที่ตัดการถาม PIN ออกจากฝั่งหน้าเว็บ): Ji ชี้ถูกต้องว่า
+// ถ้าตัดแค่ฝั่งนี้โดยไม่ได้แก้ Apps Script ด้วย จะทำให้การบันทึก "พังสำหรับทุกคน" ทันที — รวมถึง
+// คนที่มี PIN cache ถูกต้องอยู่แล้วในเครื่องตัวเองด้วย (เพราะโค้ดเดิมไม่ส่ง pin ไปเลย) ซึ่งขัดกับ
+// จุดประสงค์หลักของเว็บนี้ (ให้ทุกคนเห็น/แก้ข้อมูลชุดเดียวกันแบบ live) — คืนกลับมาใช้ระบบ PIN
+// เดิมก่อน จนกว่าจะแก้ที่ต้นตอจริงในฝั่ง Apps Script ได้ (ดูโน้ตใน workflow-notes.md)
 // opts.interactive (default true): whether it's OK to pop up the PIN modal.
 // System-driven saves (e.g. replaying a new patch during loadAll for someone
 // who's just viewing) pass {interactive:false} so a random viewer never gets
@@ -1960,7 +1965,19 @@ function performApexDraw(market, flavor, unit, qty, poRef){
   applyApexDrawAmounts(market, flavor, cartonQty, innerQty, poRef, unit==='carton');
   return {ok:true, cartonQty, innerQty, cartonLbl};
 }
+// 28 Sep 2026: Ji ขอ "เอารหัสออก" ให้ทุกคนแก้ไขได้อิสระโดยไม่ต้องใช้ PIN — ทำแบบนั้นแล้วพบว่า
+// พัง (ดูโน้ตที่ saveAll() ด้านบน): รหัสผ่านนี้เช็คจริงฝั่ง Google Apps Script (Claude เข้าไม่ถึง)
+// ดังนั้นจะ "ลบรหัส" แบบยังให้บันทึกไปยังทุกคนได้จริงๆ ไม่ได้ ในทางกลับกัน Ji ยืนยันว่าจุดสำคัญ
+// ที่สุดคือทุกคนต้องเห็นข้อมูลชุดเดียวกันเสมอ (การอ่าน/sync ยังคงต้อง live เหมือนเดิม) — ส่วนการ
+// "แก้ไขตรงบนหน้าเว็บ" ถ้าใช้งานจริงไม่ได้แบบไม่มีรหัส Ji บอกให้ตัดออกไปเลย แล้วให้แจ้งการ
+// เปลี่ยนแปลงทางแชทกับ Claude แทน (กลับไปใช้วิธีเดิมที่เว็บนี้ใช้มาตั้งแต่ต้น ก่อนมีปุ่มแก้ไขเอง)
+// — ปิดปุ่ม/ฟอร์มแก้ไขทั้ง 8 จุดที่เคยเรียก saveAll() ไว้ด้วยฟังก์ชันนี้ (การอ่าน/แสดงผลข้อมูล
+// ที่ sync มาจาก Google Sheet ยังคงทำงานปกติทุกจุด ไม่ได้แตะ)
+function editingDisabledNotice(){
+  alert('แก้ไขโดยตรงบนหน้าเว็บปิดใช้งานอยู่ตอนนี้ค่ะ (ระบบรหัสผ่านเดิมมีปัญหา ยังแก้ให้ใช้งานได้แบบไม่ต้องใช้รหัสไม่ได้) — แจ้งการเปลี่ยนแปลงที่ต้องการทางแชทกับ Claude แทนนะคะ แล้วจะอัปเดตให้');
+}
 function drawToApex(market){
+  editingDisabledNotice(); return;
   const flavor = document.getElementById('draw_flavor').value;
   const unit = document.getElementById('draw_unit').value;
   const qtyVal = document.getElementById('draw_qty').value;
@@ -2080,6 +2097,7 @@ function apexReadyDrawsList(){
 // ปุ่ม "✅ ยืนยันตัดสต็อกจริง" — ตัดตรงเป๊ะกับตัวเลขพรีวิว "เตรียมตัดออก" ที่เคยโชว์ไว้ทุก
 // ประการ (ใช้สูตรเดียวกัน pendingInner/pendingCartons) กัน "พรีวิวบอกอย่าง ตัดจริงอีกอย่าง"
 function confirmApexPendingDraw(id){
+  editingDisabledNotice(); return;
   const d = APEX_PENDING_DRAWS.find(x=>x.id===id);
   if(!d) return;
   D.apexDrawsConfirmed = D.apexDrawsConfirmed || [];
@@ -2149,6 +2167,7 @@ function applyPOOverrides(){
 // ฟิลด์ที่ Ji แก้เองได้ตรงในหน้าเว็บสำหรับ Supplier PO แต่ละใบ (ไม่ต้องแก้โค้ด/deploy อีก) —
 // จับคู่กับ input ในฟอร์มของ showPOSheet() ด้านล่าง
 function savePOField(po, field, dateStr){
+  editingDisabledNotice(); return;
   if(!dateStr) return;
   const ms = Date.parse(dateStr+'T00:00:00Z');
   if(isNaN(ms)){ alert('รูปแบบวันที่ไม่ถูกต้อง'); return; }
@@ -3498,6 +3517,7 @@ function showMktSheet(row, r){
   openSheet(`${r.flavor} · Inner box · ${r.key}`, html, row);
 }
 function saveStock(mktId, flavor, field, val){
+  editingDisabledNotice(); return;
   const arr = mktId==='hk'?D.hk:D.sg;
   const item = arr.find(x=>x.flavor===flavor);
   if(!item) return;
@@ -3566,6 +3586,7 @@ function showOuterSheet(row, r){
   openSheet(`${r.flavor} · Outer box · ${r.mktKey}`, html, row);
 }
 function saveOuterStock(mktKey, flavor, field, val){
+  editingDisabledNotice(); return;
   const arr = mktKey==='HK' ? D.hkOuter : D.sgOuter;
   const item=arr.find(x=>x.flavor===flavor);
   if(!item) return;
@@ -3608,6 +3629,7 @@ function showKRSheet(row, r, type){
   openSheet(`${r.flavor} · ${type} · 🇰🇷 KR`, html, row);
 }
 function saveKRStock(flavor, type, val){
+  editingDisabledNotice(); return;
   const item=D.kr.find(x=>x.flavor===flavor&&x.type===type);
   if(!item) return;
   const old=item.apex||0; const newV=parseInt(val)||0;
@@ -3647,6 +3669,7 @@ function showPOSheet(row, p){
   openSheet(`${p.vendor} · ${p.po}`, html, row);
 }
 function confirmReceive(id, vendor, po){
+  editingDisabledNotice(); return;
   const rmk=(document.getElementById('recv_rmk')?.value||'').trim();
   D.received[id]={date:tsNow(), remark:rmk};
   logAudit('mark_recv',`${vendor} · ${po}`,`รับสินค้าแล้ว${rmk?' · Remark: '+rmk:''}`,'+1 PO');
@@ -3814,6 +3837,7 @@ function renderIncList(){
   }).join('')||'<div style="padding:14px 22px;color:#8fa3b0;font-size:13px">ไม่มีรายการที่รออยู่</div>';
 }
 function qkReceive(id, vendor, po){
+  editingDisabledNotice(); return;
   const rmk=(document.getElementById('irmk_'+id)?.value||'').trim();
   D.received[id]={date:tsNow(), remark:rmk};
   logAudit('mark_recv',`${vendor} · ${po}`,`รับสินค้าแล้ว${rmk?' · Remark: '+rmk:''}`,'+1 PO');
