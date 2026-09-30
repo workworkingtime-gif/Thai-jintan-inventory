@@ -2048,6 +2048,18 @@ const APEX_PENDING_DRAWS = [
   // 60,000 ชิ้น ÷ 20 ชิ้น/กล่องใน ÷ 12 กล่องใน/ลัง = 250 ลัง ตรงกับ remark เป๊ะ
   // 28 Sep 2026: Ji ยืนยันของมาถึงแล้ว พิมพ์ "ตัดเลย" ในแชท — โปรโมทไปตัดสต็อกจริงแล้ว
   // (ดู APEX_DRAWS ด้านบน) จึงลบออกจากพรีวิวตรงนี้ กันไม่ให้โดนหักซ้ำสองครั้ง
+  // 30 Sep 2026: Ji ส่งภาพหน้ารายละเอียด "HK · PO 062" — หมายเหตุในหน้านั้นระบุยอดต่อ
+  // รสชาติเป็นลังตรงๆ อยู่แล้ว: "HK; Raspberry 17 ctn, HL 35 ctn, Melon 73 ctn, Donki 30
+  // ctn, Hongkong Edition 40 ctn" — Ji ยืนยันว่า "HL" = Honey lemon แล้วให้เพิ่มเป็น
+  // พรีวิวเตรียมตัดสต็อกเลย (ยังไม่ตัดจริง) — แปลงลัง→ชิ้นด้วยค่าคงที่เดิมของระบบ
+  // (1 ลัง = 12 กล่องใน = 240 ชิ้น, ดู APEX_CARTON_CAPACITY/IPC/IPU) แยกราย flavor
+  // Raspberry 17×240=4,080 / Honey lemon 35×240=8,400 / Melon 73×240=17,520 /
+  // Donki 30×240=7,200 / Hongkong edition 40×240=9,600 — รวม 195 ลัง = 46,800 ชิ้น
+  {id:'apex_po062_hk_raspberry', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Raspberry', pcs:4080},
+  {id:'apex_po062_hk_honeylemon', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Honey lemon', pcs:8400},
+  {id:'apex_po062_hk_melon', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Melon', pcs:17520},
+  {id:'apex_po062_hk_donki', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Donki', pcs:7200},
+  {id:'apex_po062_hk_hongkongedition', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Hongkong edition', pcs:9600},
 ];
 function pendingInner(pcs){ return (pcs||0)/IPU; }
 function pendingCartons(pcs){ return pendingInner(pcs)/IPC; }
@@ -3703,6 +3715,41 @@ function apexPendingDrawBannerHtml(p){
     </div>`;
   }).join('');
 }
+// 30 Sep 2026: Ji ส่งภาพหมายเหตุแบบ "HK; Raspberry 17 ctn, HL 35 ctn, ..." มาถามว่าอ้างอิง
+// ข้อมูลตรงนี้ได้มั้ย ก่อนขอให้ทำเป็นตารางอ่านง่าย (รสชาติ/ลัง/กล่องใน/ชิ้น) แทนข้อความยาว
+// บรรทัดเดียว — ถ้าหมายเหตุ (มาจาก REMARK ในชีตที่ sync สด) ตรงกับรูปแบบ "ชื่อ N ctn, ชื่อ N
+// ctn, ..." (ตัด prefix ก่อน ';' ตัวแรกทิ้งถ้ามี เช่น "HK;") จะพาร์สแล้วแปลงลัง→กล่องใน/ชิ้น
+// ด้วยค่าคงที่เดิมของระบบ (IPC=12 กล่องใน/ลัง, IPU=20 ชิ้น/กล่องใน) — ถ้ามีรายการไหนไม่ตรง
+// รูปแบบเลย fallback กลับไปโชว์ข้อความดิบทั้งหมดเหมือนเดิมทุกประการ ไม่เสี่ยงตีความผิด
+function parseCartonRemark(remark){
+  if(!remark) return null;
+  const body = remark.includes(';') ? remark.split(';').slice(1).join(';') : remark;
+  const parts = body.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!parts.length) return null;
+  const rows=[];
+  for(const part of parts){
+    const m = part.match(/^(.+?)\s+([\d,]+)\s*ctn$/i);
+    if(!m) return null;
+    const flavor = m[1].trim();
+    const ctn = parseInt(m[2].replace(/,/g,''),10);
+    if(!flavor || !isFinite(ctn)) return null;
+    rows.push({flavor, ctn});
+  }
+  return rows;
+}
+function remarkTableHtml(remark){
+  const rows = parseCartonRemark(remark);
+  if(!rows) return null;
+  const trs = rows.map(r=>{
+    const inner=r.ctn*IPC, pcs=inner*IPU;
+    return `<tr><td>${r.flavor}</td><td style="text-align:right">${f(r.ctn)}</td><td style="text-align:right">${f(inner)}</td><td style="text-align:right">${f(pcs)}</td></tr>`;
+  }).join('');
+  const totalCtn=rows.reduce((s,r)=>s+r.ctn,0), totalInner=totalCtn*IPC, totalPcs=totalInner*IPU;
+  return `<table class="rt" style="margin:12px 16px;width:calc(100% - 32px)">
+    <thead><tr><th>รสชาติ</th><th style="text-align:right">ลัง</th><th style="text-align:right">กล่องใน</th><th style="text-align:right">ชิ้น</th></tr></thead>
+    <tbody>${trs}<tr style="font-weight:700;background:#f4f6f9"><td>รวมทั้งหมด</td><td style="text-align:right">${f(totalCtn)}</td><td style="text-align:right">${f(totalInner)}</td><td style="text-align:right">${f(totalPcs)}</td></tr></tbody>
+  </table>`;
+}
 function showAPEXSheet(row, p){
   const actStr=apexDate(p,'act');
   const st=apexStatus(p);
@@ -3732,7 +3779,7 @@ function showAPEXSheet(row, p){
     </div>
     ${roundsSum ? apexRoundsSummaryHtml(roundsSum) : ''}
     ${apexPendingDrawBannerHtml(p)}
-    ${p.remark?`<div style="margin:12px 16px;padding:10px;background:#f4f6f9;border-radius:6px;font-size:12px;color:#5b6b76">${nl2br(p.remark)}</div>`:''}
+    ${p.remark?(remarkTableHtml(p.remark) || `<div style="margin:12px 16px;padding:10px;background:#f4f6f9;border-radius:6px;font-size:12px;color:#5b6b76">${nl2br(p.remark)}</div>`):''}
     ${apexMaterialsSectionHtml(p.apexPO)}`;
   openSheet(`${p.nat} · ${p.apexPO||'—'}`, html, row);
 }
