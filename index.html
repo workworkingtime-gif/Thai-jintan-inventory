@@ -2084,13 +2084,22 @@ const APEX_PENDING_DRAWS = [
   // ctn, Hongkong Edition 40 ctn" — Ji ยืนยันว่า "HL" = Honey lemon แล้วให้เพิ่มเป็น
   // พรีวิวเตรียมตัดสต็อกเลย (ยังไม่ตัดจริง) — แปลงลัง→ชิ้นด้วยค่าคงที่เดิมของระบบ
   // (1 ลัง = 12 กล่องใน = 240 ชิ้น, ดู APEX_CARTON_CAPACITY/IPC/IPU) แยกราย flavor
-  // Raspberry 17×240=4,080 / Honey lemon 35×240=8,400 / Melon 73×240=17,520 /
-  // Donki 30×240=7,200 / Hongkong edition 40×240=9,600 — รวม 195 ลัง = 46,800 ชิ้น
-  {id:'apex_po062_hk_raspberry', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Raspberry', pcs:4080},
-  {id:'apex_po062_hk_honeylemon', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Honey lemon', pcs:8400},
-  {id:'apex_po062_hk_melon', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Melon', pcs:17520},
-  {id:'apex_po062_hk_donki', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Donki', pcs:7200},
-  {id:'apex_po062_hk_hongkongedition', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Hongkong edition', pcs:9600},
+  // 1 Oct 2026 (รอบสามสิบสี่): Ji แจ้งว่า PO 062 เปลี่ยนจำนวนแล้ว ยอดใหม่คือ "HK; Raspberry
+  // 18 ctn, HL 83 ctn, Melon 83 ctn, Black spearmint 21 ctn, Donki 30 ctn, Hongkong Edition
+  // 40 ctn" (เพิ่ม Black Spearmint เข้ามาใหม่ด้วย ไม่มีในยอดเดิม) — อัปเดตทุก entry ตามนี้:
+  // Raspberry 18×240=4,320 / Honey lemon 83×240=19,920 / Melon 83×240=19,920 /
+  // Black Spearmint 21×240=5,040 / Donki 30×240=7,200 (ไม่เปลี่ยน) / Hongkong edition
+  // 40×240=9,600 (ไม่เปลี่ยน) — รวม 275 ลัง = 66,000 ชิ้น
+  // Ji ยังบอกด้วยว่า "กล่องเรา ไม่ต้องตัดแล้ว" — คือลังนอก (ลังของ Thai Jintan เอง) ไม่ต้อง
+  // ถูกตัดสต็อกสำหรับ PO นี้อีกต่อไป (APEX ใช้ลังของ APEX เองแพ็ค) ให้โชว์/ตัดแค่กล่องในเท่านั้น
+  // — เพิ่ม flag `noCartonCut:true` ให้ทุก entry ของ PO 062 กันไม่ให้ไปกระทบคอลัมน์ "เตรียมตัดออก"
+  // ของตาราง Outer box (ดู pendingCartonTotal/showOuterSheet/pendingTooltip ด้านล่างที่เช็ค flag นี้)
+  {id:'apex_po062_hk_raspberry', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Raspberry', pcs:4320, noCartonCut:true},
+  {id:'apex_po062_hk_honeylemon', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Honey lemon', pcs:19920, noCartonCut:true},
+  {id:'apex_po062_hk_melon', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Melon', pcs:19920, noCartonCut:true},
+  {id:'apex_po062_hk_blackspearmint', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Black Spearmint', pcs:5040, noCartonCut:true},
+  {id:'apex_po062_hk_donki', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Donki', pcs:7200, noCartonCut:true},
+  {id:'apex_po062_hk_hongkongedition', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Hongkong edition', pcs:9600, noCartonCut:true},
 ];
 function pendingInner(pcs){ return (pcs||0)/IPU; }
 function pendingCartons(pcs){ return pendingInner(pcs)/IPC; }
@@ -2105,12 +2114,18 @@ function pendingDrawsFor(market, flavor){
 function pendingInnerTotal(market, flavor){
   return pendingDrawsFor(market,flavor).reduce((s,d)=>s+pendingInner(d.pcs),0);
 }
+// 1 Oct 2026 (รอบสามสิบสี่): Ji ขอ PO 062 ให้ "กล่องเรา ไม่ต้องตัดแล้ว" — คือลังนอก (ของ Thai
+// Jintan เอง) ไม่ต้องถูกตัดสต็อกพรีวิวสำหรับ PO ที่ APEX แพ็คด้วยลังของตัวเอง — entry ที่ติด
+// flag `noCartonCut:true` (ดู APEX_PENDING_DRAWS ด้านบน) จะไม่ถูกนับรวมในยอด "เตรียมตัดออก"
+// ของลังนอกอีกต่อไป แต่ยังนับรวมในกล่องในตามปกติ (pendingInnerTotal ไม่ได้กรอง flag นี้ออก)
 function pendingCartonTotal(market, flavor){
-  return pendingDrawsFor(market,flavor).reduce((s,d)=>s+pendingCartons(d.pcs),0);
+  return pendingDrawsFor(market,flavor).filter(d=>!d.noCartonCut).reduce((s,d)=>s+pendingCartons(d.pcs),0);
 }
 function pendingTooltip(market, flavor){
   return pendingDrawsFor(market,flavor)
-    .map(d=>`${d.apexPO} (${d.jobName}): ${f(d.pcs)} ชิ้น = -${f(pendingInner(d.pcs))} กล่องใน / -${fc(pendingCartons(d.pcs))} ลัง`)
+    .map(d=>d.noCartonCut
+      ? `${d.apexPO} (${d.jobName}): ${f(d.pcs)} ชิ้น = -${f(pendingInner(d.pcs))} กล่องใน (ไม่ตัดลังนอก — APEX แพ็คด้วยลังของตัวเอง)`
+      : `${d.apexPO} (${d.jobName}): ${f(d.pcs)} ชิ้น = -${f(pendingInner(d.pcs))} กล่องใน / -${fc(pendingCartons(d.pcs))} ลัง`)
     .join('\n');
 }
 // 1 Oct 2026: Ji ขอให้ตาราง Stock (Inner box/Outer box ของ HK/SG) โชว์ "เตรียมตัดออก" แยกว่า
@@ -3638,7 +3653,7 @@ function pageOuterBox(data, mktKey){
 }
 function showOuterSheet(row, r){
   const total=(r.apex||0)+(r.ku||0);
-  const pendList = pendingDrawsFor(r.mktKey.toLowerCase(), r.flavor);
+  const pendList = pendingDrawsFor(r.mktKey.toLowerCase(), r.flavor).filter(d=>!d.noCartonCut);
   const pendTotal = pendingCartonTotal(r.mktKey.toLowerCase(), r.flavor);
   const html=`
     <div class="s2col">
@@ -3770,7 +3785,7 @@ function apexPendingDrawBannerHtml(p){
     const border = ready ? '#dc3545' : '#eda100';
     return `<div style="margin:12px 16px;padding:10px 12px;background:${bg};border:1px solid ${border};border-radius:8px;font-size:12px">
       <div style="font-weight:700;color:${ready?'#a23b3b':'#8a6300'}">${ready?'✅ ของมาถึงแล้ว — พร้อมตัดสต็อกจริง':'🔻 เตรียมตัดสต็อก (พรีวิว — ยังไม่ตัดสต็อกจริง)'}</div>
-      <div style="margin-top:4px;color:#5b6b76">${d.flavor} · ${f(d.pcs)} ชิ้น = -${f(innerQty)} กล่องใน / -${fc(cartonQty)} ${d.market==='kr'?'ลัง':'ลังนอก'}</div>
+      <div style="margin-top:4px;color:#5b6b76">${d.flavor} · ${f(d.pcs)} ชิ้น = -${f(innerQty)} กล่องใน${d.noCartonCut?' (ไม่ตัดลังนอก — APEX แพ็คด้วยลังของตัวเอง)':` / -${fc(cartonQty)} ${d.market==='kr'?'ลัง':'ลังนอก'}`}</div>
       ${ready?`<div style="margin-top:8px;font-size:11px;color:#a23b3b">📩 แจ้งทางแชทกับ Claude ว่า "PO ${p.apexPO} ของมาแล้ว" เพื่อตัดสต็อกจริง (ปุ่มกดตัดสต็อกบนหน้านี้ปิดใช้งานอยู่ค่ะ)</div>`:''}
     </div>`;
   }).join('');
