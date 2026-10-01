@@ -775,7 +775,11 @@ const DEF_POS = [
   // sync สดสร้างอัตโนมัติแบบไม่มี items ก็ได้ แต่ใส่ items ให้ตรงนี้เลยจาก remark ของชีต
   // เพื่อไม่ต้องรอ Ji มายืนยันจำนวนซ้ำทางแชท — Expected 8 Oct 2026, ยังไม่มี Actual Date
   // (ยังไม่ถึงกำหนด), ไม่มีคอลัมน์ "ส่ง PO" ในบล็อก PPP ของชีต (เหมือน PO อื่นๆ ในบล็อกนี้)
-  {id:'s16',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/009',sentMs:null,sent:null,expMs:Date.UTC(2026,9,8),exp:'08 Oct 2026',actMs:null,act:null,dest:'Thai Jintan',items:[{f:'Peppermint',q:800},{f:'Spearmint',q:1000},{f:'Fusion',q:200}],remark:'กล่องลัง USA; Peppermint 800 Spearmint 1000 Fusion 200 · USA ไม่มีตารางสต็อกแยกในแดชบอร์ด — มาร์คสถานะ + รายละเอียดไว้ใน Remark เท่านั้น ไม่กระทบตัวเลข apex/Thai Jintan ของตลาดไหนเลย'},
+  // 1 Oct 2026 รอบสามสิบหก: Ji ส่งไฟล์ PO ตัวจริง (01INT-PPP26/009 ลงวันที่ 22.09.2026)
+  // มาให้ — จำนวนสินค้าตรงกับที่มีอยู่แล้วทุกตัว (Peppermint 800/Spearmint 1,000/Fusion 200)
+  // เพิ่มเติมแค่ "วันที่ส่ง PO" ที่เอกสารระบุชัดเจนว่า 22 Sep 2026 (ช่องนี้เคยว่างเพราะชีตสด
+  // ไม่มีคอลัมน์นี้ให้บล็อก PPP) — ไม่กระทบ Expected/Actual ที่ sync จากชีตเหมือนเดิม
+  {id:'s16',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/009',sentMs:Date.UTC(2026,8,22),sent:'22 Sep 2026',expMs:Date.UTC(2026,9,8),exp:'08 Oct 2026',actMs:null,act:null,dest:'Thai Jintan',items:[{f:'Peppermint',q:800},{f:'Spearmint',q:1000},{f:'Fusion',q:200}],remark:'กล่องลัง USA; Peppermint 800 Spearmint 1000 Fusion 200 · ยืนยันจากไฟล์ PO ตัวจริง 01INT-PPP26/009 ลงวันที่ 22 Sep 2026 (เงื่อนไขชำระเงิน 30 วัน) · USA ไม่มีตารางสต็อกแยกในแดชบอร์ด — มาร์คสถานะ + รายละเอียดไว้ใน Remark เท่านั้น ไม่กระทบตัวเลข apex/Thai Jintan ของตลาดไหนเลย'},
 ];
 // Each APEX PO row stores raw Excel-serial day numbers (…D) for clean single dates,
 // plus free-text fallbacks (…Text) for cells that contain multiple/irregular dates
