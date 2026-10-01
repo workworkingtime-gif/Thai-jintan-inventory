@@ -2113,6 +2113,17 @@ function pendingTooltip(market, flavor){
     .map(d=>`${d.apexPO} (${d.jobName}): ${f(d.pcs)} ชิ้น = -${f(pendingInner(d.pcs))} กล่องใน / -${fc(pendingCartons(d.pcs))} ลัง`)
     .join('\n');
 }
+// 1 Oct 2026: Ji ขอให้ตาราง Stock (Inner box/Outer box ของ HK/SG) โชว์ "เตรียมตัดออก" แยกว่า
+// จะกินจาก APEX เท่าไหร่ กินจาก Thai Jintan เท่าไหร่ — สอดคล้องกับฟีเจอร์ breakdown ที่เพิ่ม
+// เข้า Audit Trail ไปแล้วก่อนหน้านี้ (ดู spend() ใน applyApexDrawAmounts) — ฟังก์ชันนี้เป็นแค่
+// พรีวิวคำนวณล่วงหน้า (ไม่แตะ/ไม่มัน state ใดๆ) ใช้ตรรกะเดียวกันเป๊ะ: หักจาก APEX ก่อนเสมอ
+// ถ้าไม่พอค่อยไหลไปหักที่ Thai Jintan ต่อ (ติดลบได้) โดยอิงจากยอดคงเหลือปัจจุบันจริง (r.apex/r.ku)
+function splitPendingByLocation(apexBal, kuBal, pend){
+  let remain = pend, newApex = apexBal, newKu = kuBal;
+  if(newApex >= remain){ newApex -= remain; remain = 0; } else { remain -= newApex; newApex = 0; }
+  if(remain > 0) newKu -= remain;
+  return { apexCut: apexBal - newApex, kuCut: kuBal - newKu };
+}
 // ─── เตรียมตัดสต็อก → ยืนยันตัดจริง (รอบยี่สิบหก) ───────────────────────────
 // Ji ขอ 25 Sep 2026: "พอสั่งเปิด PO กับทาง APEX แล้ว ก็ต้องมีแจ้งเตือนเตรียมตัดสต็อกอยู่ใน
 // เว็บแล้วขึ้นสถานะเตรียมตัดสต็อก พอของมาถึงก็ทำเป็นตัดสต็อคให้เลยอัตโนมัติ ทีนี้ก็ขึ้นแจ้งเตือน
@@ -2760,10 +2771,13 @@ function pageMarket(mktId, title, sub, data, key){
   html+=`<div class="card"><div class="card-head" onclick="toggleCard(this)">
       <span class="cht">📦 Inner box (กล่องใน)<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
       <span class="chm">${data.length} รสชาติ<span class="chev">▾</span></span></div>
-    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด · "กำลังจะมา" คือยอดจาก Supplier PO ที่สั่งแล้วแต่ยังไม่ได้รับ (ไม่รวมในคงเหลือรวมจนกว่าจะยืนยันรับของจริง) · "เตรียมตัดออก" คือ APEX PO ที่ Ji แจ้งว่ากำลังจะส่ง แต่ยังไม่ยืนยันว่าส่งจริง (พรีวิว ยังไม่ตัดสต็อกจริง)</div>
-    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>Thai Jintan</th><th>คงเหลือรวม</th><th>กำลังจะมา</th><th>รวมคาดการณ์</th><th>เตรียมตัดออก</th><th>คาดว่าจะเหลือ</th><th>สถานะ</th></tr></thead><tbody>`;
+    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด (เห็นยอดคงเหลือแยก APEX/Thai Jintan ตรงนั้น) · "กำลังจะมา" คือยอดจาก Supplier PO ที่สั่งแล้วแต่ยังไม่ได้รับ (ไม่รวมในคงเหลือรวมจนกว่าจะยืนยันรับของจริง) · "เตรียมตัดออก" คือ APEX PO ที่ Ji แจ้งว่ากำลังจะส่ง แต่ยังไม่ยืนยันว่าส่งจริง (พรีวิว ยังไม่ตัดสต็อกจริง) แยกให้เห็นว่าจะกินจาก APEX หรือ Thai Jintan เท่าไหร่ (หักจาก APEX ก่อนเสมอ)</div>
+    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX เตรียมตัดออก</th><th>Thai Jintan เตรียมตัดออก</th><th>กำลังจะมา</th><th>รวมคาดการณ์</th><th>คาดว่าจะเหลือ</th><th>สถานะ</th><th>คงเหลือรวม</th></tr></thead><tbody>`;
   // (24 Sep 2026 รอบสิบเก้า) เรียงตามลำดับความสำคัญ/ยอดขายที่ Ji กำหนด (FLAVORS[key]) แทนลำดับ
   // ดิบที่เคยพิมพ์เข้าระบบครั้งแรก — ดู sortByFlavorOrder ด้านบน
+  // (1 Oct 2026) Ji ขอสลับลำดับคอลัมน์ + ตัดคอลัมน์ "APEX"/"Thai Jintan" ยอดคงเหลือดิบออกจาก
+  // ตารางนี้ (ดูได้ตอนคลิกเข้าไปที่ showMktSheet แทน) แล้วแยก "เตรียมตัดออก" เป็น 2 คอลัมน์ตาม
+  // ที่จะกินจาก APEX/Thai Jintan แทน — ดู splitPendingByLocation ด้านบน
   sortByFlavorOrder(data, key).forEach(r=>{
     const total = (r.apex||0)+(r.ku||0);
     const inc = incoming[r.flavor]||0;
@@ -2771,19 +2785,19 @@ function pageMarket(mktId, title, sub, data, key){
     const pend = pendingInnerTotal(key.toLowerCase(), r.flavor);
     const afterDraw = projected - pend;
     const tip = pendingTooltip(key.toLowerCase(), r.flavor);
+    const split = splitPendingByLocation(r.apex||0, r.ku||0, pend);
     const nc = total>0?'np':total<0?'nn':'nz';
     const pnc = projected>0?'np':projected<0?'nn':'nz';
     const anc = afterDraw>0?'np':afterDraw<0?'nn':'nz';
     html+=`<tr onclick="showMktSheet(this,${JSON.stringify({...r,mktId,key}).replace(/"/g,'&quot;')})">
       <td><strong>${r.flavor}</strong></td>
-      <td class="n">${fD(r.apex)}</td>
-      <td class="n">${f(r.ku)}</td>
-      <td class="n ${nc}">${f(total)}</td>
+      <td class="n" style="${split.apexCut?'color:#721c24;font-weight:600;cursor:help':'color:#b7c0c8'}"${split.apexCut?` title="${tip.replace(/"/g,'&quot;')}"`:''}>${split.apexCut?'-'+f(split.apexCut):'—'}</td>
+      <td class="n" style="${split.kuCut?'color:#721c24;font-weight:600;cursor:help':'color:#b7c0c8'}"${split.kuCut?` title="${tip.replace(/"/g,'&quot;')}"`:''}>${split.kuCut?'-'+f(split.kuCut):'—'}</td>
       <td class="n" style="${inc?'color:#0d6efd;font-weight:600':'color:#b7c0c8'}">${inc?'+'+f(inc):'—'}</td>
       <td class="n ${pnc}" style="${inc?'font-weight:700':''}">${f(projected)}</td>
-      <td class="n" style="${pend?'color:#721c24;font-weight:600;cursor:help':'color:#b7c0c8'}"${pend?` title="${tip.replace(/"/g,'&quot;')}"`:''}>${pend?'-'+f(pend):'—'}</td>
       <td class="n ${anc}" style="${pend?'font-weight:700':''}">${f(afterDraw)}</td>
       <td>${stockStatus(total)}</td>
+      <td class="n ${nc}">${f(total)}</td>
     </tr>`;
   });
   html+=`</tbody></table></div></div></div>`;
@@ -3589,9 +3603,14 @@ function pageOuterBox(data, mktKey){
   let html=`<div class="card"><div class="card-head" onclick="toggleCard(this)">
       <span class="cht">📦 Outer box (ลังนอก)<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
       <span class="chm">${withStock}/${data.length} มีสต็อก<span class="chev">▾</span></span></div>
-    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด/แก้ไข · กรอกเอง ไม่ sync อัตโนมัติ · "เตรียมตัดออก" คือ APEX PO ที่ Ji แจ้งว่ากำลังจะส่ง แต่ยังไม่ยืนยันว่าส่งจริง (พรีวิว ยังไม่ตัดสต็อกจริง)</div>
-    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>Thai Jintan</th><th>คงเหลือรวม</th><th>เตรียมตัดออก</th><th>คาดว่าจะเหลือ</th></tr></thead><tbody>`;
+    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด/แก้ไข (เห็นยอดคงเหลือแยก APEX/Thai Jintan ตรงนั้น) · กรอกเอง ไม่ sync อัตโนมัติ · "เตรียมตัดออก" คือ APEX PO ที่ Ji แจ้งว่ากำลังจะส่ง แต่ยังไม่ยืนยันว่าส่งจริง (พรีวิว ยังไม่ตัดสต็อกจริง) แยกให้เห็นว่าจะกินจาก APEX หรือ Thai Jintan เท่าไหร่ (หักจาก APEX ก่อนเสมอ)</div>
+    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX เตรียมตัดออก</th><th>Thai Jintan เตรียมตัดออก</th><th>คาดว่าจะเหลือ</th><th>สถานะ</th><th>คงเหลือรวม</th></tr></thead><tbody>`;
   // (24 Sep 2026 รอบสิบเก้า) เรียงตามลำดับความสำคัญ/ยอดขายเดียวกับตาราง Inner box ด้านบน
+  // (1 Oct 2026) Ji ขอปรับลำดับคอลัมน์แบบเดียวกับตาราง Inner box ด้านบน — ตัด "APEX"/
+  // "Thai Jintan" ยอดคงเหลือดิบออก (ดูได้ตอนคลิกเข้าไปที่ showOuterSheet แทน) แล้วแยก
+  // "เตรียมตัดออก" เป็น 2 คอลัมน์ตาม splitPendingByLocation — ตารางนี้ไม่มี "กำลังจะมา"/
+  // "รวมคาดการณ์" เหมือน Inner box เพราะไม่ได้ sync จาก Supplier PO (กรอกมือ) จึงเติม
+  // "สถานะ" ต่อจาก "คาดว่าจะเหลือ" ตามลำดับเดียวกับที่ Ji ขอ
   sortByFlavorOrder(data, mktKey).forEach(r=>{
     const total=(r.apex||0)+(r.ku||0);
     const nc=total>0?'np':total<0?'nn':'nz';
@@ -3599,13 +3618,14 @@ function pageOuterBox(data, mktKey){
     const afterDraw = total - pend;
     const anc = afterDraw>0?'np':afterDraw<0?'nn':'nz';
     const tip = pendingTooltip(mktKey.toLowerCase(), r.flavor);
+    const split = splitPendingByLocation(r.apex||0, r.ku||0, pend);
     html+=`<tr onclick="showOuterSheet(this,${JSON.stringify({...r,mktKey}).replace(/"/g,'&quot;')})">
       <td><strong>${r.flavor}</strong></td>
-      <td class="n">${fD(r.apex)}</td>
-      <td class="n">${fD(r.ku)}</td>
-      <td class="n ${nc}">${f(total)}</td>
-      <td class="n" style="${pend?'color:#721c24;font-weight:600;cursor:help':'color:#b7c0c8'}"${pend?` title="${tip.replace(/"/g,'&quot;')}"`:''}>${pend?'-'+fc(pend):'—'}</td>
+      <td class="n" style="${split.apexCut?'color:#721c24;font-weight:600;cursor:help':'color:#b7c0c8'}"${split.apexCut?` title="${tip.replace(/"/g,'&quot;')}"`:''}>${split.apexCut?'-'+fc(split.apexCut):'—'}</td>
+      <td class="n" style="${split.kuCut?'color:#721c24;font-weight:600;cursor:help':'color:#b7c0c8'}"${split.kuCut?` title="${tip.replace(/"/g,'&quot;')}"`:''}>${split.kuCut?'-'+fc(split.kuCut):'—'}</td>
       <td class="n ${anc}" style="${pend?'font-weight:700':''}">${fc(afterDraw)}</td>
+      <td>${stockStatus(total)}</td>
+      <td class="n ${nc}">${f(total)}</td>
     </tr>`;
   });
   html+=`</tbody></table></div></div></div>`;
