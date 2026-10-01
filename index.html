@@ -1313,8 +1313,15 @@ async function loadAll(){
 // scope = filter key ('HK'/'SG'/'KR-Inner box'/'KR-Carton') used by the
 // per-flavor history views; falls back to substring-matching old `detail`
 // text for audit entries logged before this field existed.
-function logAudit(type, title, detail, qty, before, after, note, scope){
-  D.audit.unshift({ts:tsNow(), type, title, detail, qty, before, after, note, scope});
+// bucket (optional, 9th param, 30 Sep 2026): {apexBefore,apexAfter,kuBefore,kuAfter} — ยอดก่อน/
+// หลังแยกที่ APEX vs Thai Jintan ตอนตัดสต็อก HK/SG ผ่าน applyApexDrawAmounts() (ดูคอมเมนต์ที่
+// spend() ด้านบน) เก็บไว้ให้ renderHistoryTable()/pageAudit() แสดงเป็นตัวเลขชัดเจนแยกที่ — entry
+// เก่าก่อนรอบนี้และ entry อื่นที่ไม่ส่ง bucket มา (KR, stock_update, receive, ฯลฯ) จะไม่มี field
+// นี้เลย (undefined) ซึ่งใช้ fallback ไปแสดงแบบเดิมได้ตามปกติ ไม่กระทบข้อมูลเก่า
+function logAudit(type, title, detail, qty, before, after, note, scope, bucket){
+  const entry = {ts:tsNow(), type, title, detail, qty, before, after, note, scope};
+  if(bucket) Object.assign(entry, bucket);
+  D.audit.unshift(entry);
   if(D.audit.length > 200) D.audit = D.audit.slice(0,200);
 }
 // ─── LIVE SHARED BACKEND (Google Apps Script) ───────────────────────────────
@@ -1785,6 +1792,14 @@ function stockStatus(v){
 // round 3) tells us which bucket(s) it came from — parsed from a.note via
 // `deductSourceLabel()`. Entries without that breakdown (old PATCHES,
 // manual edits, KR single-bucket) just show no label, same as before.
+// (30 Sep 2026, รอบสามสิบสอง — Ji: "ฉันคิดว่าการตัดออกควรมีช่องว่า ตัดออกจากไทยยินตันเหลือ
+// เท่าไหร่ ตัดออกจาก APEX แล้วเหลือเท่าไหร่ ... เพื่อให้รู้ว่าสต็อคเหลืออยู่เท่าไหร่ ช่วยให้
+// สั่งของง่ายขึ้น") — เดิมมีแค่ label ข้อความสั้นๆ บอกว่าหักจากที่ไหน (ไม่มีตัวเลขเหลือเท่าไหร่
+// ต่อที่ ต้องไปแกะเอาจาก Remark ที่เป็นข้อความยาว) ตอนนี้ entry ที่มี bucket breakdown ใหม่
+// (apexBefore/apexAfter/kuBefore/kuAfter จาก logAudit() — ดู applyApexDrawAmounts()) จะโชว์
+// ตัวเลขก่อน→หลังของทั้งสองที่ตรงๆ 2 บรรทัดแทน label เดิม ("APEX: 250→0", "Thai Jintan: 500→
+// 500") ให้เห็นชัดว่าที่ไหนเหลือเท่าไหร่กันแน่โดยไม่ต้องอ่าน Remark — entry เก่าก่อนรอบนี้ที่ไม่มี
+// field พวกนี้ (undefined) จะ fallback ไปใช้ label ข้อความแบบเดิมผ่าน `deductSourceLabel()`
 const PO_CODE_RE = /\d{2}INT-[A-Za-z]+26\/\d+[A-Za-z0-9]*/;
 function extractPoCode(a){
   const hay = `${a.detail||''} ${a.title||''} ${a.note||''}`;
@@ -1797,6 +1812,13 @@ function deductSourceLabel(note){
   if(/หักจาก Thai Jintanทั้งหมด/.test(note)) return 'จาก Thai Jintan';
   if(/หักจาก APEX[^+]*\+\s*Thai Jintan/.test(note)) return 'จาก APEX+Thai Jintan';
   return '';
+}
+// คืน HTML บรรทัดเล็กแสดงยอดก่อน→หลังแยกที่ APEX/Thai Jintan ชัดเจน (ใช้ทั้งใน renderHistoryTable
+// และ pageAudit) — return '' ถ้า entry ไม่มี bucket breakdown (เก่า/ไม่เกี่ยวกับ HK-SG two-bucket)
+function bucketBreakdownHtml(a){
+  if(a.apexBefore==null || a.kuBefore==null) return '';
+  return `<div style="font-size:10px;font-weight:400;color:#5a6b78;margin-top:2px;line-height:1.5">`
+    + `APEX: ${fc(a.apexBefore)}→${fc(a.apexAfter)} · Thai Jintan: ${fc(a.kuBefore)}→${fc(a.kuAfter)}</div>`;
 }
 function renderHistoryTable(logs, limit){
   limit = limit || 15;
@@ -1811,12 +1833,13 @@ function renderHistoryTable(logs, limit){
     const code = extractPoCode(a);
     const ref = a.detail||a.title;
     const remark = a.note ? `${ref} · ${a.note}` : ref;
-    const srcLabel = isNeg ? deductSourceLabel(a.note) : '';
+    const bucketHtml = isNeg ? bucketBreakdownHtml(a) : '';
+    const srcLabel = (isNeg && !bucketHtml) ? deductSourceLabel(a.note) : '';
     const srcLabelHtml = srcLabel ? `<div style="font-size:9.5px;font-weight:400;color:#8fa3b0;margin-top:1px">${srcLabel}</div>` : '';
     return `<tr style="cursor:default">
       <td style="white-space:nowrap;font-size:11px;vertical-align:top">${a.ts}</td>
       <td style="white-space:nowrap;font-size:11px;vertical-align:top">${code||'—'}</td>
-      <td class="n nn" style="text-align:right;white-space:nowrap;vertical-align:top">${isNeg?num:''}${srcLabelHtml}</td>
+      <td class="n nn" style="text-align:right;white-space:nowrap;vertical-align:top">${isNeg?num:''}${bucketHtml||srcLabelHtml}</td>
       <td class="n np" style="text-align:right;white-space:nowrap;vertical-align:top">${isPos?num:''}</td>
       <td class="n nz" style="text-align:right;white-space:nowrap;vertical-align:top">${a.before!=null?f(a.before):'—'}</td>
       <td class="n" style="text-align:right;white-space:nowrap;font-weight:700;vertical-align:top">${a.after!=null?f(a.after):'—'}</td>
@@ -1927,6 +1950,12 @@ function applyApexDrawAmounts(market, flavor, cartonQty, innerQty, poRef, isCart
     // spend() — หักจาก "ที่ APEX" ก่อนเสมอ ถ้าไม่พอค่อยไหลไปหักต่อที่ "Thai Jintan" (ติดลบได้)
     // แล้วคืนข้อความสรุปว่าหักจากที่ไหนไปเท่าไหร่ ก่อน→หลัง ให้เห็นชัดเจน ไม่ใช่แค่
     // ยอดรวม (Ji ขอ 10 ก.ค. 2026: "หักจาก APEX หรือ Thai Jintan ตอนนี้รวมเหลือเท่าไหร่")
+    // (30 Sep 2026: Ji ขอ "ควรมีช่องว่าตัดออกจากไทยยินตันเหลือเท่าไหร่ ตัดออกจาก APEX แล้วเหลือ
+    // เท่าไหร่ ... เพื่อให้รู้ว่าสต็อคเหลืออยู่เท่าไหร่ ช่วยให้สั่งของง่ายขึ้น" — spend() คำนวณ
+    // ก่อน/หลังของทั้งสองที่อยู่แล้วสำหรับสร้างข้อความ breakdown แค่ไม่เคยถูกส่งออกไปเป็นตัวเลข
+    // แยกให้ logAudit() เก็บไว้ต่างหาก เลยมีแต่ข้อความรวม ("หักจาก APEX 250 (250→0) ...") ฝังอยู่
+    // ใน note อย่างเดียว — ตอนนี้คืนค่า beforeApex/afterApex/beforeKu/afterKu แยกออกมาด้วย ให้
+    // logAudit()/renderHistoryTable()/pageAudit() แสดงเป็นตัวเลขชัดเจนแยกที่ ไม่ต้องแกะจากข้อความ)
     const spend=(arr,delta)=>{
       const row=arr.find(x=>x.flavor===flavor);
       if(!row) return null;
@@ -1940,16 +1969,18 @@ function applyApexDrawAmounts(market, flavor, cartonQty, innerQty, poRef, isCart
       if(apexUsed>0 && kuUsed>0) breakdown=`หักจาก APEX ${fc(apexUsed)} (${fc(beforeApex)}→${fc(newApex)}) + Thai Jintan ${fc(kuUsed)} (${fc(beforeKu)}→${fc(newKu)}) เพราะ APEX ไม่พอ`;
       else if(apexUsed>0) breakdown=`หักจาก APEX ทั้งหมด (${fc(beforeApex)}→${fc(newApex)}) · Thai Jintanไม่กระทบ (${fc(newKu)})`;
       else breakdown=`หักจาก Thai Jintanทั้งหมด เพราะ APEX ไม่พอ/หมด (${fc(beforeApex)}→${fc(newApex)}) · Thai Jintan (${fc(beforeKu)}→${fc(newKu)})`;
-      return {beforeTotal, afterTotal:newApex+newKu, breakdown};
+      return {beforeTotal, afterTotal:newApex+newKu, breakdown, beforeApex, afterApex:newApex, beforeKu, afterKu:newKu};
     };
     if(cartonQty>0){
       const r=spend(outerArr,cartonQty);
-      if(r) logAudit('deduct',flavor,poRef,`-${fc(cartonQty)}`,r.beforeTotal,r.afterTotal,`เบิกให้ APEX ${fc(cartonQty)} ${cartonLbl} · ${r.breakdown}`,mktKey+'-Outer');
+      if(r) logAudit('deduct',flavor,poRef,`-${fc(cartonQty)}`,r.beforeTotal,r.afterTotal,`เบิกให้ APEX ${fc(cartonQty)} ${cartonLbl} · ${r.breakdown}`,mktKey+'-Outer',
+        {apexBefore:r.beforeApex, apexAfter:r.afterApex, kuBefore:r.beforeKu, kuAfter:r.afterKu});
     }
     if(innerQty>0){
       const r=spend(innerArr,innerQty);
       const calcNote = isCartonCalc?`หักตาม ${fc(cartonQty)} ${cartonLbl} × ${IPC} = ${f(innerQty)} กล่องใน`:`เบิกให้ APEX ${f(innerQty)} กล่องใน`;
-      if(r) logAudit('deduct',flavor,poRef,`-${f(innerQty)}`,r.beforeTotal,r.afterTotal, `${calcNote} · ${r.breakdown}`,mktKey);
+      if(r) logAudit('deduct',flavor,poRef,`-${f(innerQty)}`,r.beforeTotal,r.afterTotal, `${calcNote} · ${r.breakdown}`,mktKey,
+        {apexBefore:r.beforeApex, apexAfter:r.afterApex, kuBefore:r.beforeKu, kuAfter:r.afterKu});
     }
   }
 }
@@ -3470,9 +3501,13 @@ function pageAudit(){
     const typeLabel={receive_po:'รับ PO',stock_update:'แก้ไขสต็อก',calc:'คำนวณ',mark_recv:'รับสินค้า',deduct:'ตัดสต็อก',receive:'บวกสต็อก',milestone:'อัปเดตสถานะ',po_edit:'แก้ไขข้อมูล PO'}[a.type]||a.type;
     const qtyStr=(a.qty!=null?String(a.qty):'');
     const qc=qtyStr.trim().startsWith('-')?'nn':(qtyStr.trim().startsWith('+')?'np':'nz');
+    // (30 Sep 2026 — Ji ขอเห็นชัดๆ ว่าตัดออกจาก APEX/Thai Jintan แล้วแต่ละที่เหลือเท่าไหร่ ไม่ใช่
+    // แค่ฝังอยู่ในข้อความ note — ใช้ bucketBreakdownHtml() ตัวเดียวกับ renderHistoryTable() ขึ้น
+    // เป็นบรรทัดแยกก่อน note (ถ้ามี), entry เก่า/ไม่เกี่ยวกับ HK-SG two-bucket ไม่มีผลกระทบเลย
+    const bucketHtml = bucketBreakdownHtml(a);
     html+=`<tr><td style="font-size:11px;color:#8fa3b0;white-space:nowrap">${a.ts}</td>
       <td><span class="badge bb" style="font-size:10px">${typeLabel}</span></td>
-      <td style="font-size:13px"><strong>${a.title}</strong>${a.detail?` · ${a.detail}`:''}${a.note?`<br><span style="color:#8fa3b0;font-size:11px;font-style:italic">📝 ${a.note}</span>`:''}</td>
+      <td style="font-size:13px"><strong>${a.title}</strong>${a.detail?` · ${a.detail}`:''}${bucketHtml}${a.note?`<br><span style="color:#8fa3b0;font-size:11px;font-style:italic">📝 ${a.note}</span>`:''}</td>
       <td class="n ${qc}" style="white-space:nowrap">${qtyStr}</td>
     </tr>`;
   });
