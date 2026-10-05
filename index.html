@@ -114,6 +114,14 @@ body{background:var(--bg);color:var(--ink);font-size:14px;min-height:100vh}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:8px 16px;text-align:left;border-bottom:1px solid var(--line-soft);white-space:nowrap;background:var(--panel)}
 td{padding:10px 16px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+/* ตารางสต็อก: ย่อให้พอดีหน้าต่าง ไม่ต้องเลื่อนซ้าย-ขวา */
+table.fit{table-layout:auto}
+table.fit th{white-space:normal;line-height:1.2;padding:7px 5px;font-size:9.5px;letter-spacing:.02em;vertical-align:bottom}
+table.fit td{padding:9px 5px;font-size:12.5px}
+table.fit th:first-child,table.fit td:first-child{padding-left:12px}
+table.fit td:first-child{white-space:normal;word-break:break-word}
+table.fit .badge{padding:2px 6px;font-size:10.5px}
+@media(max-width:1100px){table.fit th{font-size:8.5px;padding:6px 3px}table.fit td{font-size:11.5px;padding:8px 3px}table.fit th:first-child,table.fit td:first-child{padding-left:8px}table.fit .badge{font-size:9.5px;padding:2px 5px}}
 tbody tr{cursor:pointer;transition:background .12s}
 tbody tr:hover td{background:#f7f9fc}
 tbody tr.sel td{background:#eef4ff}
@@ -2834,7 +2842,7 @@ function pageMarket(mktId, title, sub, data, key){
       <span class="cht">📦 Inner box (กล่องใน)<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
       <span class="chm">${data.length} รสชาติ<span class="chev">▾</span></span></div>
     <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด · "กำลังจะมา" คือยอดจาก Supplier PO ที่สั่งแล้วแต่ยังไม่ได้รับ (ไม่รวมในคงเหลือรวมจนกว่าจะยืนยันรับของจริง) · "เตรียมตัดออก" คือ APEX PO ที่ Ji แจ้งว่ากำลังจะส่ง แต่ยังไม่ยืนยันว่าส่งจริง (พรีวิว ยังไม่ตัดสต็อกจริง) แยกให้เห็นว่าจะกินจาก APEX หรือ Thai Jintan เท่าไหร่ (หักจาก APEX ก่อนเสมอ) — วางคู่กับยอดคงเหลือของที่นั้นๆ และ "คาดว่าจะเหลือ" ของที่นั้นๆ (= ยอดคงเหลือ − เตรียมตัดออก) ให้เห็นชัดว่าแต่ละที่เหลือเท่าไหร่หลังตัด</div>
-    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>APEX เตรียมตัดออก</th><th>APEX คาดว่าจะเหลือ</th><th>Thai Jintan</th><th>Thai Jintan เตรียมตัดออก</th><th>Thai Jintan คาดว่าจะเหลือ</th><th>กำลังจะมา</th><th>รวมคาดการณ์</th><th>คาดว่าจะเหลือ (รวม)</th><th>สถานะ</th><th>คงเหลือรวม</th></tr></thead><tbody>`;
+    <div class="tw"><table class="fit"><thead><tr><th>รสชาติ</th><th>APEX</th><th>APEX เตรียมตัดออก</th><th>APEX คาดว่าจะเหลือ</th><th>Thai Jintan</th><th>Thai Jintan เตรียมตัดออก</th><th>Thai Jintan คาดว่าจะเหลือ</th><th>กำลังจะมา</th><th>รวมคาดการณ์</th><th>คาดว่าจะเหลือ (รวม)</th><th>สถานะ</th><th>คงเหลือรวม</th></tr></thead><tbody>`;
   // (24 Sep 2026 รอบสิบเก้า) เรียงตามลำดับความสำคัญ/ยอดขายที่ Ji กำหนด (FLAVORS[key]) แทนลำดับ
   // ดิบที่เคยพิมพ์เข้าระบบครั้งแรก — ดู sortByFlavorOrder ด้านบน
   // (1 Oct 2026 รอบสามสิบสาม) Ji ขอสลับลำดับคอลัมน์ โดยวางคอลัมน์ยอดคงเหลือ APEX/Thai Jintan
@@ -3828,7 +3836,7 @@ function pageOuterBox(data, mktKey){
       <span class="cht">📦 Outer box (ลังนอก)<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span>
       <span class="chm">${withStock}/${data.length} มีสต็อก<span class="chev">▾</span></span></div>
     <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด/แก้ไข · กรอกเอง ไม่ sync อัตโนมัติ · "เตรียมตัดออก" คือ APEX PO ที่ Ji แจ้งว่ากำลังจะส่ง แต่ยังไม่ยืนยันว่าส่งจริง (พรีวิว ยังไม่ตัดสต็อกจริง) แยกให้เห็นว่าจะกินจาก APEX หรือ Thai Jintan เท่าไหร่ (หักจาก APEX ก่อนเสมอ) — วางคู่กับยอดคงเหลือของที่นั้นๆ และ "คาดว่าจะเหลือ" ของที่นั้นๆ (= ยอดคงเหลือ − เตรียมตัดออก) ให้เห็นชัดว่าแต่ละที่เหลือเท่าไหร่หลังตัด</div>
-    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>APEX</th><th>APEX เตรียมตัดออก</th><th>APEX คาดว่าจะเหลือ</th><th>Thai Jintan</th><th>Thai Jintan เตรียมตัดออก</th><th>Thai Jintan คาดว่าจะเหลือ</th><th>คาดว่าจะเหลือ (รวม)</th><th>สถานะ</th><th>คงเหลือรวม</th></tr></thead><tbody>`;
+    <div class="tw"><table class="fit"><thead><tr><th>รสชาติ</th><th>APEX</th><th>APEX เตรียมตัดออก</th><th>APEX คาดว่าจะเหลือ</th><th>Thai Jintan</th><th>Thai Jintan เตรียมตัดออก</th><th>Thai Jintan คาดว่าจะเหลือ</th><th>คาดว่าจะเหลือ (รวม)</th><th>สถานะ</th><th>คงเหลือรวม</th></tr></thead><tbody>`;
   // (24 Sep 2026 รอบสิบเก้า) เรียงตามลำดับความสำคัญ/ยอดขายเดียวกับตาราง Inner box ด้านบน
   // (1 Oct 2026 รอบสามสิบสาม) Ji ขอปรับลำดับคอลัมน์แบบเดียวกับตาราง Inner box ด้านบน — วาง
   // คอลัมน์ยอดคงเหลือ APEX/Thai Jintan คู่กับคอลัมน์ "เตรียมตัดออก" ของที่นั้นๆ เลย (ไม่ใช่ตัด
