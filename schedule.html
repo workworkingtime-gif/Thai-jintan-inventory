@@ -21,7 +21,13 @@
   font-display:swap;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'THSarabunNew','Sarabun',sans-serif;background:#f0f2f5;color:#1a2633;font-size:16px;padding:16px}
+body{font-family:'THSarabunNew','Sarabun',sans-serif;background:#f0f2f5;color:#1a2633;font-size:16px}
+.topbar{background:#1a2633;color:#fff;padding:0 22px;display:flex;align-items:center;justify-content:space-between;gap:10px;height:54px}
+.tt{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.pill{background:#d4f1de;color:#155d34;border-radius:20px;padding:3px 12px;font-size:14px;white-space:nowrap}
+.clk{font-size:13px;color:#6b8096;white-space:nowrap}
+.wrap{padding:16px}
+@media(max-width:640px){.topbar{height:auto;padding:8px 14px;flex-wrap:wrap}.clk{display:none}}
 h1{font-size:26px;margin-bottom:2px}
 .sub{color:#5b6b76;font-size:14px;margin-bottom:14px}
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
@@ -40,12 +46,15 @@ tr.first td{border-top:2px solid #1a2633}
 </style>
 </head>
 <body>
+<div class="topbar"><div class="tt">📦 THAI JINTAN — Packaging Inventory</div><span class="pill">🟢 อัปเดตล่าสุด <span id="stamp"></span></span><div class="clk" id="clock"></div></div>
+<div class="wrap">
 <h1>🗓️ กำหนดการของเข้า</h1>
-<div class="sub">ส่วนใหญ่นับเป็น <b>ลัง</b> · ตลับนับเป็น <b>ชิ้น</b> · กล่องลังเปล่านับเป็น <b>ใบ</b> · อัปเดตล่าสุด <span id="stamp"></span></div>
+<div class="sub">ส่วนใหญ่นับเป็น <b>ลัง</b> · ตลับนับเป็น <b>ชิ้น</b> · กล่องลังเปล่านับเป็น <b>ใบ</b></div>
 <div id="out"></div>
+</div>
 <script>
 const DATA=[{"ms":1791417600000,"source":"USA · PO 054 ตลับ","lines":[{"name":"Peppermint","text":"40,000 ชิ้น"},{"name":"Spearmint","text":"10,000 ชิ้น"}]},{"ms":1791417600000,"source":"PPP · กล่องลังเปล่า","lines":[{"name":"กล่องลัง Peppermint","text":"800 ใบ"},{"name":"กล่องลัง Spearmint","text":"1,000 ใบ"},{"name":"กล่องลัง Fusion","text":"200 ใบ"}]},{"ms":1792022400000,"source":"USA · PO 054 ตลับ","lines":[{"name":"Peppermint","text":"50,000 ชิ้น"},{"name":"Spearmint","text":"20,000 ชิ้น"}]},{"ms":1792108800000,"source":"USA · PO 060","lines":[{"name":"Spearmint (10-pack)","text":"124 ลัง"},{"name":"Spearmint (5-pack)","text":"57 ลัง"}]},{"ms":1792972800000,"source":"USA · PO 061","lines":[{"name":"Spearmint (10-pack)","text":"124 ลัง"},{"name":"Spearmint (5-pack)","text":"57 ลัง"}]},{"ms":1793145600000,"source":"USA · PO 054 ตลับ","lines":[{"name":"Peppermint","text":"30,000 ชิ้น"},{"name":"Spearmint","text":"40,000 ชิ้น"}]},{"ms":1793318400000,"source":"USA · PO 054 ตลับ","lines":[{"name":"Honey Lemon","text":"15,000 ชิ้น"},{"name":"Raspberry","text":"15,000 ชิ้น"},{"name":"Melon","text":"15,000 ชิ้น"}]},{"ms":1793923200000,"source":"HK · PO 062","lines":[{"name":"Raspberry","text":"18 ลัง"},{"name":"Honey Lemon","text":"83 ลัง"},{"name":"Melon","text":"83 ลัง"},{"name":"Black Spearmint","text":"21 ลัง"},{"name":"Donki","text":"30 ลัง"},{"name":"Hongkong Edition","text":"40 ลัง"}]},{"ms":1794787200000,"source":"USA · PO 054 ตลับ","lines":[{"name":"Spearmint","text":"20,000 ชิ้น"},{"name":"Fusion","text":"20,000 ชิ้น"}]},{"ms":1795046400000,"source":"USA · PO 063","lines":[{"name":"Honey Lemon","text":"6,000 ชิ้น"},{"name":"Fusion","text":"6,000 ชิ้น"},{"name":"Raspberry","text":"4,000 ชิ้น"},{"name":"Spearmint","text":"4,000 ชิ้น"}]}];
-const STAMP='2026-10-05';
+const STAMP='2026-10-05 11:56';
 const DOW=['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
 const MON=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const MONF=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
@@ -70,7 +79,9 @@ function render(){
     return '<div class="card"><div class="mh">'+MONF[m]+' '+y+'</div><table><thead><tr><th>วันที่ / จาก</th><th>รสชาติ</th><th style="text-align:right">จำนวน</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   }).join('')+'</div>';
 }
-document.getElementById('stamp').textContent=STAMP.split('-').reverse().join('/');
+(function(){const [d,t]=STAMP.split(' ');document.getElementById('stamp').textContent=d.split('-').reverse().join('/')+' '+t;})();
+function tick(){const n=new Date(),p=x=>String(x).padStart(2,'0');document.getElementById('clock').textContent=p(n.getDate())+'/'+p(n.getMonth()+1)+'/'+n.getFullYear()+', '+p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds());}
+tick();setInterval(tick,1000);
 render();
 </script>
 </body>
