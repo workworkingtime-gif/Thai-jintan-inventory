@@ -155,6 +155,21 @@ tbody tr.sel td{background:#eef4ff}
 .sbox{margin:14px 16px 0;background:var(--panel);border-radius:12px;padding:12px 14px}
 .sbox .row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px solid var(--line-soft)}
 .sbox .row:last-child{border-bottom:none;font-weight:700}
+/* 5 Oct 2026: แท็บกำหนดการ — การ์ดรายเดือนเรียงข้างกันแถวละ 3 เดือน เกิน 3 ขึ้นแถวใหม่ (จอแคบ = 1 คอลัมน์) */
+.sched-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start;margin-bottom:16px}
+.sched-grid.one{grid-template-columns:minmax(0,520px)}
+.sched-grid .card{margin-bottom:0}
+.sched-mh{padding:10px 14px 4px;font-size:17px;font-weight:700}
+.sched-grid table{font-size:13px}
+.sched-grid th{padding:6px 10px}
+.sched-grid td{padding:7px 10px}
+.sched-d{font-size:15px;font-weight:700;white-space:nowrap}
+.sched-src{font-size:11.5px;color:var(--ink-soft);line-height:1.25}
+.sched-f{font-size:14px}
+.sched-q{font-size:15px;font-weight:700;white-space:nowrap;text-align:right}
+.sched-warn{padding:8px 14px 12px;font-size:14px;font-weight:700}
+@media(max-width:1000px){.sched-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.sched-grid{grid-template-columns:minmax(0,1fr)}}
 .s2col{border:1px solid var(--line-soft);border-radius:12px;overflow:hidden;margin:14px 16px 0}
 .s2ch{display:grid;grid-template-columns:1fr 1fr;background:var(--panel)}
 .s2ch>div{padding:8px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-right:1px solid var(--line-soft)}
@@ -3583,26 +3598,26 @@ function pageSchedule(){
   html+=`<div class="card"><div class="card-head" onclick="toggleCard(this)"><span class="cht">สรุปรวม (สำหรับออฟฟิศ)<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span><span class="chm">${shown.length} รายการ<span class="chev">▾</span></span></div>
     <div class="card-body collapsed"><div class="tw"><table><thead><tr><th>ประเทศ</th><th>PO</th><th>ลัง</th><th>ชิ้น</th></tr></thead><tbody>${sumRows}</tbody></table></div>
     <div class="hint">ลัง = เฉพาะรายการที่หาร 240 ลงตัว${pcsOnlyPOs.size?` · ${[...pcsOnlyPOs].join(', ')} นับเป็นชิ้นเท่านั้น (ไม่รวมในยอดลัง)`:''} · ชิ้น = ยอดรวมทุกรายการของ APEX${supTotal?` · กล่องลังเปล่าจาก Supplier อีก ${f(supTotal)} ใบ`:''}</div></div></div>`;
-  // ตารางรายเดือน (มุมมองโกดัง — ตัวใหญ่อ่านง่าย)
+  // ตารางรายเดือน (มุมมองโกดัง) — การ์ดเรียงข้างกันแถวละ 3 เดือน (Ji 5 Oct 2026: "ใหญ่ไป ขอเรียงทีละ 3 เดือน")
   const byMonth={}; shown.forEach(x=>{(byMonth[mkey(x.g)]=byMonth[mkey(x.g)]||[]).push(x);});
+  let cards='';
   Object.keys(byMonth).forEach(k=>{
     const [y,m]=k.split('-').map(Number);
     let rows='';
     byMonth[k].forEach(({g,i})=>{
       g.lines.forEach((l,j)=>{
         const li=g.kind==='supplier'&&l.noQty?{text:'—'}:schedLineInfo(l,g.unit);
-        rows+=`<tr onclick="showSchedSheet(${i})" style="${j===0?'border-top:3px solid #1a2633':''}">
-          <td style="font-size:22px;font-weight:700;white-space:nowrap;padding:12px 16px">${j===0?thDateShort(g.ms):''}</td>
-          <td style="font-size:19px;white-space:nowrap">${j===0?g.source:''}</td>
-          <td style="font-size:20px">${l.name}</td>
-          <td style="font-size:22px;font-weight:700;white-space:nowrap">${li.text}</td></tr>`;
+        rows+=`<tr onclick="showSchedSheet(${i})" style="${j===0?'border-top:2px solid #1a2633':''}">
+          <td>${j===0?`<div class="sched-d">${thDateShort(g.ms)}</div><div class="sched-src">${g.source}</div>`:''}</td>
+          <td class="sched-f">${l.name}</td>
+          <td class="sched-q">${li.text}</td></tr>`;
       });
     });
-    html+=`<div class="card"><div style="padding:14px 18px 6px;font-size:24px;font-weight:700">${TH_MON_FULL[m]} ${y}</div>
-      <div class="hint">กดที่แถวเพื่อดูรายละเอียด (แบบออฟฟิศ)</div>
-      <div class="tw"><table><thead><tr><th>วันที่</th><th>จาก</th><th>รสชาติ</th><th>จำนวน</th></tr></thead><tbody>${rows}</tbody></table></div>
-      <div style="padding:12px 18px;font-size:19px;font-weight:700">นับไม่ตรง หรือของไม่มาตามวัน ให้แจ้งจีทันที</div></div>`;
+    cards+=`<div class="card"><div class="sched-mh">${TH_MON_FULL[m]} ${y}</div>
+      <div class="tw"><table><thead><tr><th>วันที่ / จาก</th><th>รสชาติ</th><th style="text-align:right">จำนวน</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="sched-warn">นับไม่ตรง หรือของไม่มาตามวัน ให้แจ้งจีทันที</div></div>`;
   });
+  html+=`<div class="hint" style="margin-bottom:10px;border-radius:8px">กดที่แถวเพื่อดูรายละเอียด (แบบออฟฟิศ)</div><div class="sched-grid${Object.keys(byMonth).length===1?' one':''}">${cards}</div>`;
   if(noDetail.length && SCHED_MONTH==='all') html+=`<div class="card"><div class="card-body"><div class="hint">📌 ${noDetail.length} รายการที่ยังไม่มีรายละเอียดรสชาติ/จำนวนในเว็บ เลยยังไม่ขึ้นในตารางด้านบน</div><div style="padding:10px 18px;font-size:13px">${noDetail.map(n=>`<div style="padding:3px 0">${n.nat} · ${n.po} — ${thDateLong(n.ms)}</div>`).join('')}</div></div></div>`;
   return html;
 }
