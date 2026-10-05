@@ -914,7 +914,8 @@ const APEX_OVERRIDES = [
   // 395,000 ชิ้น (ที่ 1 Oct เคยแจ้ง 70,000 สำหรับรอบ 6 ไม่ตรง — รอบ 6 จริงคือ Spearmint 20,000 +
   // Fusion 20,000 = 40,000 เหมือนเดิม แค่เลื่อนวันจาก 13→16 Nov 2026) และรอบ 30 Oct แก้รสจาก
   // Berries เป็น Raspberry ตามที่ Ji เขียนล่าสุด (15,000 เท่าเดิม)
-  {apexPO:'PO 054', expText:'14 Sept 2026\n8 Oct 2026\n15 Oct 2026\n28 Oct 2026\n30 Oct 2026\n16 Nov 2026', expD:null,
+  // 5 Oct 2026 (ต่อ): Peppermint 30,000 ของรอบ 30 Oct ย้ายไปทำงานอื่น Ji ให้หักออก → รอบนั้นเหลือ 45,000
+  {apexPO:'PO 054', schedUnit:'pcs', schedTag:'ตลับ', expText:'14 Sept 2026\n8 Oct 2026\n15 Oct 2026\n28 Oct 2026\n30 Oct 2026\n16 Nov 2026', expD:null,
     actText:'14 Sept 2026\n8 Oct 2026\n15 Oct 2026\n28 Oct 2026\n30 Oct 2026\n16 Nov 2026', actD:null,
     // 23 Sep 2026 (ต่อ, ตามที่ Ji ขอ "ช่วยให้เห็นว่ายอดที่สั่งทั้งหมด/เหลือ/ส่งอีกเท่าไหร่"):
     // เพิ่ม field ใหม่ `rounds` — array ของแต่ละรอบพร้อมรายการ items จริง (ไม่ใช่แค่วันที่ลอยๆ
@@ -924,16 +925,19 @@ const APEX_OVERRIDES = [
       {date:'8 Oct 2026', items:[{f:'Peppermint',q:40000},{f:'Spearmint',q:10000}]},
       {date:'15 Oct 2026', items:[{f:'Peppermint',q:50000},{f:'Spearmint',q:20000}]},
       {date:'28 Oct 2026', items:[{f:'Peppermint',q:30000},{f:'Spearmint',q:40000}]},
-      {date:'30 Oct 2026', items:[{f:'Peppermint',q:30000},{f:'Honey Lemon',q:15000},{f:'Raspberry',q:15000},{f:'Melon',q:15000}]},
+      {date:'30 Oct 2026', items:[{f:'Honey Lemon',q:15000},{f:'Raspberry',q:15000},{f:'Melon',q:15000}]},
       {date:'16 Nov 2026', items:[{f:'Spearmint',q:20000},{f:'Fusion',q:20000}]},
     ],
-    remark:'PO Nude ตลับ USA รวม 395,000 ชิ้น (Peppermint 210,000 / Spearmint 120,000 / Fusion 20,000 / Honey Lemon 15,000 / Raspberry 15,000 / Melon 15,000) แบ่งส่ง 6 รอบ: 14 Sept 2026 Peppermint 60,000+Spearmint 30,000 (รับแล้ว) · 8 Oct 2026 Peppermint 40,000+Spearmint 10,000 · 15 Oct 2026 Peppermint 50,000+Spearmint 20,000 · 28 Oct 2026 Peppermint 30,000+Spearmint 40,000 · 30 Oct 2026 Peppermint 30,000+Honey Lemon 15,000+Raspberry 15,000+Melon 15,000 · 16 Nov 2026 Spearmint 20,000+Fusion 20,000 (เลื่อนจาก 13 Nov — Ji ยืนยัน 5 Oct 2026) — จากชีต Customer requisition (23 Sep 2026, กรองเฉพาะแถว 01INT- ตามที่ Ji ขอ) ยกเลิกค่าประมาณ "28 Oct รอบเดียวที่เหลือทั้งหมด" แบบเดิมที่ไม่ละเอียดพอ'},
+    remark:'PO Nude ตลับ USA สั่งเดิมรวม 395,000 ชิ้น (Peppermint 210,000 / Spearmint 120,000 / Fusion 20,000 / Honey Lemon 15,000 / Raspberry 15,000 / Melon 15,000) — Peppermint 30,000 ของรอบ 30 Oct ย้ายไปใช้กับงานอื่นแล้ว หักออกจากกำหนดส่ง (Ji ยืนยัน 5 Oct 2026) คงเหลือที่ APEX จะส่งตาม PO นี้รวม 365,000 ชิ้น แบ่งส่ง 6 รอบ: 14 Sept 2026 Peppermint 60,000+Spearmint 30,000 (รับแล้ว) · 8 Oct 2026 Peppermint 40,000+Spearmint 10,000 · 15 Oct 2026 Peppermint 50,000+Spearmint 20,000 · 28 Oct 2026 Peppermint 30,000+Spearmint 40,000 · 30 Oct 2026 Honey Lemon 15,000+Raspberry 15,000+Melon 15,000 · 16 Nov 2026 Spearmint 20,000+Fusion 20,000 (เลื่อนจาก 13 Nov) — จากชีต Customer requisition (23 Sep 2026, กรองเฉพาะแถว 01INT- ตามที่ Ji ขอ)'},
   // 1 Oct 2026 (รอบสามสิบเจ็ด): Ji แจ้งทางแชทว่า PO 062 เลื่อนจาก 4→6 Nov 2026 จำนวนไม่เปลี่ยน
   // (66,000 ชิ้น/275 ลัง ตรงกับที่ยืนยันไว้แล้วในรอบสามสิบสี่) — ชีตสดยังไม่อัปเดตวันที่ใหม่
   // ตอนเช็ค (1 Oct 2026) จึง override expD ตรงๆ ไปก่อน (46332 = 6 Nov 2026) เผื่อชีต sync
   // เข้ามาเองทีหลังก็จะใช้ branch ทับค่าเดิม ไม่สร้างซ้ำ (apexPO ตรงกับที่มีอยู่แล้วจาก live sync)
   {apexPO:'PO 062', expD:46332, expText:'',
-    remark:'HK Nude ตลับ รวม 66,000 ชิ้น (275 ลัง): Raspberry 18 + Honey Lemon 83 + Melon 83 + Black Spearmint 21 + Donki 30 + Hongkong Edition 40 ลัง — Ji แจ้งทางแชท 1 Oct 2026 ว่าเลื่อนจาก 4→6 Nov 2026 จำนวนไม่เปลี่ยน (ตัดสต็อกเฉพาะกล่องใน ไม่ตัดลังนอก ดู APEX_PENDING_DRAWS/noCartonCut)'},
+    // 5 Oct 2026: schedItems = รายการต่อรสของ PO นี้ (ชิ้น) สำหรับแท็บ "กำหนดการ" — ตัวเลขชุดเดียวกับ
+    // APEX_PENDING_DRAWS (ด้านล่าง) ต้องแก้ให้ตรงกันทั้งสองที่ถ้า Ji แจ้งยอดใหม่
+    schedItems:[{f:'Raspberry',q:4320},{f:'Honey Lemon',q:19920},{f:'Melon',q:19920},{f:'Black Spearmint',q:5040},{f:'Donki',q:7200},{f:'Hongkong Edition',q:9600}],
+    remark:'HK Nude ตลับ รวม 66,000 ชิ้น (275 ลัง): Raspberry 18 + Honey Lemon 83 + Melon 83 + Black Spearmint 21 + Donki 30 + Hongkong Edition 40 ลัง — Ji แจ้งทางแชท 1 Oct 2026 ว่าเลื่อนจาก 4→6 Nov 2026 จำนวนไม่เปลี่ยน (ตัดสต็อกเฉพาะกล่องใน ไม่ตัดลังนอก — APEX แพ็คด้วยลังของตัวเอง)'},
   // 1 Oct 2026 (รอบสามสิบเจ็ด): Ji แจ้งกำหนดการ PO 058 มาด้วย (9→11 Nov 2026, 86,160 ตลับ) แต่
   // 2 Oct 2026 Ji บอกชัดว่า "อันที่ไม่เคยมีไม่ต้องเพิ่ม" — PO นี้ไม่เคยอยู่ในชีตสด/APEX_POS มา
   // ก่อนเลย จึงไม่สร้าง newEntry ให้ในเว็บ (รอให้เข้าสู่ชีตสดเองตามรอบปกติก่อนค่อยขึ้นในเว็บ)
@@ -941,7 +945,8 @@ const APEX_OVERRIDES = [
   // Ji แจ้งทางแชทว่าเลื่อนจาก 17→19 Nov 2026 และจำนวนเปลี่ยนจากเดิมที่เคยเห็นในชีต (Honey Lemon
   // 120+Fusion 120+Berries 80+Spearmint 80 ลัง รวม 400 ลัง=96,000 ชิ้น) เหลือแค่ 20,000 ชิ้น —
   // ต่างจากเดิมเยอะมาก ได้ถาม Ji ให้ยืนยันซ้ำแล้วในแชท ยังไม่ได้คำตอบตอนใส่ค่านี้
-  {apexPO:'PO 063', expD:46345, expText:'',
+  {apexPO:'PO 063', expD:46345, expText:'', schedUnit:'pcs',
+    schedItems:[{f:'รวม (ยังไม่แยกรสชาติ)',q:20000}],
     remark:'USA Nude ตลับ รวม 20,000 ชิ้น ยังไม่แยกรสชาติ — Ji แจ้งทางแชท 1 Oct 2026 ว่าเลื่อนจาก 17→19 Nov 2026 และจำนวนเปลี่ยนจากเดิม (Honey Lemon 120+Fusion 120+Berries 80+Spearmint 80 ลัง รวม 400 ลัง=96,000 ชิ้น) เหลือ 20,000 ชิ้น — ต่างจากเดิมมาก อยู่ระหว่างรอ Ji ยืนยันซ้ำว่าถูกต้อง'},
   // 10 Sep 2026: ชีต "Customer requisition" ละเอียดกว่าเผยว่า PO 053 จริงๆ มี 3 วันส่งของ
   // ไม่ใช่ 2 วัน (29/30 Sep) ที่เคย auto-extract จาก remark ของ APX Tracking ได้ — มีรอบ
@@ -957,9 +962,9 @@ const APEX_OVERRIDES = [
     // 23 Sep 2026: เพิ่ม `rounds` แบบเดียวกับ PO 054 (ดู apexRoundsSummary()) — ตัวเลขนี้มาจาก
     // remark เดิมที่มีรายละเอียดต่อรอบอยู่แล้ว (352/228/219/79 ลัง × 240 ชิ้น/ลัง)
     rounds:[
-      {date:'15 Sep 2026', items:[{f:'Peppermint',q:54720}]},
-      {date:'29 Sep 2026', items:[{f:'Variety',q:84480}]},
-      {date:'30 Sep 2026', items:[{f:'Peppermint',q:52560},{f:'Fusion',q:18960}]},
+      {date:'15 Sep 2026', items:[{f:'Peppermint',l:'Mint Peppermint (10-pack)',q:54720}]},
+      {date:'29 Sep 2026', items:[{f:'Variety',l:'Variety Flavor (5-pack)',q:84480}]},
+      {date:'30 Sep 2026', items:[{f:'Peppermint',l:'Mint Peppermint (10-pack)',q:52560},{f:'Fusion',l:'Fusion (10-pack)',q:18960}]},
     ],
     remark:'PO Nude USA Full Service: Variety Flavor (5-pack) 84,480 ชิ้น (352 ลัง) ส่ง 29 Sep · Mint Peppermint (10-pack) 54,720 ชิ้น (228 ลัง) ส่ง 15 Sep (ถึงไทยยันต้นก่อนเที่ยง) + 52,560 ชิ้น (219 ลัง) ส่ง 30 Sep · Fusion (10-pack) 18,960 ชิ้น (79 ลัง) ส่ง 30 Sep — จากชีต Customer requisition (10 Sep 2026) · 10 Sep 2026: sheet\'s own Actual Date column shows all 3 dates too (Expected Date cell itself only had 29/30) — mirrored into actText'},
   // 23 Sep 2026: PO 060/061 เป็น PO ใหม่ที่เจอครั้งแรกในชีต "Customer requisition" เท่านั้น
@@ -975,9 +980,11 @@ const APEX_OVERRIDES = [
   // (ดู comment เต็มที่ apexMaterialsRequirement()) — Ji บอกให้เริ่มเช็คนี้ "ตั้งแต่วันนี้เป็นต้นไป
   // คือ PO 60" เท่านั้น ไม่ต้องย้อนไปแก้ PO 053 (ดู comment ที่ APEX_MATERIALS_LOG['PO 053'])
   {apexPO:'PO 060', newEntry:true, nat:'USA', expText:'16 Oct 2026',
+    schedItems:[{f:'Spearmint (10-pack)',q:29760},{f:'Spearmint (5-pack)',q:13680}],
     orderItems:[{packType:'10-pack', qty:29760},{packType:'5-pack', qty:13680}],
     remark:'USA Apex pack full service — NUDE Capsule Mint Spearmint Flavor (10-pack) 29,760 ชิ้น + (5-pack) 13,680 ชิ้น = รวม 43,440 ชิ้น · จากชีต Customer requisition (23 Sep 2026) — ยังไม่เจอใน APX Tracking sheet'},
   {apexPO:'PO 061', newEntry:true, nat:'USA', expText:'26 Oct 2026',
+    schedItems:[{f:'Spearmint (10-pack)',q:29760},{f:'Spearmint (5-pack)',q:13680}],
     orderItems:[{packType:'10-pack', qty:29760},{packType:'5-pack', qty:13680}],
     remark:'USA Apex pack full service — NUDE Capsule Mint Spearmint Flavor (10-pack) 29,760 ชิ้น + (5-pack) 13,680 ชิ้น = รวม 43,440 ชิ้น · จากชีต Customer requisition (23 Sep 2026) — ยังไม่เจอใน APX Tracking sheet'},
 ];
@@ -1872,7 +1879,7 @@ function renderHistoryTable(logs, limit){
 }
 function stockOf(arr, flavor){ const r = arr.find(x=>x.flavor===flavor); return r ? (r.apex||0)+(r.ku||0) : 0; }
 // ─── NAV ─────────────────────────────────────────────────────────────────
-const TABS = [{id:'stock',label:'📦 Stock'},{id:'po',label:'🚚 Supplier POs'},{id:'apex',label:'✈️ APEX Orders'},{id:'cal',label:'📅 Calendar'},{id:'calc',label:'🧮 คำนวณ'},{id:'audit',label:'📋 บันทึก'}];
+const TABS = [{id:'stock',label:'📦 Stock'},{id:'po',label:'🚚 Supplier POs'},{id:'apex',label:'✈️ APEX Orders'},{id:'cal',label:'📅 Calendar'},{id:'sched',label:'🗓️ กำหนดการ'},{id:'calc',label:'🧮 คำนวณ'},{id:'audit',label:'📋 บันทึก'}];
 const STOCK_SUBS = [{id:'hk',label:'🇭🇰 ฮ่องกง'},{id:'sg',label:'🇸🇬 สิงคโปร์'},{id:'kr',label:'🇰🇷 เกาหลี'}];
 function renderNav(){
   document.getElementById('nav').innerHTML = TABS.map(t=>`<div class="nav-tab ${TAB===t.id?'active':''}" onclick="setTab('${t.id}')">${t.label}</div>`).join('');
@@ -1886,6 +1893,7 @@ function renderMain(){
   if(TAB==='po')   m.innerHTML = pagePO();
   if(TAB==='apex') m.innerHTML = pageAPEX();
   if(TAB==='cal')  m.innerHTML = pageCalendar();
+  if(TAB==='sched')m.innerHTML = pageSchedule();
   if(TAB==='calc') m.innerHTML = pageCalc();
   if(TAB==='audit')m.innerHTML = pageAudit();
 }
@@ -3485,6 +3493,156 @@ function calToday(){
 function calSelect(ms){
   CAL_SEL=ms;
   renderMain();
+}
+// ─── SCHEDULE PAGE (กำหนดการของเข้า) ─────────────────────────────────────────
+// 5 Oct 2026: Ji ขอให้เพิ่ม "บอร์ดกำหนดการ" (เดิมเป็นเอกสาร Claude Docs แยกต่างหาก ที่ต้องให้ Claude
+// มาแก้มือทุกครั้ง) ลงในเว็บ — สร้างอัตโนมัติจากข้อมูลที่เว็บมีอยู่แล้ว (APEX_POS + rounds/schedItems +
+// Supplier PO) ไม่ต้องคีย์ซ้ำ: ตารางหลักอ่านง่ายเหมาะแคปส่งคุณลุงที่โกดัง (ตัวใหญ่ ตัวหนา แยกเดือน
+// 1 รสชาติต่อ 1 แถว ไม่ใช้สีสื่อความหมาย) กดแถวไหนก็เปิดรายละเอียดแบบออฟฟิศ (ประเทศ/PO/รอบ/ลัง/ชิ้น/
+// สถานะ/หมายเหตุ) กฎเดิมจากบอร์ด: ลัง = 240 ชิ้น (หารลงตัวเท่านั้น), PO ที่ตั้ง schedUnit:'pcs'
+// (ตลับ Nude USA เช่น PO 054/063) แสดงเป็นชิ้นเสมอ ห้ามเดาจำนวนลัง, Supplier นับเป็น "ใบ"
+let SCHED_MONTH='all', SCHED_GROUPS=[];
+const TH_DOW=['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+const TH_MON=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const TH_MON_FULL=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+function thDateShort(ms){ const d=new Date(ms); return `${TH_DOW[d.getUTCDay()]} ${d.getUTCDate()} ${TH_MON[d.getUTCMonth()]}`; }
+function thDateLong(ms){ const d=new Date(ms); return `${TH_DOW[d.getUTCDay()]} ${d.getUTCDate()} ${TH_MON_FULL[d.getUTCMonth()]} ${d.getUTCFullYear()}`; }
+function schedTodayMs(){ const n=new Date(); return Date.UTC(n.getFullYear(),n.getMonth(),n.getDate()); }
+function schedPickDate(list,today){ const l=list.filter(x=>x!=null).sort((a,b)=>a-b); if(!l.length) return null; return l.find(x=>x>=today) ?? l[l.length-1]; }
+// วันที่ของ PO ที่มีวันเดียว: ใช้ Actual เป็นหลัก ถ้าไม่มีใช้ Expected (ตรงกับกฎของบอร์ดเดิม)
+function schedPoDate(p,today){
+  const act=schedPickDate([p.actD?serialToMs(p.actD):null,...parseFreeDates(p.actText)],today);
+  if(act!=null) return {ms:act,kind:'Actual'};
+  const exp=schedPickDate([p.expD?serialToMs(p.expD):null,...parseFreeDates(p.expText),...parseFreeDates(expTextFallback(p)||'')],today);
+  if(exp!=null) return {ms:exp,kind:'Expected'};
+  return null;
+}
+function schedLineInfo(l,unit){
+  if(unit==='box') return {text:`${f(l.pcs)} ใบ`, ctn:null, pcs:l.pcs};
+  if(unit==='ctn' && l.pcs%APEX_CARTON_CAPACITY===0){ const c=l.pcs/APEX_CARTON_CAPACITY; return {text:`${f(c)} ลัง`, ctn:c, pcs:l.pcs}; }
+  return {text:`${f(l.pcs)} ชิ้น`, ctn:null, pcs:l.pcs};
+}
+function schedBuild(){
+  const today=schedTodayMs(); const groups=[]; const noDetail=[];
+  APEX_POS.forEach(p=>{
+    if(p.cancelled) return;
+    const po=p.apexPO||p.custPO||'APEX';
+    const unit=p.schedUnit==='pcs'?'pcs':'ctn';
+    const base={kind:'apex',p,po,nat:p.nat||'',unit,source:`${p.nat||'—'} · ${po}${p.schedTag?' '+p.schedTag:''}`};
+    const rs=apexRoundsSummary(p);
+    if(rs){
+      rs.rounds.forEach((r,i)=>{
+        if(r.ms==null||r.ms<today) return;
+        groups.push({...base,ms:r.ms,dateKind:'รอบส่ง',roundNo:i+1,roundTotal:rs.rounds.length,rs,
+          lines:r.items.map(it=>({name:it.l||it.f,pcs:it.q}))});
+      });
+      return;
+    }
+    if(apexStatus(p).done) return;
+    const d=schedPoDate(p,today);
+    if(d==null||d.ms<today) return;
+    if(p.schedItems){
+      groups.push({...base,ms:d.ms,dateKind:d.kind,lines:p.schedItems.map(it=>({name:it.f,pcs:it.q}))});
+    } else {
+      noDetail.push({po,nat:p.nat||'—',ms:d.ms});
+    }
+  });
+  D.pos.forEach(p=>{
+    if(poArrived(p)) return;
+    const ms = p.actMs!=null ? p.actMs : p.expMs;
+    if(ms==null||ms<today) return;
+    const isCarton=p.product==='Carton';
+    const items=(p.items||[]).filter(i=>i.f&&i.q);
+    groups.push({kind:'supplier',p,po:p.po,nat:p.nat||'',unit:'box',ms,dateKind:p.actMs!=null?'Actual':'Expected',
+      source:`${p.vendor} · ${isCarton?'กล่องลังเปล่า':p.product}`,
+      lines:items.length?items.map(i=>({name:(isCarton?'กล่องลัง ':'')+i.f,pcs:i.q})):[{name:p.product||'—',pcs:0,noQty:true}]});
+  });
+  groups.sort((a,b)=>a.ms-b.ms || (a.kind===b.kind?0:(a.kind==='apex'?-1:1)) || a.source.localeCompare(b.source));
+  return {groups,noDetail};
+}
+function setSchedMonth(k){ SCHED_MONTH=k; closeSheet(); renderMain(); }
+function pageSchedule(){
+  const {groups,noDetail}=schedBuild(); SCHED_GROUPS=groups;
+  const mkey=g=>{const d=new Date(g.ms); return d.getUTCFullYear()+'-'+d.getUTCMonth();};
+  const monthKeys=[...new Set(groups.map(mkey))];
+  if(SCHED_MONTH!=='all' && !monthKeys.includes(SCHED_MONTH)) SCHED_MONTH='all';
+  const chip=(k,label)=>`<div class="sub-tab ${SCHED_MONTH===k?'active':''}" onclick="setSchedMonth('${k}')">${label}</div>`;
+  const chips=`<div class="subnav">${chip('all','ทุกเดือน')}${monthKeys.map(k=>{const [y,m]=k.split('-').map(Number);return chip(k,`${TH_MON_FULL[m]} ${y}`);}).join('')}</div>`;
+  const shown=groups.map((g,i)=>({g,i})).filter(x=>SCHED_MONTH==='all'||mkey(x.g)===SCHED_MONTH);
+  let html=`<div class="pt">🗓️ กำหนดการของเข้า</div><div class="ps">ของที่กำลังจะเข้า — สร้างอัตโนมัติจากข้อมูล APEX + Supplier ในเว็บ · ส่วนใหญ่นับเป็น <b>ลัง</b> · ตลับนับเป็น <b>ชิ้น</b> · กล่องลังเปล่านับเป็น <b>ใบ</b> ${liveBadge('apex')}</div>${chips}`;
+  if(!shown.length) return html+'<div class="card"><div class="card-body" style="padding:30px;text-align:center;color:#8fa3b0">ไม่มีของที่กำลังจะเข้า</div></div>';
+  // สรุปรวมแยกประเทศ (มุมมองออฟฟิศ) — ลัง = เฉพาะรายการที่นับเป็นลังได้, ชิ้น = ทุกรายการของ APEX
+  const sum={}; const pcsOnlyPOs=new Set();
+  shown.forEach(({g})=>{
+    if(g.kind!=='apex') return;
+    const s=sum[g.nat]||(sum[g.nat]={pos:new Set(),ctn:0,pcs:0}); s.pos.add(g.po);
+    g.lines.forEach(l=>{const li=schedLineInfo(l,g.unit); if(li.ctn!=null) s.ctn+=li.ctn; else pcsOnlyPOs.add(g.po); s.pcs+=l.pcs;});
+  });
+  const sumRows=Object.keys(sum).map(n=>`<tr style="cursor:default"><td>${n}</td><td>${[...sum[n].pos].join(', ')}</td><td class="n">${f(sum[n].ctn)}</td><td class="n">${f(sum[n].pcs)}</td></tr>`).join('');
+  const supTotal=shown.filter(x=>x.g.kind==='supplier').reduce((a,x)=>a+x.g.lines.reduce((b,l)=>b+l.pcs,0),0);
+  html+=`<div class="card"><div class="card-head" onclick="toggleCard(this)"><span class="cht">สรุปรวม (สำหรับออฟฟิศ)<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span><span class="chm">${shown.length} รายการ<span class="chev">▾</span></span></div>
+    <div class="card-body collapsed"><div class="tw"><table><thead><tr><th>ประเทศ</th><th>PO</th><th>ลัง</th><th>ชิ้น</th></tr></thead><tbody>${sumRows}</tbody></table></div>
+    <div class="hint">ลัง = เฉพาะรายการที่หาร 240 ลงตัว${pcsOnlyPOs.size?` · ${[...pcsOnlyPOs].join(', ')} นับเป็นชิ้นเท่านั้น (ไม่รวมในยอดลัง)`:''} · ชิ้น = ยอดรวมทุกรายการของ APEX${supTotal?` · กล่องลังเปล่าจาก Supplier อีก ${f(supTotal)} ใบ`:''}</div></div></div>`;
+  // ตารางรายเดือน (มุมมองโกดัง — ตัวใหญ่อ่านง่าย)
+  const byMonth={}; shown.forEach(x=>{(byMonth[mkey(x.g)]=byMonth[mkey(x.g)]||[]).push(x);});
+  Object.keys(byMonth).forEach(k=>{
+    const [y,m]=k.split('-').map(Number);
+    let rows='';
+    byMonth[k].forEach(({g,i})=>{
+      g.lines.forEach((l,j)=>{
+        const li=g.kind==='supplier'&&l.noQty?{text:'—'}:schedLineInfo(l,g.unit);
+        rows+=`<tr onclick="showSchedSheet(${i})" style="${j===0?'border-top:3px solid #1a2633':''}">
+          <td style="font-size:22px;font-weight:700;white-space:nowrap;padding:12px 16px">${j===0?thDateShort(g.ms):''}</td>
+          <td style="font-size:19px;white-space:nowrap">${j===0?g.source:''}</td>
+          <td style="font-size:20px">${l.name}</td>
+          <td style="font-size:22px;font-weight:700;white-space:nowrap">${li.text}</td></tr>`;
+      });
+    });
+    html+=`<div class="card"><div style="padding:14px 18px 6px;font-size:24px;font-weight:700">${TH_MON_FULL[m]} ${y}</div>
+      <div class="hint">กดที่แถวเพื่อดูรายละเอียด (แบบออฟฟิศ)</div>
+      <div class="tw"><table><thead><tr><th>วันที่</th><th>จาก</th><th>รสชาติ</th><th>จำนวน</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div style="padding:12px 18px;font-size:19px;font-weight:700">นับไม่ตรง หรือของไม่มาตามวัน ให้แจ้งจีทันที</div></div>`;
+  });
+  if(noDetail.length && SCHED_MONTH==='all') html+=`<div class="card"><div class="card-body"><div class="hint">📌 ${noDetail.length} รายการที่ยังไม่มีรายละเอียดรสชาติ/จำนวนในเว็บ เลยยังไม่ขึ้นในตารางด้านบน</div><div style="padding:10px 18px;font-size:13px">${noDetail.map(n=>`<div style="padding:3px 0">${n.nat} · ${n.po} — ${thDateLong(n.ms)}</div>`).join('')}</div></div></div>`;
+  return html;
+}
+function showSchedSheet(i){
+  const g=SCHED_GROUPS[i]; if(!g) return; const p=g.p;
+  const infos=g.lines.map(l=>({l,li:g.kind==='supplier'&&l.noQty?{text:'—',ctn:null,pcs:0}:schedLineInfo(l,g.unit)}));
+  const lineRows=infos.map(({l,li})=>`<div class="row"><span>${l.name}</span><span style="font-weight:600">${li.text}${g.kind==='apex'&&li.ctn!=null?` <span style="color:#8fa3b0;font-weight:400">(${f(l.pcs)} ชิ้น)</span>`:''}</span></div>`).join('');
+  const totPcs=g.lines.reduce((a,l)=>a+l.pcs,0), totCtn=infos.reduce((a,x)=>a+(x.li.ctn||0),0);
+  const allCtn=infos.length>0 && infos.every(x=>x.li.ctn!=null);
+  let html;
+  if(g.kind==='supplier'){
+    html=`<div class="sbox">
+      <div class="row"><span>Supplier</span><span><span class="vtag v-${p.vendor.toLowerCase()}">${p.vendor}</span></span></div>
+      <div class="row"><span>PO No.</span><span style="font-weight:600">${p.po}</span></div>
+      <div class="row"><span>สินค้า</span><span>${p.product||'—'}</span></div>
+      <div class="row"><span>ส่ง PO</span><span>${p.sent||'—'}</span></div>
+      <div class="row"><span>วันที่คาดว่าจะเข้า</span><span>${thDateLong(g.ms)}</span></div>
+      <div class="row"><span>ส่งที่</span><span>${p.dest||'—'}</span></div>
+    </div>
+    <div class="sbox">${lineRows}<div class="row"><span>รวม</span><span>${f(totPcs)} ใบ</span></div></div>
+    ${p.remark?`<div style="margin:10px 16px;padding:10px;background:#f4f6f9;border-radius:6px;font-size:12px;color:#5b6b76">${p.remark}</div>`:''}
+    <div style="padding:6px 16px 16px"><button class="bg2" onclick="setTab('po')">ไปหน้า Supplier POs →</button></div>`;
+  } else {
+    const st=apexStatus(p);
+    const expTxt=apexExpDisplay(p).text;
+    html=`<div class="sbox">
+      <div class="row"><span>ประเทศ</span><span style="font-weight:700">${g.nat||'—'}</span></div>
+      <div class="row"><span>APEX PO</span><span style="font-weight:700">${g.po}${g.roundNo?` (รอบ ${g.roundNo}/${g.roundTotal})`:''}</span></div>
+      <div class="row"><span>Customer PO</span><span>${p.custPO||'—'}</span></div>
+      <div class="row"><span>วันที่ของเข้า</span><span style="text-align:right">${thDateLong(g.ms)}<div style="font-size:11px;color:#8fa3b0;font-weight:400">${g.dateKind==='รอบส่ง'?'ตามกำหนดรอบส่ง':'วัน '+g.dateKind+' ตามเว็บ'}</div></span></div>
+      ${expTxt&&!g.roundNo?`<div class="row"><span>Expected</span><span style="text-align:right">${nl2br(expTxt)}</span></div>`:''}
+      <div class="row"><span>สถานะ PO</span><span style="text-align:right"><span class="badge ${st.cls}">${st.label}</span></span></div>
+    </div>
+    <div class="sbox">${lineRows}<div class="row"><span>รวม</span><span>${allCtn?`${f(totCtn)} ลัง · `:''}${f(totPcs)} ชิ้น</span></div></div>
+    ${g.unit==='pcs'?'<div style="margin:8px 16px 0;font-size:11px;color:#8fa3b0">* รายการนี้นับเป็นชิ้น ไม่แสดงจำนวนลัง (ไม่ใช้ยอดลังเดา)</div>':''}
+    ${g.rs?apexRoundsSummaryHtml(g.rs):''}
+    ${p.remark?(remarkTableHtml(p.remark)||`<div style="margin:12px 16px;padding:10px;background:#f4f6f9;border-radius:6px;font-size:12px;color:#5b6b76">${nl2br(p.remark)}</div>`):''}
+    <div style="padding:6px 16px 16px"><button class="bg2" onclick="setTab('apex')">ไปหน้า APEX Orders →</button></div>`;
+  }
+  openSheet(`${g.source} · ${thDateShort(g.ms)}`, html, null);
 }
 // ─── CALC PAGE ────────────────────────────────────────────────────────────
 function pageCalc(){
