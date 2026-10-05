@@ -159,15 +159,14 @@ tbody tr.sel td{background:#eef4ff}
 .sched-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start;margin-bottom:16px}
 .sched-grid.one{grid-template-columns:minmax(0,520px)}
 .sched-grid .card{margin-bottom:0}
-.sched-mh{padding:10px 14px 4px;font-size:17px;font-weight:700}
-.sched-grid table{font-size:13px}
-.sched-grid th{padding:6px 10px}
-.sched-grid td{padding:7px 10px}
-.sched-d{font-size:15px;font-weight:700;white-space:nowrap}
-.sched-src{font-size:11.5px;color:var(--ink-soft);line-height:1.25}
-.sched-f{font-size:14px}
-.sched-q{font-size:15px;font-weight:700;white-space:nowrap;text-align:right}
-.sched-warn{padding:8px 14px 12px;font-size:14px;font-weight:700}
+.sched-mh{padding:9px 12px 3px;font-size:15px;font-weight:700}
+.sched-grid table{font-size:11.5px}
+.sched-grid th{padding:5px 8px}
+.sched-grid td{padding:5px 8px}
+.sched-d{font-size:13px;font-weight:700;white-space:nowrap}
+.sched-src{font-size:10px;color:var(--ink-soft);line-height:1.25}
+.sched-f{font-size:12.5px}
+.sched-q{font-size:13px;font-weight:700;white-space:nowrap;text-align:right}
 @media(max-width:1000px){.sched-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){.sched-grid{grid-template-columns:minmax(0,1fr)}}
 .s2col{border:1px solid var(--line-soft);border-radius:12px;overflow:hidden;margin:14px 16px 0}
@@ -3616,8 +3615,7 @@ function pageSchedule(){
       });
     });
     cards+=`<div class="card"><div class="sched-mh">${TH_MON_FULL[m]} ${y}</div>
-      <div class="tw"><table><thead><tr><th>วันที่ / จาก</th><th>รสชาติ</th><th style="text-align:right">จำนวน</th></tr></thead><tbody>${rows}</tbody></table></div>
-      <div class="sched-warn">นับไม่ตรง หรือของไม่มาตามวัน ให้แจ้งจีทันที</div></div>`;
+      <div class="tw"><table><thead><tr><th>วันที่ / จาก</th><th>รสชาติ</th><th style="text-align:right">จำนวน</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   });
   html+=`<div class="hint" style="margin-bottom:10px;border-radius:8px">กดที่แถวเพื่อดูรายละเอียด (แบบออฟฟิศ)</div><div class="sched-grid${Object.keys(byMonth).length===1?' one':''}">${cards}</div>`;
   if(noDetail.length && SCHED_MONTH==='all') html+=`<div class="card"><div class="card-body"><div class="hint">📌 ${noDetail.length} รายการที่ยังไม่มีรายละเอียดรสชาติ/จำนวนในเว็บ เลยยังไม่ขึ้นในตารางด้านบน</div><div style="padding:10px 18px;font-size:13px">${noDetail.map(n=>`<div style="padding:3px 0">${n.nat} · ${n.po} — ${thDateLong(n.ms)}</div>`).join('')}</div></div></div>`;
