@@ -134,6 +134,7 @@ tbody tr.sel td{background:#eef4ff}
 .v-sjr{background:#D9E2F3;color:#3A5A8C}.v-jrs{background:#E2EFDA;color:#4C7A3A}
 .v-ppp{background:#FCE4D6;color:#B85C2E}.v-tbb{background:#FFF2CC;color:#9C7E1A}
 .v-yj{background:#EAD9F3;color:#6B3A8C}
+.v-tcm{background:#E1D9F0;color:#5B4A8C}
 .nat{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700}
 .nkr{background:#E2EFDA;color:#4C7A3A}.nhk{background:#D9E2F3;color:#3A5A8C}
 .nusa{background:#FCE4D6;color:#B85C2E}.nsg{background:#FFF2CC;color:#9C7E1A}
@@ -802,6 +803,10 @@ const DEF_POS = [
   // เพิ่มเติมแค่ "วันที่ส่ง PO" ที่เอกสารระบุชัดเจนว่า 22 Sep 2026 (ช่องนี้เคยว่างเพราะชีตสด
   // ไม่มีคอลัมน์นี้ให้บล็อก PPP) — ไม่กระทบ Expected/Actual ที่ sync จากชีตเหมือนเดิม
   {id:'s16',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/009',sentMs:Date.UTC(2026,8,22),sent:'22 Sep 2026',expMs:Date.UTC(2026,9,8),exp:'08 Oct 2026',actMs:null,act:null,dest:'Thai Jintan',items:[{f:'Peppermint',q:800},{f:'Spearmint',q:1000},{f:'Fusion',q:200}],remark:'กล่องลัง USA; Peppermint 800 Spearmint 1000 Fusion 200 · ยืนยันจากไฟล์ PO ตัวจริง 01INT-PPP26/009 ลงวันที่ 22 Sep 2026 (เงื่อนไขชำระเงิน 30 วัน) · USA ไม่มีตารางสต็อกแยกในแดชบอร์ด — มาร์คสถานะ + รายละเอียดไว้ใน Remark เท่านั้น ไม่กระทบตัวเลข apex/Thai Jintan ของตลาดไหนเลย'},
+  // 15 Oct 2026: Ji ส่งสกรีนช็อตชีต Supplier — มี Supplier ใหม่ "TCM" PO แรก 01INT-TCM26/001 (USA, สินค้า Box)
+  // Nude Walmart กล่องฝาชน ขนาด 8.25 x 8.75 x 4.75 นิ้ว 1,350 ใบ ยังไม่มี Expected/Actual/วันส่งในชีต (ว่างทั้งหมด)
+  // จึงยังไม่ขึ้นในแท็บกำหนดการ/ปฏิทิน — พอชีตมีวันที่ sync สดจะเติมให้เอง (เพิ่ม TCM ใน syncSupplierPOs แล้ว)
+  {id:'s_tcm1',vendor:'TCM',nat:'USA',product:'Box',po:'01INT-TCM26/001',sentMs:null,sent:null,expMs:null,exp:null,actMs:null,act:null,dest:'',items:[{f:'Nude Walmart (กล่องฝาชน 8.25 x 8.75 x 4.75")',q:1350}],remark:'Nude Walmart - กล่องฝาชนขนาด 8.25 x 8.75 x 4.75" 1,350 ใบ · ยังไม่มีวันที่ Expected/Actual ในชีต (Ji แจ้ง 15 Oct 2026)'},
 ];
 // Each APEX PO row stores raw Excel-serial day numbers (…D) for clean single dates,
 // plus free-text fallbacks (…Text) for cells that contain multiple/irregular dates
@@ -1692,6 +1697,8 @@ const SUPPLIER_BLOCK_LAYOUT = {
   'JRS':     {nat:0, product:1,    po:2, sent:null, exp:3, act:4, dest:5, remark:6},
   'PPP':     {nat:0, product:1,    po:2, sent:null, exp:3, act:4, dest:5, remark:6},
   'Thai BB': {nat:0, product:1,    po:2, sent:null, exp:3, act:4, dest:5, remark:6},
+  // 15 Oct 2026: Supplier ใหม่ TCM — คอลัมน์: Nationality | Product | PO NO. | Expected | Actual | Send->Customer | Remark
+  'TCM':     {nat:0, product:1,    po:2, sent:null, exp:3, act:4, dest:5, remark:6},
 };
 async function syncSupplierPOs(){
   LIVE.supplier.status='loading'; if(TAB==='po') renderMain();
@@ -1701,13 +1708,13 @@ async function syncSupplierPOs(){
     const rows = resp.table.rows.map(r=>(r.c||[]));
     const cellStr = c => (c && c.v!=null) ? String(c.v).trim() : '';
     const isBlankRow = row => row.every(c=>!cellStr(c));
-    const VENDOR_NAMES = ['SJR','JRS','PPP','Thai BB'];
+    const VENDOR_NAMES = ['SJR','JRS','PPP','Thai BB','TCM'];
     // sheet block-marker name -> vendor code actually stored in DEF_POS/D.pos
     // (Thai BB's marker cell literally says "Thai BB" but every existing
     // DEF_POS entry for it uses the abbreviated code 'TBB' — without this
     // mapping, matching by vendor code fails on every sync and a duplicate
     // "new" PO gets created every single time instead of updating s9)
-    const VENDOR_CODE = {'SJR':'SJR','JRS':'JRS','PPP':'PPP','Thai BB':'TBB'};
+    const VENDOR_CODE = {'SJR':'SJR','JRS':'JRS','PPP':'PPP','Thai BB':'TBB','TCM':'TCM'};
     // Classify every row purely by its OWN content — never by its position or
     // distance from another row. Earlier versions skipped a fixed "marker+1"
     // or "marker+2" offset to land on data rows, which broke against the real
@@ -2946,7 +2953,7 @@ function supplierPoSortKey(p){
 }
 function pagePO(){
   const vendors=[...new Set(D.pos.map(p=>p.vendor))];
-  let html=`<div class="pt">Supplier PO Status</div><div class="ps">SJR (แสงเจริญ) · JRS (จรัสแสง) · PPP (PaperPack) · TBB · YJ (วายเจ) ${liveBadge('supplier')}</div>`;
+  let html=`<div class="pt">Supplier PO Status</div><div class="ps">SJR (แสงเจริญ) · JRS (จรัสแสง) · PPP (PaperPack) · TBB · YJ (วายเจ) · TCM ${liveBadge('supplier')}</div>`;
   vendors.forEach(v=>{
     const rows=D.pos.filter(p=>p.vendor===v).sort((a,b)=>supplierPoSortKey(a)-supplierPoSortKey(b));
     const done=rows.filter(poArrived).length;
