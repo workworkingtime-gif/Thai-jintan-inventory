@@ -806,7 +806,13 @@ const DEF_POS = [
   // 15 Oct 2026: Ji ส่งสกรีนช็อตชีต Supplier — มี Supplier ใหม่ "TCM" PO แรก 01INT-TCM26/001 (USA, สินค้า Box)
   // Nude Walmart กล่องฝาชน ขนาด 8.25 x 8.75 x 4.75 นิ้ว 1,350 ใบ ยังไม่มี Expected/Actual/วันส่งในชีต (ว่างทั้งหมด)
   // จึงยังไม่ขึ้นในแท็บกำหนดการ/ปฏิทิน — พอชีตมีวันที่ sync สดจะเติมให้เอง (เพิ่ม TCM ใน syncSupplierPOs แล้ว)
-  {id:'s_tcm1',vendor:'TCM',nat:'USA',product:'Box',po:'01INT-TCM26/001',sentMs:null,sent:null,expMs:null,exp:null,actMs:null,act:null,dest:'',items:[{f:'Nude Walmart (กล่องฝาชน 8.25 x 8.75 x 4.75")',q:1350}],remark:'Nude Walmart - กล่องฝาชนขนาด 8.25 x 8.75 x 4.75" 1,350 ใบ · ยังไม่มีวันที่ Expected/Actual ในชีต (Ji แจ้ง 15 Oct 2026)'},
+  {id:'s_tcm1',vendor:'TCM',nat:'USA',product:'Box',po:'01INT-TCM26/001',sentMs:Date.UTC(2026,9,9),sent:'09 Oct 2026',expMs:null,exp:null,actMs:null,act:null,dest:'',items:[{f:'Nude Walmart (กล่องฝาชน 8.25 x 8.75 x 4.75")',q:1350}],remark:'Nude Walmart - กล่องฝาชนขนาด 8.25 x 8.75 x 4.75" 1,350 ใบ · ยังไม่มีวันที่ Expected/Actual ในชีต',
+    // 15 Oct 2026: Ji ส่งไฟล์ PO ตัวจริง (สแกน) — ข้อมูลจากเอกสาร: วันที่ PO 9 Oct 2026 (ผู้อนุมัติลงนาม 12 Oct 2026),
+    // ใบเสนอราคา 3457/2026, ผู้ขาย บริษัท ที.ซี.เอ็ม.เปเปอร์บ็อกซ์ จำกัด — เก็บใน field `detail` (ซิงก์ชีตไม่ทับ)
+    detail:'ผู้ขาย: บริษัท ที.ซี.เอ็ม.เปเปอร์บ็อกซ์ จำกัด · วันที่ PO 9 Oct 2026 (อนุมัติลงนาม 12 Oct 2026) · ใบเสนอราคา 3457/2026\n'
+      +'รายการ: กล่องฝาชน 8.25 x 8.75 x 4.75" (NUDE Walmart) 1,350 ใบ × 8.50 บาท = 11,475.00 บาท + ค่าบล็อกพิมพ์ 1 ชุด 1,000.00 บาท\n'
+      +'รวมก่อน VAT 12,475.00 · VAT 873.25 · ยอดรวม 13,348.25 บาท\n'
+      +'เงื่อนไข: มัดจำ 60% หลัง Confirm AW ส่วนที่เหลือ 40% ชำระก่อนส่งมอบสินค้า · เกรดกระดาษ KH250/CS110/KH200 หนา 3 ชั้น (ลอน C สูง 3-4 มม.) · พิมพ์ BMC (Box Maker\'s Certificate) บนตัวกล่อง · Lead time 7-10 วัน (นับจาก Confirm AW — ยังไม่มีวันครบกำหนดใน PO)'},
 ];
 // Each APEX PO row stores raw Excel-serial day numbers (…D) for clean single dates,
 // plus free-text fallbacks (…Text) for cells that contain multiple/irregular dates
@@ -4005,6 +4011,7 @@ function showPOSheet(row, p){
       ${recInfo?.remark?`<div class="row"><span>Remark</span><span style="font-size:12px">${recInfo.remark}</span></div>`:''}
     </div>
     ${p.remark?`<div style="margin:10px 16px;padding:10px;background:#f4f6f9;border-radius:6px;font-size:12px;color:#5b6b76">${p.remark}</div>`:''}
+    ${p.detail?`<div style="margin:10px 16px;padding:10px;background:#eef4ff;border-radius:6px;font-size:12px;color:#34495e;line-height:1.6"><b>รายละเอียดจากใบ PO</b><br>${nl2br(p.detail)}</div>`:''}
     <div class="ssect"><div class="ssect-t">รสชาติที่สั่ง</div>${items}</div>`;
   openSheet(`${p.vendor} · ${p.po}`, html, row);
 }
@@ -4224,7 +4231,7 @@ function toggleCard(head){
   const chev=head.querySelector('.chev');
   if(chev) chev.classList.toggle('closed');
 }
-function vname(v){ return {SJR:'แสงเจริญ (คุณลูกหยี)',JRS:'จรัสแสง (คุณเล็ก)',PPP:'PaperPack (คุณหยง/คุณลูกหมี)',TBB:'Thai BB',YJ:'หจก.วายเจ ครีเอทีฟ พรินติ้ง'}[v]||v; }
+function vname(v){ return {SJR:'แสงเจริญ (คุณลูกหยี)',JRS:'จรัสแสง (คุณเล็ก)',PPP:'PaperPack (คุณหยง/คุณลูกหมี)',TBB:'Thai BB',YJ:'หจก.วายเจ ครีเอทีฟ พรินติ้ง',TCM:'ที.ซี.เอ็ม.เปเปอร์บ็อกซ์ (T.C.M. Paper Box)'}[v]||v; }
 function tick(){ document.getElementById('clock').textContent=new Date().toLocaleString('en-GB'); }
 tick(); setInterval(tick,1000);
 // boot
