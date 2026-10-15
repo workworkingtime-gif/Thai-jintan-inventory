@@ -937,20 +937,22 @@ const APEX_OVERRIDES = [
   // Fusion 20,000 = 40,000 เหมือนเดิม แค่เลื่อนวันจาก 13→16 Nov 2026) และรอบ 30 Oct แก้รสจาก
   // Berries เป็น Raspberry ตามที่ Ji เขียนล่าสุด (15,000 เท่าเดิม)
   // 5 Oct 2026 (ต่อ): Peppermint 30,000 ของรอบ 30 Oct ย้ายไปทำงานอื่น Ji ให้หักออก → รอบนั้นเหลือ 45,000
-  {apexPO:'PO 054', schedUnit:'pcs', schedTag:'ตลับ', expText:'14 Sept 2026\n8 Oct 2026\n15 Oct 2026\n28 Oct 2026\n30 Oct 2026\n16 Nov 2026', expD:null,
-    actText:'14 Sept 2026\n8 Oct 2026\n15 Oct 2026\n28 Oct 2026\n30 Oct 2026\n16 Nov 2026', actD:null,
+  // 14 Oct 2026: ไฟล์แผนส่งมอบ 13 Oct 2026 (Ji ส่งมา สนใจเฉพาะงานต่างประเทศ) — รอบ 15 Oct ของ PO 054 เลื่อนเข้ามาเป็น 14 Oct 2026
+  // (Peppermint 50,000 + Spearmint 20,000 เท่าเดิม) รอบอื่นของ PO 054 ตรงกับที่มีอยู่แล้วทุกรอบ
+  {apexPO:'PO 054', schedUnit:'pcs', schedTag:'ตลับ', expText:'14 Sept 2026\n8 Oct 2026\n14 Oct 2026\n28 Oct 2026\n30 Oct 2026\n16 Nov 2026', expD:null,
+    actText:'14 Sept 2026\n8 Oct 2026\n14 Oct 2026\n28 Oct 2026\n30 Oct 2026\n16 Nov 2026', actD:null,
     // 23 Sep 2026 (ต่อ, ตามที่ Ji ขอ "ช่วยให้เห็นว่ายอดที่สั่งทั้งหมด/เหลือ/ส่งอีกเท่าไหร่"):
     // เพิ่ม field ใหม่ `rounds` — array ของแต่ละรอบพร้อมรายการ items จริง (ไม่ใช่แค่วันที่ลอยๆ
     // เหมือน expText/actText) ให้ apexRoundsSummary() คำนวณยอดสั่งรวม/ส่งแล้ว/คงเหลือ ต่อรสได้
     rounds:[
       {date:'14 Sept 2026', items:[{f:'Peppermint',q:60000},{f:'Spearmint',q:30000}]},
       {date:'8 Oct 2026', items:[{f:'Peppermint',q:40000},{f:'Spearmint',q:10000}]},
-      {date:'15 Oct 2026', items:[{f:'Peppermint',q:50000},{f:'Spearmint',q:20000}]},
+      {date:'14 Oct 2026', items:[{f:'Peppermint',q:50000},{f:'Spearmint',q:20000}]},
       {date:'28 Oct 2026', items:[{f:'Peppermint',q:30000},{f:'Spearmint',q:40000}]},
       {date:'30 Oct 2026', items:[{f:'Honey Lemon',q:15000},{f:'Raspberry',q:15000},{f:'Melon',q:15000}]},
       {date:'16 Nov 2026', items:[{f:'Spearmint',q:20000},{f:'Fusion',q:20000}]},
     ],
-    remark:'PO Nude ตลับ USA สั่งเดิมรวม 395,000 ชิ้น (Peppermint 210,000 / Spearmint 120,000 / Fusion 20,000 / Honey Lemon 15,000 / Raspberry 15,000 / Melon 15,000) — Peppermint 30,000 ของรอบ 30 Oct ย้ายไปใช้กับงานอื่นแล้ว หักออกจากกำหนดส่ง (Ji ยืนยัน 5 Oct 2026) คงเหลือที่ APEX จะส่งตาม PO นี้รวม 365,000 ชิ้น แบ่งส่ง 6 รอบ: 14 Sept 2026 Peppermint 60,000+Spearmint 30,000 (รับแล้ว) · 8 Oct 2026 Peppermint 40,000+Spearmint 10,000 · 15 Oct 2026 Peppermint 50,000+Spearmint 20,000 · 28 Oct 2026 Peppermint 30,000+Spearmint 40,000 · 30 Oct 2026 Honey Lemon 15,000+Raspberry 15,000+Melon 15,000 · 16 Nov 2026 Spearmint 20,000+Fusion 20,000 (เลื่อนจาก 13 Nov) — จากชีต Customer requisition (23 Sep 2026, กรองเฉพาะแถว 01INT- ตามที่ Ji ขอ)'},
+    remark:'PO Nude ตลับ USA สั่งเดิมรวม 395,000 ชิ้น (Peppermint 210,000 / Spearmint 120,000 / Fusion 20,000 / Honey Lemon 15,000 / Raspberry 15,000 / Melon 15,000) — Peppermint 30,000 ของรอบ 30 Oct ย้ายไปใช้กับงานอื่นแล้ว หักออกจากกำหนดส่ง (Ji ยืนยัน 5 Oct 2026) คงเหลือที่ APEX จะส่งตาม PO นี้รวม 365,000 ชิ้น แบ่งส่ง 6 รอบ: 14 Sept 2026 Peppermint 60,000+Spearmint 30,000 (รับแล้ว) · 8 Oct 2026 Peppermint 40,000+Spearmint 10,000 · 14 Oct 2026 Peppermint 50,000+Spearmint 20,000 (เลื่อนเข้าจาก 15 Oct ตามแผนส่งมอบ 13 Oct 2026) · 28 Oct 2026 Peppermint 30,000+Spearmint 40,000 · 30 Oct 2026 Honey Lemon 15,000+Raspberry 15,000+Melon 15,000 · 16 Nov 2026 Spearmint 20,000+Fusion 20,000 (เลื่อนจาก 13 Nov) — จากชีต Customer requisition (23 Sep 2026, กรองเฉพาะแถว 01INT- ตามที่ Ji ขอ)'},
   // 1 Oct 2026 (รอบสามสิบเจ็ด): Ji แจ้งทางแชทว่า PO 062 เลื่อนจาก 4→6 Nov 2026 จำนวนไม่เปลี่ยน
   // (66,000 ชิ้น/275 ลัง ตรงกับที่ยืนยันไว้แล้วในรอบสามสิบสี่) — ชีตสดยังไม่อัปเดตวันที่ใหม่
   // ตอนเช็ค (1 Oct 2026) จึง override expD ตรงๆ ไปก่อน (46332 = 6 Nov 2026) เผื่อชีต sync
@@ -959,7 +961,7 @@ const APEX_OVERRIDES = [
     // 5 Oct 2026: schedItems = รายการต่อรสของ PO นี้ (ชิ้น) สำหรับแท็บ "กำหนดการ" — ตัวเลขชุดเดียวกับ
     // APEX_PENDING_DRAWS (ด้านล่าง) ต้องแก้ให้ตรงกันทั้งสองที่ถ้า Ji แจ้งยอดใหม่
     schedItems:[{f:'Raspberry',q:4320},{f:'Honey Lemon',q:19920},{f:'Melon',q:19920},{f:'Black Spearmint',q:5040},{f:'Donki',q:7200},{f:'Hongkong Edition',q:9600}],
-    remark:'HK Nude ตลับ รวม 66,000 ชิ้น (275 ลัง): Raspberry 18 + Honey Lemon 83 + Melon 83 + Black Spearmint 21 + Donki 30 + Hongkong Edition 40 ลัง — Ji แจ้งทางแชท 1 Oct 2026 ว่าเลื่อนจาก 4→6 Nov 2026 จำนวนไม่เปลี่ยน (ตัดสต็อกเฉพาะกล่องใน ไม่ตัดลังนอก — APEX แพ็คด้วยลังของตัวเอง)'},
+    remark:'HK Nude ตลับ รวม 66,000 ชิ้น (275 ลัง): Raspberry 18 + Honey Lemon 83 + Melon 83 + Black Spearmint 21 + Donki 30 + Hongkong Edition 40 ลัง — Ji ยืนยัน 15 Oct 2026 (ส่งภาพ REMAININVENTPHYSICAL ของ APEX) ว่ายอดต้องเป็น 4,320 / 19,920 / 19,920 / 5,040 / 7,200 / 9,600 ชิ้น (แผนส่งมอบ 13 Oct แสดง 216 ลัง ซึ่ง Ji ไม่ใช้) · กำหนดส่ง 6 Nov 2026 (เลื่อนจาก 4 Nov) · 15 Oct 2026: Ji ยืนยันตัดสต็อกกล่องในจริงแล้ว (ตามยอดนี้) (ตัดสต็อกเฉพาะกล่องใน ไม่ตัดลังนอก — APEX แพ็คด้วยลังของตัวเอง)'},
   // 1 Oct 2026 (รอบสามสิบเจ็ด): Ji แจ้งกำหนดการ PO 058 มาด้วย (9→11 Nov 2026, 86,160 ตลับ) แต่
   // 2 Oct 2026 Ji บอกชัดว่า "อันที่ไม่เคยมีไม่ต้องเพิ่ม" — PO นี้ไม่เคยอยู่ในชีตสด/APEX_POS มา
   // ก่อนเลย จึงไม่สร้าง newEntry ให้ในเว็บ (รอให้เข้าสู่ชีตสดเองตามรอบปกติก่อนค่อยขึ้นในเว็บ)
@@ -1003,14 +1005,19 @@ const APEX_OVERRIDES = [
   // ควรจะสัมพันธ์กัน") — ยืนยันสูตรแล้วว่าตรงกับตัวเลข requestedQty จริงของ PO 060/061 ทุกตัว
   // (ดู comment เต็มที่ apexMaterialsRequirement()) — Ji บอกให้เริ่มเช็คนี้ "ตั้งแต่วันนี้เป็นต้นไป
   // คือ PO 60" เท่านั้น ไม่ต้องย้อนไปแก้ PO 053 (ดู comment ที่ APEX_MATERIALS_LOG['PO 053'])
-  {apexPO:'PO 060', newEntry:true, nat:'USA', expText:'16 Oct 2026',
+  {apexPO:'PO 060', newEntry:true, nat:'USA', expText:'19 Oct 2026',
     schedItems:[{f:'Spearmint (10-pack)',q:29760},{f:'Spearmint (5-pack)',q:13680}],
     orderItems:[{packType:'10-pack', qty:29760},{packType:'5-pack', qty:13680}],
-    remark:'USA Apex pack full service — NUDE Capsule Mint Spearmint Flavor (10-pack) 29,760 ชิ้น + (5-pack) 13,680 ชิ้น = รวม 43,440 ชิ้น · จากชีต Customer requisition (23 Sep 2026) — ยังไม่เจอใน APX Tracking sheet'},
+    remark:'USA Apex pack full service — NUDE Capsule Mint Spearmint Flavor (10-pack) 29,760 ชิ้น + (5-pack) 13,680 ชิ้น = รวม 43,440 ชิ้น · จากชีต Customer requisition (23 Sep 2026) — ยังไม่เจอใน APX Tracking sheet · 14 Oct 2026: แผนส่งมอบ 13 Oct 2026 เลื่อนส่งจาก 16 Oct เป็น 19 Oct 2026 (จำนวนเท่าเดิม)'},
   {apexPO:'PO 061', newEntry:true, nat:'USA', expText:'26 Oct 2026',
     schedItems:[{f:'Spearmint (10-pack)',q:29760},{f:'Spearmint (5-pack)',q:13680}],
     orderItems:[{packType:'10-pack', qty:29760},{packType:'5-pack', qty:13680}],
     remark:'USA Apex pack full service — NUDE Capsule Mint Spearmint Flavor (10-pack) 29,760 ชิ้น + (5-pack) 13,680 ชิ้น = รวม 43,440 ชิ้น · จากชีต Customer requisition (23 Sep 2026) — ยังไม่เจอใน APX Tracking sheet'},
+  // 14 Oct 2026: PO 064 (USA เฉพาะตลับบรรจุเม็ด) เป็น PO ใหม่ที่เจอในแผนส่งมอบ 13 Oct 2026 — ส่ง 28 Nov 2026
+  // Spearmint 50,000 + Raspberry 20,000 + Honey Lemon 10,000 + Melon 15,000 = 95,000 ชิ้น (นับเป็นชิ้นเหมือน PO 054 ตลับ)
+  {apexPO:'PO 064', newEntry:true, nat:'USA', schedUnit:'pcs', schedTag:'ตลับ', expText:'28 Nov 2026',
+    schedItems:[{f:'Spearmint',q:50000},{f:'Raspberry',q:20000},{f:'Honey Lemon',q:10000},{f:'Melon',q:15000}],
+    remark:'USA เฉพาะตลับบรรจุเม็ด (ตลับ) รวม 95,000 ชิ้น: Spearmint 50,000 + Raspberry 20,000 + Honey Lemon 10,000 + Melon 15,000 — กำหนดส่ง 28 Nov 2026 · จากแผนส่งมอบ 13 Oct 2026 (Ji ส่งมา) — ยังไม่เจอใน APX Tracking sheet'},
 ];
 // APEX_MATERIALS_LOG — บันทึกวัสดุแพ็ค (ซอง/กล่องใน/กล่องนอก) ที่ส่งให้ APEX ต่อ PO
 // (23 Sep 2026, แก้ตามที่ Ji ขอ 23 Sep 2026 รอบสอง: "ฉันส่งตัวเลขให้คุณอย่างเดียวแล้วคุณทำ
@@ -2100,6 +2107,18 @@ const APEX_DRAWS = [
   // พรีวิวใน APEX_PENDING_DRAWS (ด้านล่าง) มาตัดสต็อกจริงแล้ว (ลบ entry เดิมออกจาก pending
   // ด้วย กันตัดซ้ำสองครั้ง) — 250 ลัง × 12 กล่องใน/ลัง = 3,000 กล่องใน ตรงกับพรีวิวเป๊ะ
   {id:'apex_po056_kr_peppermint_draw', market:'kr', flavor:'Peppermint', unit:'carton', qty:250, poRef:'APEX PO 056 (Dong-A Peppermint Anpanman เกาหลี)'},
+  // 15 Oct 2026: Ji ส่งภาพตาราง Inner box (HK) ที่มี "เตรียมตัดออก" ของ PO 062 แล้วพิมพ์ "ตัดออกได้เลย เรียบร้อยแล้ว"
+  // — โปรโมทจากพรีวิวใน APEX_PENDING_DRAWS มาตัดสต็อกจริง (ลบ entry เดิมออกจาก pending ด้วย กันตัดซ้ำสองครั้ง)
+  // ยอดที่ตัด (Ji ยืนยัน 15 Oct 2026 ด้วยภาพ REMAININVENTPHYSICAL ของ APEX — 275 ลัง/66,000 ชิ้น ไม่ใช่ 216 ลังในแผนส่งมอบ 13 Oct):
+  // Raspberry 4,320 / Honey lemon 19,920 / Melon 19,920 / Black Spearmint 5,040 / Donki 7,200 / Hongkong edition 9,600
+  // ÷ 20 ชิ้นต่อกล่องใน = 216/996/996/252/360/480 กล่องใน
+  // ตัดเฉพาะกล่องใน ไม่ตัดลังนอก (Ji 1 Oct: "กล่องเรา ไม่ต้องตัดแล้ว" — APEX แพ็คด้วยลังของตัวเอง)
+  {id:'apex_po062_hk_raspberry_draw', market:'hk', flavor:'Raspberry', unit:'inner', qty:216, poRef:'APEX PO 062 (Nude HK)'},
+  {id:'apex_po062_hk_honeylemon_draw', market:'hk', flavor:'Honey lemon', unit:'inner', qty:996, poRef:'APEX PO 062 (Nude HK)'},
+  {id:'apex_po062_hk_melon_draw', market:'hk', flavor:'Melon', unit:'inner', qty:996, poRef:'APEX PO 062 (Nude HK)'},
+  {id:'apex_po062_hk_blackspearmint_draw', market:'hk', flavor:'Black Spearmint', unit:'inner', qty:252, poRef:'APEX PO 062 (Nude HK)'},
+  {id:'apex_po062_hk_donki_draw', market:'hk', flavor:'Donki', unit:'inner', qty:360, poRef:'APEX PO 062 (Nude HK)'},
+  {id:'apex_po062_hk_hongkongedition_draw', market:'hk', flavor:'Hongkong edition', unit:'inner', qty:480, poRef:'APEX PO 062 (Nude HK)'},
 ];
 function applyApexDraw(d){
   performApexDraw(d.market, d.flavor, d.unit, d.qty, d.poRef);
@@ -2149,12 +2168,10 @@ const APEX_PENDING_DRAWS = [
   // ถูกตัดสต็อกสำหรับ PO นี้อีกต่อไป (APEX ใช้ลังของ APEX เองแพ็ค) ให้โชว์/ตัดแค่กล่องในเท่านั้น
   // — เพิ่ม flag `noCartonCut:true` ให้ทุก entry ของ PO 062 กันไม่ให้ไปกระทบคอลัมน์ "เตรียมตัดออก"
   // ของตาราง Outer box (ดู pendingCartonTotal/showOuterSheet/pendingTooltip ด้านล่างที่เช็ค flag นี้)
-  {id:'apex_po062_hk_raspberry', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Raspberry', pcs:4320, noCartonCut:true},
-  {id:'apex_po062_hk_honeylemon', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Honey lemon', pcs:19920, noCartonCut:true},
-  {id:'apex_po062_hk_melon', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Melon', pcs:19920, noCartonCut:true},
-  {id:'apex_po062_hk_blackspearmint', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Black Spearmint', pcs:5040, noCartonCut:true},
-  {id:'apex_po062_hk_donki', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Donki', pcs:7200, noCartonCut:true},
-  {id:'apex_po062_hk_hongkongedition', market:'hk', apexPO:'PO 062', jobName:'Nude', flavor:'Hongkong edition', pcs:9600, noCartonCut:true},
+  // 15 Oct 2026: Ji ยืนยัน "ตัดออกได้เลย เรียบร้อยแล้ว" — entry ทั้ง 6 รสของ PO 062 ย้ายไป APEX_DRAWS (ตัดสต็อกจริง) ด้านบนแล้ว
+  // (ลบออกจากพรีวิวตรงนี้ กันหักซ้ำสองครั้ง) ยอดที่ตัด = ตามแผนส่งมอบ 13 Oct 2026 ด้านล่าง
+  // 14 Oct 2026: แผนส่งมอบ 13 Oct แสดง PO 062 = 216 ลัง/51,840 ชิ้น แต่ 15 Oct Ji ยืนยันว่าต้องเป็นยอดเดิม 275 ลัง/66,000 ชิ้น
+  // (ภาพ REMAININVENTPHYSICAL ของ APEX) — ใช้ยอด 66,000 ต้องตรงกับ schedItems ของ PO 062 ใน APEX_OVERRIDES
 ];
 function pendingInner(pcs){ return (pcs||0)/IPU; }
 function pendingCartons(pcs){ return pendingInner(pcs)/IPC; }
@@ -3593,7 +3610,7 @@ function pageSchedule(){
   const chip=(k,label)=>`<div class="sub-tab ${SCHED_MONTH===k?'active':''}" onclick="setSchedMonth('${k}')">${label}</div>`;
   const chips=`<div class="subnav">${chip('all','ทุกเดือน')}${monthKeys.map(k=>{const [y,m]=k.split('-').map(Number);return chip(k,`${TH_MON_FULL[m]} ${y}`);}).join('')}</div>`;
   const shown=groups.map((g,i)=>({g,i})).filter(x=>SCHED_MONTH==='all'||mkey(x.g)===SCHED_MONTH);
-  let html=`<div class="pt">🗓️ กำหนดการของเข้า</div><div class="ps">ของที่กำลังจะเข้า — สร้างอัตโนมัติจากข้อมูล APEX + Supplier ในเว็บ · ส่วนใหญ่นับเป็น <b>ลัง</b> · ตลับนับเป็น <b>ชิ้น</b> · กล่องลังเปล่านับเป็น <b>ใบ</b> ${liveBadge('apex')}</div>${chips}`;
+  let html=`<div class="pt">🗓️ กำหนดการของเข้า</div><div class="ps">ของที่กำลังจะเข้า — <b>APEX</b> = กำหนดที่ APEX ส่งของมาที่ไทยยินตัน · <b>PPP</b> = Paperpack ส่งกล่องมาที่ไทยยินตัน · ส่วนใหญ่นับเป็น <b>ลัง</b> · ตลับนับเป็น <b>ชิ้น</b> · กล่องลังเปล่านับเป็น <b>ใบ</b> ${liveBadge('apex')}</div>${chips}`;
   if(!shown.length) return html+'<div class="card"><div class="card-body" style="padding:30px;text-align:center;color:#8fa3b0">ไม่มีของที่กำลังจะเข้า</div></div>';
   // สรุปรวมแยกประเทศ (มุมมองออฟฟิศ) — ลัง = เฉพาะรายการที่นับเป็นลังได้, ชิ้น = ทุกรายการของ APEX
   const sum={}; const pcsOnlyPOs=new Set();
