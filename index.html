@@ -1016,10 +1016,10 @@ const APEX_OVERRIDES = [
   // ควรจะสัมพันธ์กัน") — ยืนยันสูตรแล้วว่าตรงกับตัวเลข requestedQty จริงของ PO 060/061 ทุกตัว
   // (ดู comment เต็มที่ apexMaterialsRequirement()) — Ji บอกให้เริ่มเช็คนี้ "ตั้งแต่วันนี้เป็นต้นไป
   // คือ PO 60" เท่านั้น ไม่ต้องย้อนไปแก้ PO 053 (ดู comment ที่ APEX_MATERIALS_LOG['PO 053'])
-  {apexPO:'PO 060', newEntry:true, nat:'USA', expText:'19 Oct 2026',
+  {apexPO:'PO 060', newEntry:true, nat:'USA', expText:'19 Oct 2026', actD:null, actText:'19 Oct 2026',
     schedItems:[{f:'Spearmint (10-pack)',q:29760},{f:'Spearmint (5-pack)',q:13680}],
     orderItems:[{packType:'10-pack', qty:29760},{packType:'5-pack', qty:13680}],
-    remark:'USA Apex pack full service — NUDE Capsule Mint Spearmint Flavor (10-pack) 29,760 ชิ้น + (5-pack) 13,680 ชิ้น = รวม 43,440 ชิ้น · จากชีต Customer requisition (23 Sep 2026) — ยังไม่เจอใน APX Tracking sheet · 14 Oct 2026: แผนส่งมอบ 13 Oct 2026 เลื่อนส่งจาก 16 Oct เป็น 19 Oct 2026 (จำนวนเท่าเดิม)'},
+    remark:'USA Apex pack full service — NUDE Capsule Mint Spearmint Flavor (10-pack) 29,760 ชิ้น + (5-pack) 13,680 ชิ้น = รวม 43,440 ชิ้น · จากชีต Customer requisition (23 Sep 2026) — ยังไม่เจอใน APX Tracking sheet · 14 Oct 2026: แผนส่งมอบ 13 Oct 2026 เลื่อนส่งจาก 16 Oct เป็น 19 Oct 2026 (จำนวนเท่าเดิม) · 16 Oct 2026: Ji ยืนยันอีกครั้งว่าวันมาส่ง (Actual) เลื่อนเป็น 19 Oct 2026 — ยังไม่มาถึง'},
   {apexPO:'PO 061', newEntry:true, nat:'USA', expText:'26 Oct 2026',
     schedItems:[{f:'Spearmint (10-pack)',q:29760},{f:'Spearmint (5-pack)',q:13680}],
     orderItems:[{packType:'10-pack', qty:29760},{packType:'5-pack', qty:13680}],
