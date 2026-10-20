@@ -1026,9 +1026,13 @@ const APEX_OVERRIDES = [
     remark:'USA Apex pack full service — NUDE Capsule Mint Spearmint Flavor (10-pack) 29,760 ชิ้น + (5-pack) 13,680 ชิ้น = รวม 43,440 ชิ้น · จากชีต Customer requisition (23 Sep 2026) — ยังไม่เจอใน APX Tracking sheet'},
   // 14 Oct 2026: PO 064 (USA เฉพาะตลับบรรจุเม็ด) เป็น PO ใหม่ที่เจอในแผนส่งมอบ 13 Oct 2026 — ส่ง 28 Nov 2026
   // Spearmint 50,000 + Raspberry 20,000 + Honey Lemon 10,000 + Melon 15,000 = 95,000 ชิ้น (นับเป็นชิ้นเหมือน PO 054 ตลับ)
-  {apexPO:'PO 064', newEntry:true, nat:'USA', schedUnit:'pcs', schedTag:'ตลับ', expText:'28 Nov 2026',
-    schedItems:[{f:'Spearmint',q:50000},{f:'Raspberry',q:20000},{f:'Honey Lemon',q:10000},{f:'Melon',q:15000}],
-    remark:'USA เฉพาะตลับบรรจุเม็ด (ตลับ) รวม 95,000 ชิ้น: Spearmint 50,000 + Raspberry 20,000 + Honey Lemon 10,000 + Melon 15,000 — กำหนดส่ง 28 Nov 2026 · จากแผนส่งมอบ 13 Oct 2026 (Ji ส่งมา) — ยังไม่เจอใน APX Tracking sheet'},
+  {apexPO:'PO 064', newEntry:true, nat:'USA', schedUnit:'pcs', schedTag:'ตลับ', expText:'13 Nov 2026\n28 Nov 2026', expD:null, actText:'13 Nov 2026\n28 Nov 2026', actD:null,
+    // 20 Oct 2026: Ji แจ้งว่า Spearmint ต้องส่งก่อนวันที่ 13 Nov (ส่งทั้ง 50,000) — แยกเป็น 2 รอบ
+    rounds:[
+      {date:'13 Nov 2026', items:[{f:'Spearmint',q:50000}]},
+      {date:'28 Nov 2026', items:[{f:'Raspberry',q:20000},{f:'Honey Lemon',q:10000},{f:'Melon',q:15000}]},
+    ],
+    remark:'USA เฉพาะตลับบรรจุเม็ด (ตลับ) รวม 95,000 ชิ้น: Spearmint 50,000 + Raspberry 20,000 + Honey Lemon 10,000 + Melon 15,000 · จากแผนส่งมอบ 13 Oct 2026 (Ji ส่งมา) · 20 Oct 2026: Ji แจ้งว่า Spearmint 50,000 ต้องส่งก่อนวันที่ 13 Nov 2026 (รอบ 1) ส่วนรสที่เหลือส่ง 28 Nov 2026 (รอบ 2) — ยังไม่เจอใน APX Tracking sheet'},
 ];
 // APEX_MATERIALS_LOG — บันทึกวัสดุแพ็ค (ซอง/กล่องใน/กล่องนอก) ที่ส่งให้ APEX ต่อ PO
 // (23 Sep 2026, แก้ตามที่ Ji ขอ 23 Sep 2026 รอบสอง: "ฉันส่งตัวเลขให้คุณอย่างเดียวแล้วคุณทำ
