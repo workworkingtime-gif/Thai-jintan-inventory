@@ -135,6 +135,7 @@ tbody tr.sel td{background:#eef4ff}
 .v-ppp{background:#FCE4D6;color:#B85C2E}.v-tbb{background:#FFF2CC;color:#9C7E1A}
 .v-yj{background:#EAD9F3;color:#6B3A8C}
 .v-tcm{background:#E1D9F0;color:#5B4A8C}
+.v-jit{background:#D6EEF0;color:#2E6E75}
 .nat{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700}
 .nkr{background:#E2EFDA;color:#4C7A3A}.nhk{background:#D9E2F3;color:#3A5A8C}
 .nusa{background:#FCE4D6;color:#B85C2E}.nsg{background:#FFF2CC;color:#9C7E1A}
@@ -813,6 +814,24 @@ const DEF_POS = [
       +'รายการ: กล่องฝาชน 8.25 x 8.75 x 4.75" (NUDE Walmart) 1,350 ใบ × 8.50 บาท = 11,475.00 บาท + ค่าบล็อกพิมพ์ 1 ชุด 1,000.00 บาท\n'
       +'รวมก่อน VAT 12,475.00 · VAT 873.25 · ยอดรวม 13,348.25 บาท\n'
       +'เงื่อนไข: มัดจำ 60% หลัง Confirm AW ส่วนที่เหลือ 40% ชำระก่อนส่งมอบสินค้า · เกรดกระดาษ KH250/CS110/KH200 หนา 3 ชั้น (ลอน C สูง 3-4 มม.) · พิมพ์ BMC (Box Maker\'s Certificate) บนตัวกล่อง · Lead time 7-10 วัน (นับจาก Confirm AW — ยังไม่มีวันครบกำหนดใน PO)'},
+  // 9 Nov 2026: Ji ส่งไฟล์ PO ตัวจริง (สแกน) 2 ใบ ของ Supplier ใหม่ "JIT" = บริษัท จีไท จำกัด (สติ๊กเกอร์ งานฝรั่งเศส)
+  // เลข PO 01INT-JIT26/005 และ /006 ลงวันที่ 26 Oct 2026 — ปลายทาง Thai Jintan และ "รับของวันพรุ่งนี้" = 10 Nov 2026 (Ji ยืนยันทางแชท)
+  // ไม่มีบล็อก JIT ในชีต Supplier จึงไม่ซิงก์ — ข้อมูลทั้งหมดมาจากเอกสาร PO + แชท (เก็บรายละเอียดใน `detail`)
+  // schedUnit:'pcs' = สติ๊กเกอร์นับเป็นชิ้น (ไม่ใช่ "ใบ" แบบกล่อง) ในแท็บกำหนดการ
+  {id:'s_jit5',vendor:'JIT',nat:'France',product:'สติ๊กเกอร์ซอง',po:'01INT-JIT26/005',sentMs:Date.UTC(2026,9,26),sent:'26 Oct 2026',expMs:Date.UTC(2026,10,10),exp:'10 Nov 2026',actMs:null,act:null,dest:'Thai Jintan',schedUnit:'pcs',
+    items:[{f:'Peppermint',q:3050},{f:'Spearmint',q:3050},{f:'Berries',q:3050}],
+    remark:'สติ๊กเกอร์งานฝรั่งเศสสำหรับแปะซอง (Nude Sachet) 3 รส รสละ 3,050 ชิ้น รวม 9,150 ชิ้น · ยอดรวม 12,238.13 บาท · ของถึง 10 Nov 2026 (Ji ยืนยันทางแชท)',
+    detail:'ผู้ขาย: บริษัท จีไท จำกัด (98/64 หมู่ 11 ถ.พุทธมณฑลสาย 5 ต.บลไร่ขิง อ.สามพราน จ.นครปฐม 73210) · วันที่ PO 26 Oct 2026 (ผู้สั่งซื้อและผู้อนุมัติลงนาม 26 Oct 2026)\n'
+      +'รายการ: สติ๊กเกอร์งานฝรั่งเศสสำหรับแปะซอง — Nude Peppermint Sachet 3,050 + Nude Spearmint Sachet 3,050 + Nude Berries Sachet 3,050 ชิ้น × 1.25 บาท (รสละ 3,812.50 บาท)\n'
+      +'รวมก่อน VAT 11,437.50 · VAT 7% 800.63 · ยอดรวม 12,238.13 บาท · เงื่อนไขชำระเงิน 30 วัน\n'
+      +'สเปก: STK ingredients ขนาด 12 x 30 MM · วัสดุ PP White · พิมพ์ 2 สี · เคลือบ UV Varnish Glossy · แบบแผ่น (SHEET) · 3 SKU · Lead time 10 วัน · ไม่ระบุเลขใบเสนอราคา'},
+  {id:'s_jit6',vendor:'JIT',nat:'France',product:'สติ๊กเกอร์โภชนาการ',po:'01INT-JIT26/006',sentMs:Date.UTC(2026,9,26),sent:'26 Oct 2026',expMs:Date.UTC(2026,10,10),exp:'10 Nov 2026',actMs:null,act:null,dest:'Thai Jintan',schedUnit:'pcs',
+    items:[{f:'Peppermint',q:2000},{f:'Spearmint',q:2000},{f:'Berries',q:2000}],
+    remark:'สติ๊กเกอร์ตารางโภชนาการติดหน้ากล่อง (France Sleeve) สำหรับกล่องใน 3 รส รสละ 2,000 ชิ้น รวม 6,000 ชิ้น · ยอดรวม 15,408.00 บาท · ของถึง 10 Nov 2026 (Ji ยืนยันทางแชท)',
+    detail:'ผู้ขาย: บริษัท จีไท จำกัด (98/64 หมู่ 11 ถ.พุทธมณฑลสาย 5 ต.บลไร่ขิง อ.สามพราน จ.นครปฐม 73210) · วันที่ PO 26 Oct 2026 (ผู้สั่งซื้อและผู้อนุมัติลงนาม 28 Oct 2026) · ใบเสนอราคา QJT 2605090\n'
+      +'รายการ: สติ๊กเกอร์ตารางโภชนาการงานฝรั่งเศสสำหรับแปะกล่องใน — Peppermint 2,000 + Spearmint 2,000 + Berries 2,000 ชิ้น × 2.40 บาท (รสละ 4,800.00 บาท)\n'
+      +'รวมก่อน VAT 14,400.00 · VAT 7% 1,008.00 · ยอดรวม 15,408.00 บาท · เงื่อนไขชำระเงิน 30 วัน\n'
+      +'สเปก: STK ติดหน้ากล่อง (France Sleeve) ขนาด 100 x 65 MM · วัสดุ PP White · พิมพ์ 1 สี (ดำ) · เคลือบ UV Varnish Glossy · แบบแผ่น (SHEET) · Lead time 10 วัน'},
 ];
 // Each APEX PO row stores raw Excel-serial day numbers (…D) for clean single dates,
 // plus free-text fallbacks (…Text) for cells that contain multiple/irregular dates
@@ -2963,7 +2982,7 @@ function supplierPoSortKey(p){
 }
 function pagePO(){
   const vendors=[...new Set(D.pos.map(p=>p.vendor))];
-  let html=`<div class="pt">Supplier PO Status</div><div class="ps">SJR (แสงเจริญ) · JRS (จรัสแสง) · PPP (PaperPack) · TBB · YJ (วายเจ) · TCM ${liveBadge('supplier')}</div>`;
+  let html=`<div class="pt">Supplier PO Status</div><div class="ps">SJR (แสงเจริญ) · JRS (จรัสแสง) · PPP (PaperPack) · TBB · YJ (วายเจ) · TCM · JIT (จีไท) ${liveBadge('supplier')}</div>`;
   vendors.forEach(v=>{
     const rows=D.pos.filter(p=>p.vendor===v).sort((a,b)=>supplierPoSortKey(a)-supplierPoSortKey(b));
     const done=rows.filter(poArrived).length;
@@ -3611,7 +3630,7 @@ function schedBuild(){
     if(ms==null||ms<today) return;
     const isCarton=p.product==='Carton';
     const items=(p.items||[]).filter(i=>i.f&&i.q);
-    groups.push({kind:'supplier',p,po:p.po,nat:p.nat||'',unit:'box',ms,dateKind:p.actMs!=null?'Actual':'Expected',
+    groups.push({kind:'supplier',p,po:p.po,nat:p.nat||'',unit:p.schedUnit==='pcs'?'pcs':'box',ms,dateKind:p.actMs!=null?'Actual':'Expected',
       source:`${p.vendor} · ${isCarton?'กล่องลังเปล่า':p.product}`,
       lines:items.length?items.map(i=>({name:(isCarton?'กล่องลัง ':'')+i.f,pcs:i.q})):[{name:p.product||'—',pcs:0,noQty:true}]});
   });
@@ -4235,7 +4254,7 @@ function toggleCard(head){
   const chev=head.querySelector('.chev');
   if(chev) chev.classList.toggle('closed');
 }
-function vname(v){ return {SJR:'แสงเจริญ (คุณลูกหยี)',JRS:'จรัสแสง (คุณเล็ก)',PPP:'PaperPack (คุณหยง/คุณลูกหมี)',TBB:'Thai BB',YJ:'หจก.วายเจ ครีเอทีฟ พรินติ้ง',TCM:'ที.ซี.เอ็ม.เปเปอร์บ็อกซ์ (T.C.M. Paper Box)'}[v]||v; }
+function vname(v){ return {SJR:'แสงเจริญ (คุณลูกหยี)',JRS:'จรัสแสง (คุณเล็ก)',PPP:'PaperPack (คุณหยง/คุณลูกหมี)',TBB:'Thai BB',YJ:'หจก.วายเจ ครีเอทีฟ พรินติ้ง',TCM:'ที.ซี.เอ็ม.เปเปอร์บ็อกซ์ (T.C.M. Paper Box)',JIT:'จีไท (G-Tai) — สติ๊กเกอร์'}[v]||v; }
 function tick(){ document.getElementById('clock').textContent=new Date().toLocaleString('en-GB'); }
 tick(); setInterval(tick,1000);
 // boot
