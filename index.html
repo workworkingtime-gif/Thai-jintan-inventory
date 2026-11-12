@@ -500,6 +500,18 @@ const DEF_KR = [
   {flavor:'Peppermint',type:'Carton',  apex:96,  newQty:2005, newPO:'PPP PO004R1'},
   {flavor:'Spearmint', type:'Carton',  apex:-263, newQty:2000, newPO:'PPP PO006'}
 ];
+// 12 Nov 2026: Ji แจ้งสต็อก "แผงรอง" (Tray) งานเกาหลีที่ APEX เพิ่ม — แยกตามลาย (Anpanman / Pikachu / Standard) เพราะลายต่างกันใช้แทนกันไม่ได้
+// flavor ของแถว Tray เป็นข้อความ "รส · ลาย" (ไม่ซ้ำกัน) เพื่อให้ฟังก์ชันที่ค้นด้วย flavor+type ใช้ได้เหมือนเดิม; base/variant เก็บไว้จัดกลุ่มในตารางสรุป
+const KR_TRAY_ROWS = [
+  {flavor:'Peppermint · Anpanman', base:'Peppermint', variant:'Anpanman', type:'Tray', apex:0, newQty:0, newPO:'—'},
+  {flavor:'Peppermint · Pikachu',  base:'Peppermint', variant:'Pikachu',  type:'Tray', apex:0, newQty:0, newPO:'—'},
+  {flavor:'Peppermint · Standard', base:'Peppermint', variant:'Standard', type:'Tray', apex:0, newQty:0, newPO:'—'},
+  {flavor:'Spearmint · Anpanman',  base:'Spearmint',  variant:'Anpanman', type:'Tray', apex:0, newQty:0, newPO:'—'}
+];
+DEF_KR.push(...KR_TRAY_ROWS.map(r=>({...r})));
+function ensureKRTrays(){
+  KR_TRAY_ROWS.forEach(t=>{ if(!D.kr.find(x=>x.flavor===t.flavor && x.type===t.type)) D.kr.push({...t}); });
+}
 // ─── RECEIPTS — เพิ่มสต็อก KR ครั้งเดียวเมื่อของจริงมาถึง APEX ───────────
 // คู่กับ PATCHES (ที่หักสต็อก HK) แต่ทำตรงข้าม: บวกเข้า apex แล้วเคลียร์
 // newQty/newPO ของออเดอร์นั้นเป็น 0 กันไม่ให้ pageKR บวกซ้ำ (total = apex+newQty)
@@ -721,6 +733,51 @@ const STOCK_RECOUNTS = [
 // item schema: {flavor, apex?, ku?, type? (kr only)} — apex/ku are each optional
 // so one entry can set just one side (e.g. a Thai Jintan-only recount that doesn't
 // touch apex, or the original APEX-only recounts that don't touch Thai Jintan)
+// 12 Nov 2026: STOCK_RECOUNTS_LATE — นับ/แจ้งสต็อกจริงที่ลงหลังการตัดสต็อก (APEX_DRAWS) ที่มีอยู่ทั้งหมดแล้ว จึง replay "หลัง" APEX_DRAWS ปกติ
+// (ลำดับใน applyLoadedState_: APEX_DRAWS ปกติ → STOCK_RECOUNTS_LATE → APEX_DRAWS ที่ติด late:true) — ใครเปิดเว็บโดยไม่มีสถานะเดิมก็ได้ยอดเดียวกัน
+// ⚠️ APEX_DRAWS ที่เพิ่ม "หลังวันที่นับนี้" ต้องใส่ late:true ไม่งั้นจะโดน recount ทับ
+const STOCK_RECOUNTS_LATE = [
+  {
+    id:'kr_apex_stock_report_1112',
+    market:'kr',
+    ref:'Ji แจ้งสต็อกงานเกาหลีที่ APEX 12 Nov 2026',
+    items:[
+      {flavor:'Peppermint',type:'Inner box',apex:23435},
+      {flavor:'Peppermint',type:'Carton',apex:2271},
+      {flavor:'Peppermint · Anpanman',type:'Tray',apex:710},
+      {flavor:'Peppermint · Pikachu',type:'Tray',apex:8600},
+      {flavor:'Peppermint · Standard',type:'Tray',apex:228222},
+      {flavor:'Spearmint',type:'Inner box',apex:17838},
+      {flavor:'Spearmint',type:'Carton',apex:1727},
+      {flavor:'Spearmint · Anpanman',type:'Tray',apex:72930},
+    ]
+  },
+  // 12 Nov 2026: Ji ให้ "อิงยอดที่ APEX ส่งมา" — PPP PO004R1 (Peppermint ลัง 2,005) รับแล้ว 25 Jun 2026 จึงรวมอยู่ในสต็อก APEX 2,271 แล้ว ตัด New Order นี้เป็น 0 กันนับซ้ำ
+  {
+    id:'kr_pep_carton_newqty_zero_1112',
+    market:'kr',
+    ref:'อิงรายงาน APEX 12 Nov 2026 — PPP PO004R1 รวมในสต็อกแล้ว',
+    items:[
+      {flavor:'Peppermint',type:'Carton',newQty:0,newPO:'PPP PO004R1 (รับแล้ว 25 Jun 2026 — รวมในยอดรายงาน APEX)'},
+    ]
+  },
+];
+// ข้อมูลที่ยังไม่ตรง/รอ Ji ยืนยัน (แสดงในหน้า KR) — ลบรายการออกเมื่อ Ji ตอบแล้ว
+const KR_STOCK_NOTES = []; // ว่าง = ไม่มีเรื่องรอ Ji ยืนยัน (12 Nov 2026 Ji ตอบครบแล้ว: ใช้ยอดรายงาน APEX เป็นหลัก)
+// 12 Nov 2026: Ji ตอบ — ยอด Spearmint ไม่เคยถูกหัก (PO 049 ยกเลิก), แผงรองให้ติดลบได้ก่อน, ยอดชุดนี้เป็นรายงานจาก APEX (ใช้เป็นยอดหลัก)
+// ส่วนต่าง Peppermint ที่อธิบายไม่ได้ (+1,913 กล่องใน / +170 ลัง เทียบยอดนับ 10 Jul ก่อนหัก PO 056) — Ji ไม่ตามต่อ ใช้ยอด APEX เป็นหลัก
+// ตัวเลขแผงรองที่ PO ต้องใช้ (พรีวิว "เตรียมตัดออก" — ยังไม่ตัดสต็อกจริง; ติดลบได้)
+// PO 066: Peppermint 368,640 ตลับ · สมมติแผงรอง 1 แผงต่อ 1 ตลับ ลาย Standard (PO ระบุ "ใช้แผงรองไม่มีไส้ไฮฟอย ไม่มีปั๊มนูน ใช้ AW เดิม")
+const KR_TRAY_PENDING = [
+  {apexPO:'PO 066', flavor:'Peppermint · Standard', qty:368640, note:'สมมติ 1 แผงต่อ 1 ตลับ ลาย Standard — ยังไม่ได้รับยืนยัน'},
+];
+function krTrayPending(flavor){ return KR_TRAY_PENDING.filter(d=>d.flavor===flavor); }
+function krTrayPendingTotal(flavor){ return krTrayPending(flavor).reduce((s,d)=>s+d.qty,0); }
+function purgeCancelledPO049Audit(){
+  const n=D.audit.length;
+  D.audit=D.audit.filter(a=>!(a && typeof a.detail==='string' && a.detail.includes('APEX PO 049 (Duo Burster')));
+  return D.audit.length!==n;
+}
 function applyStockRecount(r){
   r.items.forEach(it=>{
     let arr, item;
@@ -739,6 +796,12 @@ function applyStockRecount(r){
       const diff = it.apex - (before||0);
       const deltaStr = diff===0 ? '' : (diff>0?`+${f(diff)}`:`${f(diff)}`);
       logAudit('stock_update', it.flavor, r.ref, deltaStr, before, it.apex, 'นับสต็อกจริงที่ APEX — แทนที่ค่าเดิมด้วยตัวเลขนับจริง (ไม่แตะ Thai Jintan)', scope);
+    }
+    if(it.newQty!==undefined){
+      const beforeNew = item.newQty||0;
+      item.newQty = it.newQty;
+      if(it.newPO!==undefined) item.newPO = it.newPO;
+      logAudit('stock_update', it.flavor, r.ref, beforeNew===it.newQty?'':(it.newQty-beforeNew>0?`+${f(it.newQty-beforeNew)}`:`${f(it.newQty-beforeNew)}`), beforeNew, it.newQty, 'ปรับยอด New Order ให้ตรงรายงาน APEX (ของรับแล้วรวมอยู่ในสต็อก APEX แล้ว)', scope);
     }
     if(it.ku!==undefined){
       const before = item.ku;
@@ -1350,6 +1413,8 @@ function applyLoadedState_(d){
     D.hk.push({flavor:'Black Spearmint',apex:0,ku:0});
   }
   if(!D.hkOuter) D.hkOuter = JSON.parse(JSON.stringify(DEF_HK_OUTER));
+  if(purgeCancelledPO049Audit()) patched = true;
+  ensureKRTrays(); // 12 Nov 2026: เพิ่มแถว "แผงรอง" (Tray) ให้สถานะเดิมที่บันทึกไว้ก่อนมีหมวดนี้
   // ensure every HK flavor exists in Outer box too (migration)
   D.hk.forEach(x=>{
     if(!D.hkOuter.find(o=>o.flavor===x.flavor)) D.hkOuter.push({flavor:x.flavor,apex:null,ku:null});
@@ -1405,7 +1470,13 @@ function applyLoadedState_(d){
   STOCK_RECOUNTS.forEach(r=>{
     if(!D.patches_applied.includes(r.id)){ applyStockRecount(r); D.patches_applied.push(r.id); patched = true; }
   });
-  APEX_DRAWS.forEach(dr=>{
+  APEX_DRAWS.filter(dr=>!dr.late).forEach(dr=>{
+    if(!D.patches_applied.includes(dr.id)){ applyApexDraw(dr); D.patches_applied.push(dr.id); patched = true; }
+  });
+  STOCK_RECOUNTS_LATE.forEach(r=>{
+    if(!D.patches_applied.includes(r.id)){ applyStockRecount(r); D.patches_applied.push(r.id); patched = true; }
+  });
+  APEX_DRAWS.filter(dr=>dr.late).forEach(dr=>{
     if(!D.patches_applied.includes(dr.id)){ applyApexDraw(dr); D.patches_applied.push(dr.id); patched = true; }
   });
   return patched;
@@ -2174,10 +2245,8 @@ const APEX_DRAWS = [
   // ชิ้น ÷ 20 ชิ้นต่อกล่องใน (อัตราที่ Ji ยืนยัน 22 Jul 2026)
   {id:'apex_po047_hk_peppermint_draw', market:'hk', flavor:'Peppermint', unit:'inner', qty:420, poRef:'APEX PO 047 (Nude)'},
   {id:'apex_po047_hk_honeylemon_draw', market:'hk', flavor:'Honey lemon', unit:'inner', qty:420, poRef:'APEX PO 047 (Nude)'},
-  // 21 Aug 2026: Ji ยืนยัน "PO 49 update status from เตรียมตัดออกเป็น ตัดออกไปได้เลย
-  // เพราะตัดเรียบร้อยแล้ว" — โปรโมทจากพรีวิวใน APEX_PENDING_DRAWS (ด้านล่าง) มาตัดสต็อก
-  // จริงแล้ว (ลบ entry เดิมออกจาก pending ด้วย กันตัดซ้ำสองครั้ง) — 1,355 ลัง Spearmint
-  {id:'apex_po049_kr_spearmint_draw', market:'kr', flavor:'Spearmint', unit:'carton', qty:1355, poRef:'APEX PO 049 (Duo Burster เกาหลี)'},
+  // 12 Nov 2026: เอา APEX PO 049 (Duo Burster เกาหลี Spearmint 1,355 ลัง) ออกจากการตัดสต็อกจริงแล้ว — Ji ยืนยันว่า PO นี้ถูกยกเลิกก่อนใช้ของ
+  // "ไม่เคยถูกหักเลย" (เดิมเคยตัด 21 Aug 2026 ผิดพลาด) · ประวัติ Audit เดิมของรายการนี้ถูกลบอัตโนมัติใน applyLoadedState_ (ดู purgeCancelledPO049Audit)
   // 28 Sep 2026 (รอบยี่สิบเก้า): Ji ส่งภาพ banner "PO 056 ... มาถึงแล้ว" (พรีวิว -3,000
   // กล่องใน / -250 ลัง) แล้วพิมพ์ในแชทว่า "ตัดเลย" — ปุ่มยืนยันตัดสต็อกบนเว็บถูกปิดไปแล้ว
   // (รอบยี่สิบแปด) จึงใช้วิธีเดิม (แจ้งทางแชท → Claude เพิ่ม entry ตรงนี้) แทน — โปรโมทจาก
@@ -2981,23 +3050,48 @@ function pageMarket(mktId, title, sub, data, key){
   return html;
 }
 // ─── KR PAGE ─────────────────────────────────────────────────────────────
+const KR_TYPE_LABEL = {Tray:'แผงรอง (Tray)'};
+// 12 Nov 2026: การ์ดสรุป "สต็อกงานเกาหลีที่ APEX" อ่านง่าย (รส × แผงรองแต่ละลาย / กล่องใน / ลัง) + รายการที่ยังไม่ตรงรอ Ji ยืนยัน
+function krSummaryHtml(){
+  const num=(flavor,type)=>{ const r=D.kr.find(x=>x.flavor===flavor && x.type===type); return r?(r.apex||0):null; };
+  const cell=v=>v==null?'<span style="color:#b7c0c8">—</span>':`<b>${f(v)}</b>`;
+  const rows=['Peppermint','Spearmint'].map(fl=>`<tr>
+    <td><strong>${fl}</strong></td>
+    <td class="n">${cell(num(fl+' · Anpanman','Tray'))}</td>
+    <td class="n">${cell(num(fl+' · Pikachu','Tray'))}</td>
+    <td class="n">${cell(num(fl+' · Standard','Tray'))}</td>
+    <td class="n">${cell(num(fl,'Inner box'))}</td>
+    <td class="n">${cell(num(fl,'Carton'))}</td></tr>`).join('');
+  const notes = KR_STOCK_NOTES.length ? `<div style="margin:10px 14px 14px;padding:10px 12px;background:#fff6e5;border:1px solid #f0d9a8;border-radius:8px;font-size:12px;line-height:1.55;color:#5c4a1c">
+      <div style="font-weight:700;margin-bottom:6px">❓ ข้อมูลที่ยังไม่ตรง — รอ Ji ยืนยัน (${KR_STOCK_NOTES.length} เรื่อง)</div>
+      ${KR_STOCK_NOTES.map((n,i)=>`<div style="margin-bottom:7px"><b>${i+1}. ${n.t}</b><br>${n.d}</div>`).join('')}
+    </div>` : '';
+  const trayNeed = KR_TRAY_PENDING.map(d=>{ const r=D.kr.find(x=>x.flavor===d.flavor && x.type==='Tray'); const have=r?(r.apex||0):0; const left=have-d.qty;
+    return `<div style="margin:8px 14px 0;padding:8px 12px;background:#f4f6f9;border-radius:8px;font-size:12px;line-height:1.55;color:#34495e"><b>${d.apexPO} ต้องใช้แผงรอง ${d.flavor.split(' · ')[1]}</b> ${f(d.qty)} แผง · มีที่ APEX ${f(have)} → <b style="color:${left<0?'#a52a2a':'#1b6e3a'}">${left<0?'ขาด '+f(-left):'พอ เหลือ '+f(left)}</b> (ตารางแผงรองแสดงเป็นติดลบ) · ${d.note}</div>`; }).join('');
+  return `<div class="card"><div class="card-head" onclick="toggleCard(this)"><span class="cht">สรุปสต็อกที่ APEX — งานเกาหลี<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span><span class="chm">ตามรายงาน APEX · Ji แจ้ง 12 Nov 2026<span class="chev">▾</span></span></div>
+    <div class="card-body"><div class="hint">หน่วย: แผงรอง = แผง · กล่องใน = กล่อง · ลัง = ลัง · ตัวเลขอัปเดตตามการตัดสต็อกที่ทำหลังจากนี้</div>
+    <div class="tw"><table class="fit"><thead><tr><th>รสชาติ</th><th>แผงรอง Anpanman</th><th>แผงรอง Pikachu</th><th>แผงรอง Standard</th><th>กล่องใน</th><th>ลัง</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${trayNeed}${notes}</div></div>`;
+}
 function pageKR(){
   const types=[...new Set(D.kr.map(r=>r.type))];
   const krFlavors=[...new Set(D.kr.map(r=>r.flavor))];
-  let html=`<div class="pt">🇰🇷 เกาหลี — Duo Burster</div><div class="ps">Peppermint &amp; Spearmint · Inner box &amp; Carton</div>`;
+  let html=`<div class="pt">🇰🇷 เกาหลี — Duo Burster</div><div class="ps">Peppermint &amp; Spearmint · แผงรอง · Inner box &amp; Carton</div>`;
+  html+=krSummaryHtml();
   types.forEach(type=>{
     const rows=D.kr.filter(r=>r.type===type);
-    html+=`<div class="card"><div class="card-head" onclick="toggleCard(this)"><span class="cht">${type}<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span><span class="chm">${rows.length} รสชาติ<span class="chev">▾</span></span></div>
+    html+=`<div class="card"><div class="card-head" onclick="toggleCard(this)"><span class="cht">${KR_TYPE_LABEL[type]||type}<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span><span class="chm">${rows.length} ${type==='Tray'?'ลาย':'รสชาติ'}<span class="chev">▾</span></span></div>
     <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด · "เตรียมตัดออก" คือ APEX PO ที่ Ji แจ้งว่ากำลังจะส่ง แต่ยังไม่ยืนยันว่าส่งจริง (พรีวิว ยังไม่ตัดสต็อกจริง)</div>
     <div class="tw"><table><thead><tr><th>รสชาติ</th><th>สต็อก APEX</th><th>New Order</th><th>PO</th><th>คงเหลือรวม</th><th>เตรียมตัดออก</th><th>คาดว่าจะเหลือ</th><th>สถานะ</th></tr></thead><tbody>`;
     rows.forEach(r=>{
       const total=(r.apex||0)+(r.newQty||0);
       const nc=total>0?'np':total<0?'nn':'nz';
       const isCarton = type==='Carton';
-      const pend = isCarton ? pendingCartonTotal('kr', r.flavor) : pendingInnerTotal('kr', r.flavor);
+      const isTray = type==='Tray';
+      const pend = isTray ? krTrayPendingTotal(r.flavor) : (isCarton ? pendingCartonTotal('kr', r.flavor) : pendingInnerTotal('kr', r.flavor));
       const afterDraw = total - pend;
       const anc = afterDraw>0?'np':afterDraw<0?'nn':'nz';
-      const tip = pendingTooltip('kr', r.flavor);
+      const tip = isTray ? krTrayPending(r.flavor).map(d=>`${d.apexPO}: ${f(d.qty)} แผง (${d.note})`).join('\n') : pendingTooltip('kr', r.flavor);
       html+=`<tr onclick="showKRSheet(this,${JSON.stringify(r).replace(/"/g,'&quot;')},'${type}')">
         <td><strong>${r.flavor}</strong></td>
         <td class="n ${(r.apex||0)<0?'nn':'np'}">${f(r.apex)}</td>
@@ -4023,6 +4117,15 @@ function showKRSheet(row, r, type){
       <div class="row"><span>New Order (${r.newPO})</span><span class="n np">+${f(r.newQty)}</span></div>
       <div class="row"><span style="font-weight:700">คงเหลือรวม</span><span class="n np" style="font-size:15px">${f(total)}</span></div>
     </div>
+    ${type==='Tray' && krTrayPending(r.flavor).length?`
+    <div class="ssect">
+      <div class="ssect-t">🔻 เตรียมตัดออก (พรีวิว — ยังไม่ตัดสต็อกจริง · ติดลบได้)</div>
+      ${krTrayPending(r.flavor).map(d=>`<div class="srow"><div>${d.apexPO} · ${f(d.qty)} แผง<br><span style="font-size:11px;color:#8fa3b0">${d.note}</span></div><span class="sq out">-${f(d.qty)} แผง</span></div>`).join('')}
+      <div class="stot" style="margin-top:8px">
+        <span style="font-size:13px;font-weight:700">คาดว่าจะเหลือหลังตัด</span>
+        <span class="n ${(total-krTrayPendingTotal(r.flavor))>=0?'np':'nn'}" style="font-size:18px">${f(total-krTrayPendingTotal(r.flavor))}</span>
+      </div>
+    </div>`:''}
     ${pendList.length?`
     <div class="ssect">
       <div class="ssect-t">🔻 เตรียมตัดออก (พรีวิว — ยังไม่ตัดสต็อกจริง)</div>
@@ -4036,7 +4139,7 @@ function showKRSheet(row, r, type){
       <div class="ssect-t">ประวัติการเปลี่ยนแปลง (เติม/หักใช้)</div>
       ${renderHistoryTable(logs)}
     </div>`;
-  openSheet(`${r.flavor} · ${type} · 🇰🇷 KR`, html, row);
+  openSheet(`${r.flavor} · ${KR_TYPE_LABEL[type]||type} · 🇰🇷 KR`, html, row);
 }
 function saveKRStock(flavor, type, val){
   editingDisabledNotice(); return;
