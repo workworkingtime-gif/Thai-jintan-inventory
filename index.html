@@ -3053,59 +3053,37 @@ function pageMarket(mktId, title, sub, data, key){
 const KR_TYPE_LABEL = {Tray:'แผงรอง (Tray)'};
 // 12 Nov 2026: การ์ดสรุป "สต็อกงานเกาหลีที่ APEX" อ่านง่าย (รส × แผงรองแต่ละลาย / กล่องใน / ลัง) + รายการที่ยังไม่ตรงรอ Ji ยืนยัน
 function krSummaryHtml(){
-  const num=(flavor,type)=>{ const r=D.kr.find(x=>x.flavor===flavor && x.type===type); return r?(r.apex||0):null; };
-  const cell=v=>v==null?'<span style="color:#b7c0c8">—</span>':`<b>${f(v)}</b>`;
+  const find=(flavor,type)=>D.kr.find(x=>x.flavor===flavor && x.type===type);
+  // 1 ช่อง = 1 รายการสต็อก (ของทั้งหมดอยู่ที่ APEX — ไม่แยกสต็อก/ไม่แยกการ์ด) กดช่องเพื่อดูประวัติ
+  const cell=(flavor,type)=>{
+    const r=find(flavor,type);
+    if(!r) return '<td class="n"><span style="color:#b7c0c8">—</span></td>';
+    const total=(r.apex||0)+(r.newQty||0);
+    const isTray=type==='Tray', isCarton=type==='Carton';
+    const pend = isTray ? krTrayPendingTotal(r.flavor) : (isCarton ? pendingCartonTotal('kr', r.flavor) : pendingInnerTotal('kr', r.flavor));
+    const tip = isTray ? krTrayPending(r.flavor).map(d=>`${d.apexPO}: ${f(d.qty)} แผง (${d.note})`).join('\n') : pendingTooltip('kr', r.flavor);
+    const after = total-pend;
+    const pendHtml = pend ? `<div style="font-size:10.5px;font-weight:600;color:${after<0?'#a52a2a':'#8a6d1a'};white-space:nowrap" title="${tip.replace(/"/g,'&quot;')}">เตรียมตัด −${isCarton?fc(pend):f(pend)} → ${isCarton?fc(after):f(after)}</div>` : '';
+    return `<td class="n" style="cursor:pointer" onclick="showKRSheet(null,${JSON.stringify(r).replace(/"/g,'&quot;')},'${type}')"><b class="${total<0?'nn':''}">${isCarton?fc(total):f(total)}</b>${pendHtml}</td>`;
+  };
   const rows=['Peppermint','Spearmint'].map(fl=>`<tr>
     <td><strong>${fl}</strong></td>
-    <td class="n">${cell(num(fl+' · Anpanman','Tray'))}</td>
-    <td class="n">${cell(num(fl+' · Pikachu','Tray'))}</td>
-    <td class="n">${cell(num(fl+' · Standard','Tray'))}</td>
-    <td class="n">${cell(num(fl,'Inner box'))}</td>
-    <td class="n">${cell(num(fl,'Carton'))}</td></tr>`).join('');
+    ${cell(fl+' · Anpanman','Tray')}${cell(fl+' · Pikachu','Tray')}${cell(fl+' · Standard','Tray')}${cell(fl,'Inner box')}${cell(fl,'Carton')}</tr>`).join('');
+  const trayNeed = KR_TRAY_PENDING.map(d=>{ const r=D.kr.find(x=>x.flavor===d.flavor && x.type==='Tray'); const have=r?(r.apex||0):0; const left=have-d.qty;
+    return `<div style="margin:8px 14px 0;padding:8px 12px;background:#f4f6f9;border-radius:8px;font-size:12px;line-height:1.55;color:#34495e"><b>${d.apexPO} ต้องใช้แผงรอง ${d.flavor.split(' · ')[1]}</b> ${f(d.qty)} แผง · มี ${f(have)} → <b style="color:${left<0?'#a52a2a':'#1b6e3a'}">${left<0?'ขาด '+f(-left)+' (ติดลบได้ก่อน)':'พอ เหลือ '+f(left)}</b> · ${d.note}</div>`; }).join('');
   const notes = KR_STOCK_NOTES.length ? `<div style="margin:10px 14px 14px;padding:10px 12px;background:#fff6e5;border:1px solid #f0d9a8;border-radius:8px;font-size:12px;line-height:1.55;color:#5c4a1c">
       <div style="font-weight:700;margin-bottom:6px">❓ ข้อมูลที่ยังไม่ตรง — รอ Ji ยืนยัน (${KR_STOCK_NOTES.length} เรื่อง)</div>
       ${KR_STOCK_NOTES.map((n,i)=>`<div style="margin-bottom:7px"><b>${i+1}. ${n.t}</b><br>${n.d}</div>`).join('')}
     </div>` : '';
-  const trayNeed = KR_TRAY_PENDING.map(d=>{ const r=D.kr.find(x=>x.flavor===d.flavor && x.type==='Tray'); const have=r?(r.apex||0):0; const left=have-d.qty;
-    return `<div style="margin:8px 14px 0;padding:8px 12px;background:#f4f6f9;border-radius:8px;font-size:12px;line-height:1.55;color:#34495e"><b>${d.apexPO} ต้องใช้แผงรอง ${d.flavor.split(' · ')[1]}</b> ${f(d.qty)} แผง · มีที่ APEX ${f(have)} → <b style="color:${left<0?'#a52a2a':'#1b6e3a'}">${left<0?'ขาด '+f(-left):'พอ เหลือ '+f(left)}</b> (ตารางแผงรองแสดงเป็นติดลบ) · ${d.note}</div>`; }).join('');
-  return `<div class="card"><div class="card-head" onclick="toggleCard(this)"><span class="cht">สรุปสต็อกที่ APEX — งานเกาหลี<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span><span class="chm">ตามรายงาน APEX · Ji แจ้ง 12 Nov 2026<span class="chev">▾</span></span></div>
-    <div class="card-body"><div class="hint">หน่วย: แผงรอง = แผง · กล่องใน = กล่อง · ลัง = ลัง · ตัวเลขอัปเดตตามการตัดสต็อกที่ทำหลังจากนี้</div>
+  return `<div class="card"><div class="card-head" onclick="toggleCard(this)"><span class="cht">สต็อกงานเกาหลี — ทั้งหมดอยู่ที่ APEX<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span><span class="chm">ตามรายงาน APEX · Ji แจ้ง 12 Nov 2026<span class="chev">▾</span></span></div>
+    <div class="card-body"><div class="hint">แผงรอง = แผง · กล่องใน = กล่อง · ลัง = ลัง · กดตัวเลขเพื่อดูประวัติ · ตัวเลขอัปเดตตามการตัดสต็อกที่ทำหลังจากนี้</div>
     <div class="tw"><table class="fit"><thead><tr><th>รสชาติ</th><th>แผงรอง Anpanman</th><th>แผงรอง Pikachu</th><th>แผงรอง Standard</th><th>กล่องใน</th><th>ลัง</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${trayNeed}${notes}</div></div>`;
 }
+// ─── KR PAGE ─────────────────────────────────────────────────────────────
+// 12 Nov 2026: Ji สั่ง "สต็อกงานเกาหลีทั้งหมดอยู่ที่ APEX ไม่ต้องทำแยกสต็อก" → รวมเป็นตารางเดียว (รส × แผงรอง 3 ลาย / กล่องใน / ลัง) ไม่มีการ์ดแยก Inner box/Carton/Tray
 function pageKR(){
-  const types=[...new Set(D.kr.map(r=>r.type))];
-  const krFlavors=[...new Set(D.kr.map(r=>r.flavor))];
-  let html=`<div class="pt">🇰🇷 เกาหลี — Duo Burster</div><div class="ps">Peppermint &amp; Spearmint · แผงรอง · Inner box &amp; Carton</div>`;
-  html+=krSummaryHtml();
-  types.forEach(type=>{
-    const rows=D.kr.filter(r=>r.type===type);
-    html+=`<div class="card"><div class="card-head" onclick="toggleCard(this)"><span class="cht">${KR_TYPE_LABEL[type]||type}<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span><span class="chm">${rows.length} ${type==='Tray'?'ลาย':'รสชาติ'}<span class="chev">▾</span></span></div>
-    <div class="card-body"><div class="hint">คลิกแถวเพื่อดูรายละเอียด · "เตรียมตัดออก" คือ APEX PO ที่ Ji แจ้งว่ากำลังจะส่ง แต่ยังไม่ยืนยันว่าส่งจริง (พรีวิว ยังไม่ตัดสต็อกจริง)</div>
-    <div class="tw"><table><thead><tr><th>รสชาติ</th><th>สต็อก APEX</th><th>New Order</th><th>PO</th><th>คงเหลือรวม</th><th>เตรียมตัดออก</th><th>คาดว่าจะเหลือ</th><th>สถานะ</th></tr></thead><tbody>`;
-    rows.forEach(r=>{
-      const total=(r.apex||0)+(r.newQty||0);
-      const nc=total>0?'np':total<0?'nn':'nz';
-      const isCarton = type==='Carton';
-      const isTray = type==='Tray';
-      const pend = isTray ? krTrayPendingTotal(r.flavor) : (isCarton ? pendingCartonTotal('kr', r.flavor) : pendingInnerTotal('kr', r.flavor));
-      const afterDraw = total - pend;
-      const anc = afterDraw>0?'np':afterDraw<0?'nn':'nz';
-      const tip = isTray ? krTrayPending(r.flavor).map(d=>`${d.apexPO}: ${f(d.qty)} แผง (${d.note})`).join('\n') : pendingTooltip('kr', r.flavor);
-      html+=`<tr onclick="showKRSheet(this,${JSON.stringify(r).replace(/"/g,'&quot;')},'${type}')">
-        <td><strong>${r.flavor}</strong></td>
-        <td class="n ${(r.apex||0)<0?'nn':'np'}">${f(r.apex)}</td>
-        <td class="n np">+${f(r.newQty)}</td>
-        <td><span style="font-size:11px;background:#e8edf5;color:#3a5a8c;padding:1px 7px;border-radius:3px;font-weight:600">${r.newPO}</span></td>
-        <td class="n ${nc}">${f(total)}</td>
-        <td class="n" style="${pend?'color:#721c24;font-weight:600;cursor:help':'color:#b7c0c8'}"${pend?` title="${tip.replace(/"/g,'&quot;')}"`:''}>${pend?'-'+(isCarton?fc(pend):f(pend)):'—'}</td>
-        <td class="n ${anc}" style="${pend?'font-weight:700':''}">${isCarton?fc(afterDraw):f(afterDraw)}</td>
-        <td>${stockStatus(total)}</td>
-      </tr>`;
-    });
-    html+=`</tbody></table></div></div></div>`;
-  });
-  return html;
+  return `<div class="pt">🇰🇷 เกาหลี — Duo Burster</div><div class="ps">Peppermint &amp; Spearmint · แผงรอง · กล่องใน · ลัง — ทั้งหมดอยู่ที่ APEX</div>`+krSummaryHtml();
 }
 // ─── PO PAGE ─────────────────────────────────────────────────────────────
 // ดึงเลข PO ท้ายสุดออกมาจาก po (เช่น "01INT-JP26/003"→3, "01INT-PPP26/004R1"→4)
