@@ -769,7 +769,7 @@ const KR_STOCK_NOTES = []; // ว่าง = ไม่มีเรื่อง�
 // ตัวเลขแผงรองที่ PO ต้องใช้ (พรีวิว "เตรียมตัดออก" — ยังไม่ตัดสต็อกจริง; ติดลบได้)
 // PO 066: Peppermint 368,640 ตลับ · สมมติแผงรอง 1 แผงต่อ 1 ตลับ ลาย Standard (PO ระบุ "ใช้แผงรองไม่มีไส้ไฮฟอย ไม่มีปั๊มนูน ใช้ AW เดิม")
 const KR_TRAY_PENDING = [
-  {apexPO:'PO 066', flavor:'Peppermint · Standard', qty:368640, note:'สมมติ 1 แผงต่อ 1 ตลับ ลาย Standard — ยังไม่ได้รับยืนยัน'},
+  {apexPO:'PO 066', flavor:'Peppermint · Standard', qty:368640, note:'ลาย Standard (Ji ยืนยัน 12 Nov 2026) · 1 แผงต่อ 1 ตลับ'},
 ];
 function krTrayPending(flavor){ return KR_TRAY_PENDING.filter(d=>d.flavor===flavor); }
 function krTrayPendingTotal(flavor){ return krTrayPending(flavor).reduce((s,d)=>s+d.qty,0); }
@@ -883,9 +883,9 @@ const DEF_POS = [
   // schedUnit:'pcs' = สติ๊กเกอร์นับเป็นชิ้น (ไม่ใช่ "ใบ" แบบกล่อง) ในแท็บกำหนดการ
   // 10 Nov 2026: Ji ส่งไฟล์ PO ตัวจริง 01INT-JP26/005 (จรัสแสง JRS, งานเกาหลี) ลงวันที่ 9 Nov 2026 — ยังไม่มี Expected/Actual (Ji จะแจ้งกำหนดการภายหลัง)
   // และเอกสารไม่ระบุปลายทาง (PO JRS ก่อนหน้านี้ส่งไป Apex) จึงเว้น dest ว่างไว้
-  {id:'s_jp5',vendor:'JRS',nat:'KR',product:'Inner box',po:'01INT-JP26/005',sentMs:Date.UTC(2026,10,9),sent:'09 Nov 2026',expMs:null,exp:null,actMs:null,act:null,dest:'Apex',
+  {id:'s_jp5',vendor:'JRS',nat:'KR',product:'Inner box',po:'01INT-JP26/005',sentMs:Date.UTC(2026,10,9),sent:'09 Nov 2026',expMs:Date.UTC(2026,10,23),exp:'23 Nov 2026',actMs:null,act:null,dest:'Apex',
     items:[{f:'Peppermint',q:20000}],
-    remark:'กล่องใน + ไส้เสียบ NUDE Capsules (งานเกาหลี) กล่อง Duo Burster + Partition ด้านใน Peppermint 20,000 ใบ · 83,460.00 บาท (รวม VAT) · ยังไม่มีวันที่ส่ง — รอ Ji แจ้งกำหนดการ',
+    remark:'กล่องใน + ไส้เสียบ NUDE Capsules (งานเกาหลี) กล่อง Duo Burster + Partition ด้านใน Peppermint 20,000 ใบ · 83,460.00 บาท (รวม VAT) · กำหนดรับประมาณ 23 หรือ 24 Nov 2026 (Ji แจ้ง 12 Nov 2026 — ใช้ 23 Nov เป็นวันกำหนด)',
     detail:'ผู้ขาย: หจก.จรัสแสงการพิมพ์ (2 ซอยเทียนทะเล 15 ถ.บางขุนเทียน-ชายทะเล แขวงแสมดำ เขตบางขุนเทียน กรุงเทพฯ 10150) · วันที่ PO 9 Nov 2026 (ผู้สั่งซื้อลงนาม 9 Nov 2026, ผู้อนุมัติลงนาม 9 Nov 2026) · ใบเสนอราคา QT68-00088 · เงื่อนไขชำระเงิน 60 วัน\n'
       +'รายการ: กล่องใน + ไส้เสียบ NUDE CAPSULES (งานเกาหลี) — กล่อง Duo Burster + Partition ด้านใน - Peppermint 20,000 ใบ × 3.90 บาท = 78,000.00 บาท\n'
       +'รวมก่อน VAT 78,000.00 · VAT 7% 5,460.00 · ยอดรวม 83,460.00 บาท\n'
@@ -1054,7 +1054,7 @@ const APEX_OVERRIDES = [
       {date:'30 Oct 2026', items:[{f:'Honey Lemon',q:15000},{f:'Raspberry',q:15000},{f:'Melon',q:15000}]},
       {date:'16 Nov 2026', items:[{f:'Spearmint',q:20000},{f:'Fusion',q:20000}]},
     ],
-    remark:'PO Nude ตลับ USA สั่งเดิมรวม 395,000 ชิ้น (Peppermint 210,000 / Spearmint 120,000 / Fusion 20,000 / Honey Lemon 15,000 / Raspberry 15,000 / Melon 15,000) — Peppermint 30,000 ของรอบ 30 Oct ย้ายไปใช้กับงานอื่นแล้ว หักออกจากกำหนดส่ง (Ji ยืนยัน 5 Oct 2026) คงเหลือที่ APEX จะส่งตาม PO นี้รวม 365,000 ชิ้น แบ่งส่ง 6 รอบ: 14 Sept 2026 Peppermint 60,000+Spearmint 30,000 (รับแล้ว) · 8 Oct 2026 Peppermint 40,000+Spearmint 10,000 · 14 Oct 2026 Peppermint 50,000+Spearmint 20,000 (เลื่อนเข้าจาก 15 Oct ตามแผนส่งมอบ 13 Oct 2026) · 28 Oct 2026 Peppermint 30,000+Spearmint 40,000 · 30 Oct 2026 Honey Lemon 15,000+Raspberry 15,000+Melon 15,000 · 16 Nov 2026 Spearmint 20,000+Fusion 20,000 (เลื่อนจาก 13 Nov) — จากชีต Customer requisition (23 Sep 2026, กรองเฉพาะแถว 01INT- ตามที่ Ji ขอ)'},
+    remark:'PO Nude ตลับ USA สั่งเดิมรวม 395,000 ชิ้น (Peppermint 210,000 / Spearmint 120,000 / Fusion 20,000 / Honey Lemon 15,000 / Raspberry 15,000 / Melon 15,000) — Peppermint 30,000 ของรอบ 30 Oct ย้ายไปใช้กับงานอื่นแล้ว หักออกจากกำหนดส่ง (Ji ยืนยัน 5 Oct 2026) คงเหลือที่ APEX จะส่งตาม PO นี้รวม 365,000 ชิ้น แบ่งส่ง 6 รอบ: 14 Sept 2026 Peppermint 60,000+Spearmint 30,000 (รับแล้ว) · 8 Oct 2026 Peppermint 40,000+Spearmint 10,000 · 14 Oct 2026 Peppermint 50,000+Spearmint 20,000 (เลื่อนเข้าจาก 15 Oct ตามแผนส่งมอบ 13 Oct 2026) · 28 Oct 2026 Peppermint 30,000+Spearmint 40,000 · 30 Oct 2026 Honey Lemon 15,000+Raspberry 15,000+Melon 15,000 · 16 Nov 2026 Spearmint 20,000+Fusion 20,000 (เลื่อนจาก 13 Nov) — จากชีต Customer requisition (23 Sep 2026, กรองเฉพาะแถว 01INT- ตามที่ Ji ขอ) · 12 Nov 2026: Ji ยืนยันว่ารอบ 28 Oct และ 30 Oct มาแล้วครบ (เหลือรอบ 16 Nov)'},
   // 1 Oct 2026 (รอบสามสิบเจ็ด): Ji แจ้งทางแชทว่า PO 062 เลื่อนจาก 4→6 Nov 2026 จำนวนไม่เปลี่ยน
   // (66,000 ชิ้น/275 ลัง ตรงกับที่ยืนยันไว้แล้วในรอบสามสิบสี่) — ชีตสดยังไม่อัปเดตวันที่ใหม่
   // ตอนเช็ค (1 Oct 2026) จึง override expD ตรงๆ ไปก่อน (46332 = 6 Nov 2026) เผื่อชีต sync
@@ -1110,11 +1110,11 @@ const APEX_OVERRIDES = [
   {apexPO:'PO 060', newEntry:true, nat:'USA', expText:'19 Oct 2026', actD:null, actText:'19 Oct 2026',
     schedItems:[{f:'Spearmint (10-pack)',q:29760},{f:'Spearmint (5-pack)',q:13680}],
     orderItems:[{packType:'10-pack', qty:29760},{packType:'5-pack', qty:13680}],
-    remark:'USA Apex pack full service — NUDE Capsule Mint Spearmint Flavor (10-pack) 29,760 ชิ้น + (5-pack) 13,680 ชิ้น = รวม 43,440 ชิ้น · จากชีต Customer requisition (23 Sep 2026) — ยังไม่เจอใน APX Tracking sheet · 14 Oct 2026: แผนส่งมอบ 13 Oct 2026 เลื่อนส่งจาก 16 Oct เป็น 19 Oct 2026 (จำนวนเท่าเดิม) · 16 Oct 2026: Ji ยืนยันอีกครั้งว่าวันมาส่ง (Actual) เลื่อนเป็น 19 Oct 2026 — ยังไม่มาถึง'},
-  {apexPO:'PO 061', newEntry:true, nat:'USA', expText:'26 Oct 2026',
+    remark:'USA Apex pack full service — NUDE Capsule Mint Spearmint Flavor (10-pack) 29,760 ชิ้น + (5-pack) 13,680 ชิ้น = รวม 43,440 ชิ้น · จากชีต Customer requisition (23 Sep 2026) — ยังไม่เจอใน APX Tracking sheet · 14 Oct 2026: แผนส่งมอบ 13 Oct 2026 เลื่อนส่งจาก 16 Oct เป็น 19 Oct 2026 (จำนวนเท่าเดิม) · 16 Oct 2026: Ji ยืนยันอีกครั้งว่าวันมาส่ง (Actual) เลื่อนเป็น 19 Oct 2026 · 12 Nov 2026: Ji ยืนยันว่ามาแล้ว'},
+  {apexPO:'PO 061', newEntry:true, nat:'USA', expText:'26 Oct 2026', actD:null, actText:'26 Oct 2026', // 12 Nov 2026: Ji ยืนยันมาแล้ว (รถส่งของ 2 รอบ)
     schedItems:[{f:'Spearmint (10-pack)',q:29760},{f:'Spearmint (5-pack)',q:13680}],
     orderItems:[{packType:'10-pack', qty:29760},{packType:'5-pack', qty:13680}],
-    remark:'USA Apex pack full service — NUDE Capsule Mint Spearmint Flavor (10-pack) 29,760 ชิ้น + (5-pack) 13,680 ชิ้น = รวม 43,440 ชิ้น · จากชีต Customer requisition (23 Sep 2026) — ยังไม่เจอใน APX Tracking sheet'},
+    remark:'USA Apex pack full service — NUDE Capsule Mint Spearmint Flavor (10-pack) 29,760 ชิ้น + (5-pack) 13,680 ชิ้น = รวม 43,440 ชิ้น · จากชีต Customer requisition (23 Sep 2026) — ยังไม่เจอใน APX Tracking sheet · 12 Nov 2026: Ji ยืนยันว่ามาแล้ว (ตามกำหนด 26 Oct 2026)'},
   // 14 Oct 2026: PO 064 (USA เฉพาะตลับบรรจุเม็ด) เป็น PO ใหม่ที่เจอในแผนส่งมอบ 13 Oct 2026 — ส่ง 28 Nov 2026
   // Spearmint 50,000 + Raspberry 20,000 + Honey Lemon 10,000 + Melon 15,000 = 95,000 ชิ้น (นับเป็นชิ้นเหมือน PO 054 ตลับ)
   {apexPO:'PO 064', newEntry:true, nat:'USA', schedUnit:'pcs', schedTag:'ตลับ', sentText:'12 Oct 2026',
@@ -1133,20 +1133,35 @@ const APEX_OVERRIDES = [
   // 10 Nov 2026: Ji ส่งไฟล์ PO ตัวจริง 2 ใบใหม่ (APEX PO 066 งานเกาหลี, APEX PO 068 USA เฉพาะตลับ) — ยังไม่มีกำหนดวันส่งที่ยืนยัน
   // ("กำหนดการถ้าได้แล้วจะบอก") จึงยังไม่ใส่ Expected/Actual ไม่ขึ้นในแท็บกำหนดการ — ข้อมูลทั้งหมดจากเอกสารเก็บใน `detail`
   {apexPO:'PO 066', newEntry:true, nat:'KR', sentText:'9 Nov 2026',
+    // 12 Nov 2026: Ji แจ้งกำหนดส่งแน่นอน 4 รอบ (ตรงกับที่ PO ระบุ "กลางเดือน") — ลัง × 240 ชิ้น: 352/448/448/288 ลัง = 84,480/107,520/107,520/69,120 ชิ้น
+    expText:'15 Dec 2026\n15 Jan 2027\n15 Feb 2027\n15 Mar 2027', expD:null, actText:'15 Dec 2026\n15 Jan 2027\n15 Feb 2027\n15 Mar 2027', actD:null,
+    rounds:[
+      {date:'15 Dec 2026', items:[{f:'Peppermint',q:84480}]},
+      {date:'15 Jan 2027', items:[{f:'Peppermint',q:107520}]},
+      {date:'15 Feb 2027', items:[{f:'Peppermint',q:107520}]},
+      {date:'15 Mar 2027', items:[{f:'Peppermint',q:69120}]},
+    ],
     schedItems:[{f:'Peppermint',q:368640}],
     detail:'ลูกค้า: บริษัท เอเพ็กซ์พลาสเทค จำกัด (สำนักงานใหญ่) · เลข PO 01INT-APX26/066 · วันที่ PO 9 Nov 2026 (ผู้สั่งซื้อลงนาม 9 Nov 2026, ผู้อนุมัติลงนาม 10 Nov 2026) · เงื่อนไขชำระเงิน 45 วัน · ใบเสนอราคา Jintan_690402-01\n'
       +'รายการ: NUDE CAPSULE (งานเกาหลี) — Dong-A Duo Burster ตลับลูกอมเกาหลี 30 เม็ด + อะไหล่ USA + แผงรอง 80*140 mm — Peppermint flavor 368,640 ตลับ (1,536 ลัง) × 14.25 บาท = 5,253,120.00 บาท\n'
       +'รวมก่อน VAT 5,253,120.00 · VAT 7% 367,718.40 · ยอดรวม 5,620,838.40 บาท\n'
       +'แบ่งส่งถึงไทยยินตัน (ตาม PO): กลางเดือน Dec 2026 — 352 ลัง · กลางเดือน Jan 2027 — 448 ลัง · กลางเดือน Feb 2027 — 448 ลัง · กลางเดือน Mar 2027 — 288 ลัง (รวม 1,536 ลัง)\n'
       +'หมายเหตุใน PO: 1) ตลับ/แผงรอง/กล่องใน/ลัง งานเกาหลี ใช้แผงรองไม่มีไส้ไฮฟอย ไม่มีปั๊มนูน ใช้ AW เดิม (รบกวนส่ง AW ให้พรูฟก่อนผลิต) 2) บรรจุ 30 เม็ด/ตลับ 3) ชิ้นอะไหล่ Shutter USA แบบใหม่ 4) แบ่งส่งถึงไทยยินตัน',
-    remark:'งานเกาหลี Nude Capsule Peppermint (Dong-A Duo Burster 30 เม็ด) 368,640 ตลับ = 1,536 ลัง · 5,620,838.40 บาท (รวม VAT) · PO ระบุแบ่งส่งถึงไทยยินตัน: กลาง Dec 2026 = 352 ลัง / กลาง Jan 2027 = 448 ลัง / กลาง Feb 2027 = 448 ลัง / กลาง Mar 2027 = 288 ลัง · ยังไม่มีวันที่ส่งแน่นอน — รอ Ji แจ้งกำหนดการ (10 Nov 2026)'},
+    remark:'งานเกาหลี Nude Capsule Peppermint (Dong-A Duo Burster 30 เม็ด) 368,640 ตลับ = 1,536 ลัง · 5,620,838.40 บาท (รวม VAT) · PO ระบุแบ่งส่งถึงไทยยินตัน 4 รอบ (กลางเดือน) · 12 Nov 2026: Ji ยืนยันกำหนดส่ง 15 Dec 2026 (352 ลัง) / 15 Jan 2027 (448) / 15 Feb 2027 (448) / 15 Mar 2027 (288) รวม 1,536 ลัง'},
   {apexPO:'PO 068', newEntry:true, nat:'USA', schedUnit:'pcs', schedTag:'ตลับ', sentText:'9 Nov 2026',
+    // 12 Nov 2026: Ji แจ้งกำหนดส่ง 3 รอบ — 4 Dec 30,000 / 9 Dec 30,000 / 11 Dec 40,000 ตลับ (รวม 100,000)
+    expText:'4 Dec 2026\n9 Dec 2026\n11 Dec 2026', expD:null, actText:'4 Dec 2026\n9 Dec 2026\n11 Dec 2026', actD:null,
+    rounds:[
+      {date:'4 Dec 2026', items:[{f:'Spearmint',q:30000}]},
+      {date:'9 Dec 2026', items:[{f:'Spearmint',q:30000}]},
+      {date:'11 Dec 2026', items:[{f:'Spearmint',q:40000}]},
+    ],
     schedItems:[{f:'Spearmint',q:100000}],
     detail:'ลูกค้า: บริษัท เอเพ็กซ์พลาสเทค จำกัด (สำนักงานใหญ่) · เลข PO 01INT-APX26/068 · วันที่ PO 9 Nov 2026 (ผู้สั่งซื้อและผู้อนุมัติลงนาม 9 Nov 2026) · เงื่อนไขชำระเงิน 45 วัน · ใบเสนอราคา Jintan_690402-01\n'
       +'รายการ: NUDE CAPSULE (เฉพาะตลับ USA แบบใหม่ — ชิ้นอะไหล่ใหม่ — Screen padding ใหม่ 2025) — Spearmint Flavor 100,000 ตลับ × 8.40 บาท = 840,000.00 บาท\n'
       +'รวมก่อน VAT 840,000.00 · VAT 7% 58,800.00 · ยอดรวม 898,800.00 บาท\n'
       +'หมายเหตุใน PO: 1) ชิ้นอะไหล่ shutter ใหม่ 2) Padding แบบ stacked logo ใหม่ ปี 2025 3) Padding สีน้ำเงิน เป็นลูกศร "ซีล็อ" 4) บรรจุเม็ดอม 30 เม็ด ไม่เอาแผงรอง ใส่บรรจุถุง 1/1',
-    remark:'USA เฉพาะตลับบรรจุเม็ด (ตลับ) Spearmint 100,000 ชิ้น · 898,800.00 บาท (รวม VAT) · ยังไม่มีวันที่ส่ง — รอ Ji แจ้งกำหนดการ (10 Nov 2026)'},
+    remark:'USA เฉพาะตลับบรรจุเม็ด (ตลับ) Spearmint 100,000 ชิ้น · 898,800.00 บาท (รวม VAT) · 12 Nov 2026: Ji ยืนยันกำหนดส่ง 4 Dec 2026 (30,000) / 9 Dec 2026 (30,000) / 11 Dec 2026 (40,000)'},
   // 11 Nov 2026: Ji ส่งไฟล์ PO ตัวจริง APEX PO 067 (USA APEX Full service — Spearmint 10-pack) ลงวันที่ 9 Nov 2026 — ยังไม่มีกำหนดวันส่ง
   // ("กำหนดการถ้าได้แล้วจะบอก") จึงไม่ใส่ Expected/Actual ไม่ขึ้นแท็บกำหนดการ · ไม่ใส่ orderItems (ยังไม่ได้เริ่มเช็ควัสดุแพ็คของ PO นี้)
   {apexPO:'PO 067', newEntry:true, nat:'USA', sentText:'9 Nov 2026',
@@ -1155,7 +1170,7 @@ const APEX_OVERRIDES = [
       +'รายการ: NUDE CAPSULE (USA APEX Full service) — Spearmint (10-pack) 900 ลัง = 216,000 ตลับ × 9.15 บาท = 1,976,400.00 บาท\n'
       +'รวมก่อน VAT 1,976,400.00 · VAT 7% 138,348.00 · ยอดรวม 2,114,748.00 บาท\n'
       +'หมายเหตุใน PO: 1) ชิ้นอะไหล่ shutter ใหม่ 2) Padding แบบ stacked logo ใหม่ ปี 2025 3) Padding สีน้ำเงิน เป็นลูกศร "ซีล็อ" 4) บรรจุเม็ดอม 30 เม็ด ไม่เอาแผงรอง ใส่บรรจุถุง 1/1 5) ส่งไทยยินตัน',
-    remark:'USA APEX Full service — NUDE Capsule Spearmint (10-pack) 216,000 ชิ้น = 900 ลัง · 2,114,748.00 บาท (รวม VAT) · ยังไม่มีวันที่ส่ง — รอ Ji แจ้งกำหนดการ (11 Nov 2026)'},
+    remark:'USA APEX Full service — NUDE Capsule Spearmint (10-pack) 216,000 ชิ้น = 900 ลัง · 2,114,748.00 บาท (รวม VAT) · ยังไม่มีวันที่ส่ง — รอ APEX แจ้งกำหนดส่ง (Ji 12 Nov 2026) · ตามสัดส่วน 10-pack: 1 ลัง = 24 กล่องใน = 240 ชิ้น → 900 ลัง = 21,600 กล่องใน · (5-pack: 1 ลัง = 48 กล่องใน = 240 ชิ้น) · วัสดุที่ Ji ส่งให้ APEX บันทึกแค่ว่าส่งอะไรเท่าไหร่ ไม่ต้องเช็คยอดขั้นต่ำ'},
 ];
 // APEX_MATERIALS_LOG — บันทึกวัสดุแพ็ค (ซอง/กล่องใน/กล่องนอก) ที่ส่งให้ APEX ต่อ PO
 // (23 Sep 2026, แก้ตามที่ Ji ขอ 23 Sep 2026 รอบสอง: "ฉันส่งตัวเลขให้คุณอย่างเดียวแล้วคุณทำ
@@ -3084,14 +3099,18 @@ function krIncomingBannerHtml(){
 function krReadinessHtml(){
   const need=[];
   APEX_POS.filter(p=>p.nat==='KR' && !p.cancelled && !apexStatus(p).done && Array.isArray(p.schedItems) && p.schedItems.length).forEach(p=>{
+    const rs=apexRoundsSummary(p); // มี rounds → ใช้ยอดที่ยังไม่ถึงกำหนดส่ง (คงเหลือ) แทนยอดสั่งทั้งหมด
     p.schedItems.forEach(it=>{
       const fl=String(it.f||'').split(' ')[0];
       if(!D.kr.find(x=>x.flavor===fl)) return;
-      need.push({po:p.apexPO, flavor:fl, type:'Inner box', label:'กล่องใน', qty:Math.ceil(it.q/IPU)});
-      need.push({po:p.apexPO, flavor:fl, type:'Carton', label:'ลัง', qty:Math.ceil(it.q/(IPU*IPC))});
+      const t = rs && rs.totalsByFlavor[it.f];
+      const pcs = t ? (t.ordered-t.shipped) : it.q;
+      if(pcs<=0) return;
+      need.push({po:p.apexPO, flavor:fl, type:'Inner box', label:'กล่องใน', qty:Math.ceil(pcs/IPU)});
+      need.push({po:p.apexPO, flavor:fl, type:'Carton', label:'ลัง', qty:Math.ceil(pcs/(IPU*IPC))});
     });
   });
-  KR_TRAY_PENDING.forEach(d=>need.push({po:d.apexPO, flavor:d.flavor, type:'Tray', label:'แผงรอง '+d.flavor.split(' · ')[1]+' (สมมติ)', qty:d.qty, tray:true}));
+  KR_TRAY_PENDING.forEach(d=>need.push({po:d.apexPO, flavor:d.flavor, type:'Tray', label:'แผงรอง '+d.flavor.split(' · ')[1], qty:d.qty, tray:true}));
   if(!need.length) return '';
   const rows=need.map(n=>{
     const r=D.kr.find(x=>x.flavor===n.flavor && x.type===n.type);
@@ -3103,7 +3122,7 @@ function krReadinessHtml(){
   }).join('');
   return `<div style="margin:10px 14px 0"><div style="font-size:12px;font-weight:700;color:#34495e;margin-bottom:4px">ความพร้อมสำหรับงานที่เปิดอยู่ (ต้องใช้ เทียบกับ มีอยู่ + รอรับ)</div>
     <div class="tw"><table class="fit"><thead><tr><th>PO</th><th>รายการ</th><th>ต้องใช้</th><th>มีอยู่</th><th>รอรับ</th><th>พร้อมใช้รวม</th><th>ผล</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <div style="font-size:11px;color:#8fa3b0;margin:4px 0 8px">กล่องใน = 20 ชิ้น/กล่อง · ลัง = 12 กล่องใน (240 ชิ้น) · แผงรองสมมติ 1 แผงต่อ 1 ตลับ ลาย Standard — ยังไม่ได้รับยืนยัน (ติดลบได้ก่อน)</div></div>`;
+    <div style="font-size:11px;color:#8fa3b0;margin:4px 0 8px">กล่องใน = 20 ชิ้น/กล่อง · ลัง = 12 กล่องใน (240 ชิ้น) · แผงรอง PO 066: ลาย Standard 1 แผงต่อ 1 ตลับ (Ji ยืนยัน 12 Nov 2026) · ติดลบได้ก่อน</div></div>`;
 }
 function krSummaryHtml(){
   const find=(flavor,type)=>D.kr.find(x=>x.flavor===flavor && x.type===type);
@@ -3799,7 +3818,7 @@ function schedBuild(){
     const isCarton=p.product==='Carton';
     const items=(p.items||[]).filter(i=>i.f&&i.q);
     groups.push({kind:'supplier',p,po:p.po,nat:p.nat||'',unit:p.schedUnit==='pcs'?'pcs':'box',ms,dateKind:p.actMs!=null?'Actual':'Expected',
-      source:`${p.vendor} · ${isCarton?'กล่องลังเปล่า':p.product}`,
+      source:`${p.vendor} · ${isCarton?'กล่องลังเปล่า':p.product}${/apex/i.test(p.dest||'')?' → ส่งที่ APEX (ไม่เข้าโกดัง)':''}`,
       lines:items.length?items.map(i=>({name:(isCarton?'กล่องลัง ':'')+i.f,pcs:i.q})):[{name:p.product||'—',pcs:0,noQty:true}]});
   });
   groups.sort((a,b)=>a.ms-b.ms || (a.kind===b.kind?0:(a.kind==='apex'?-1:1)) || a.source.localeCompare(b.source));
