@@ -883,7 +883,7 @@ const DEF_POS = [
   // schedUnit:'pcs' = สติ๊กเกอร์นับเป็นชิ้น (ไม่ใช่ "ใบ" แบบกล่อง) ในแท็บกำหนดการ
   // 10 Nov 2026: Ji ส่งไฟล์ PO ตัวจริง 01INT-JP26/005 (จรัสแสง JRS, งานเกาหลี) ลงวันที่ 9 Nov 2026 — ยังไม่มี Expected/Actual (Ji จะแจ้งกำหนดการภายหลัง)
   // และเอกสารไม่ระบุปลายทาง (PO JRS ก่อนหน้านี้ส่งไป Apex) จึงเว้น dest ว่างไว้
-  {id:'s_jp5',vendor:'JRS',nat:'KR',product:'Inner box',po:'01INT-JP26/005',sentMs:Date.UTC(2026,10,9),sent:'09 Nov 2026',expMs:null,exp:null,actMs:null,act:null,dest:'',
+  {id:'s_jp5',vendor:'JRS',nat:'KR',product:'Inner box',po:'01INT-JP26/005',sentMs:Date.UTC(2026,10,9),sent:'09 Nov 2026',expMs:null,exp:null,actMs:null,act:null,dest:'Apex',
     items:[{f:'Peppermint',q:20000}],
     remark:'กล่องใน + ไส้เสียบ NUDE Capsules (งานเกาหลี) กล่อง Duo Burster + Partition ด้านใน Peppermint 20,000 ใบ · 83,460.00 บาท (รวม VAT) · ยังไม่มีวันที่ส่ง — รอ Ji แจ้งกำหนดการ',
     detail:'ผู้ขาย: หจก.จรัสแสงการพิมพ์ (2 ซอยเทียนทะเล 15 ถ.บางขุนเทียน-ชายทะเล แขวงแสมดำ เขตบางขุนเทียน กรุงเทพฯ 10150) · วันที่ PO 9 Nov 2026 (ผู้สั่งซื้อลงนาม 9 Nov 2026, ผู้อนุมัติลงนาม 9 Nov 2026) · ใบเสนอราคา QT68-00088 · เงื่อนไขชำระเงิน 60 วัน\n'
@@ -3052,6 +3052,59 @@ function pageMarket(mktId, title, sub, data, key){
 // ─── KR PAGE ─────────────────────────────────────────────────────────────
 const KR_TYPE_LABEL = {Tray:'แผงรอง (Tray)'};
 // 12 Nov 2026: การ์ดสรุป "สต็อกงานเกาหลีที่ APEX" อ่านง่าย (รส × แผงรองแต่ละลาย / กล่องใน / ลัง) + รายการที่ยังไม่ตรงรอ Ji ยืนยัน
+// 12 Nov 2026: Ji ขอ "เวลาสั่งของแล้วมี PO จากจรัสแสงหรือเปเปอร์แพ็ค ให้แจ้งในหน้าสต็อกด้วยว่าเพิ่มมาแล้วเท่าไหร่ จะได้เห็นจำนวนที่ควรเป็น/พร้อมทำงานไหม"
+// — PO ผู้ขายงานเกาหลี (KR) ที่ยังไม่ได้รับ: JRS = กล่องใน (Inner box), PPP = ลัง (Carton) · สต็อกเกาหลีทั้งหมดอยู่ที่ APEX จึงนับทุก PO KR ที่ยังไม่รับ (dest ว่างก็นับ)
+// ⚠️ PO ใหม่ของ JRS/PPP งานเกาหลีต้องมี nat:'KR' + items (จำนวนต่อรส) ถึงจะขึ้นหน้าสต็อก
+function krIncomingPOs(){
+  return D.pos.filter(p=>p.nat==='KR' && (p.vendor==='JRS'||p.vendor==='PPP') && !poArrived(p));
+}
+function krIncoming(type, flavor){
+  const want = type==='Inner box' ? 'JRS' : (type==='Carton' ? 'PPP' : null);
+  if(!want) return {qty:0, list:[], unknown:[]};
+  const list=[], unknown=[];
+  krIncomingPOs().filter(p=>p.vendor===want).forEach(p=>{
+    const its=(p.items||[]).filter(i=>i.f&&i.q);
+    if(!its.length){ unknown.push(p); return; }
+    its.filter(i=>i.f===flavor).forEach(i=>list.push({po:p.po,vendor:p.vendor,qty:i.q,exp:p.exp||null,sent:p.sent||null}));
+  });
+  return {qty:list.reduce((a,x)=>a+x.qty,0), list, unknown};
+}
+function krIncomingBannerHtml(){
+  const rows=[];
+  krIncomingPOs().forEach(p=>{
+    const unit = p.vendor==='JRS' ? 'กล่องใน' : 'ลัง';
+    const its=(p.items||[]).filter(i=>i.f&&i.q);
+    const what = its.length ? its.map(i=>`${i.f} <b>+${f(i.q)}</b>`).join(' · ') : '<span style="color:#a52a2a">ยังไม่มีจำนวนต่อรสในระบบ</span>';
+    rows.push(`<div style="margin-bottom:4px">📬 <b>${p.vendor}</b> ${p.po} · ${unit}: ${what} · ${p.exp?'Expected '+p.exp:'ยังไม่มีวันที่ส่ง'}${p.sent?' · สั่งเมื่อ '+p.sent:''}</div>`);
+  });
+  if(!rows.length) return '';
+  return `<div style="margin:10px 14px 0;padding:9px 12px;background:#e8f1fb;border:1px solid #b9d3ee;border-radius:8px;font-size:12px;line-height:1.55;color:#1d4a7a"><div style="font-weight:700;margin-bottom:4px">เตรียมเติมของ — PO ที่สั่งแล้ว ยังไม่ได้รับ (จำนวนนี้รวมใน "พร้อมใช้" ในตารางด้านบนแล้ว)</div>${rows.join('')}</div>`;
+}
+// ความพร้อมของงาน APEX เกาหลีที่ยังเปิดอยู่ (เช่น PO 066): ต้องใช้เท่าไหร่ vs มี + รอรับ — กล่องใน = ชิ้น÷IPU, ลัง = ชิ้น÷(IPU×IPC), แผงรองตาม KR_TRAY_PENDING (สมมติ)
+function krReadinessHtml(){
+  const need=[];
+  APEX_POS.filter(p=>p.nat==='KR' && !p.cancelled && !apexStatus(p).done && Array.isArray(p.schedItems) && p.schedItems.length).forEach(p=>{
+    p.schedItems.forEach(it=>{
+      const fl=String(it.f||'').split(' ')[0];
+      if(!D.kr.find(x=>x.flavor===fl)) return;
+      need.push({po:p.apexPO, flavor:fl, type:'Inner box', label:'กล่องใน', qty:Math.ceil(it.q/IPU)});
+      need.push({po:p.apexPO, flavor:fl, type:'Carton', label:'ลัง', qty:Math.ceil(it.q/(IPU*IPC))});
+    });
+  });
+  KR_TRAY_PENDING.forEach(d=>need.push({po:d.apexPO, flavor:d.flavor, type:'Tray', label:'แผงรอง '+d.flavor.split(' · ')[1]+' (สมมติ)', qty:d.qty, tray:true}));
+  if(!need.length) return '';
+  const rows=need.map(n=>{
+    const r=D.kr.find(x=>x.flavor===n.flavor && x.type===n.type);
+    const have=r?((r.apex||0)+(r.newQty||0)):0;
+    const inc=n.tray?0:krIncoming(n.type, n.flavor).qty;
+    const ready=have+inc, left=ready-n.qty;
+    const base=n.tray?n.flavor.split(' · ')[0]:n.flavor;
+    return `<tr><td>${n.po}</td><td>${base} · ${n.label}</td><td class="n">${f(n.qty)}</td><td class="n">${f(have)}</td><td class="n">${inc?'<span style="color:#1d4a7a">+'+f(inc)+'</span>':'—'}</td><td class="n"><b>${f(ready)}</b></td><td class="n" style="font-weight:700;color:${left<0?'#a52a2a':'#1b6e3a'}">${left<0?'ขาด '+f(-left):'✓ พอ (เหลือ '+f(left)+')'}</td></tr>`;
+  }).join('');
+  return `<div style="margin:10px 14px 0"><div style="font-size:12px;font-weight:700;color:#34495e;margin-bottom:4px">ความพร้อมสำหรับงานที่เปิดอยู่ (ต้องใช้ เทียบกับ มีอยู่ + รอรับ)</div>
+    <div class="tw"><table class="fit"><thead><tr><th>PO</th><th>รายการ</th><th>ต้องใช้</th><th>มีอยู่</th><th>รอรับ</th><th>พร้อมใช้รวม</th><th>ผล</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div style="font-size:11px;color:#8fa3b0;margin:4px 0 8px">กล่องใน = 20 ชิ้น/กล่อง · ลัง = 12 กล่องใน (240 ชิ้น) · แผงรองสมมติ 1 แผงต่อ 1 ตลับ ลาย Standard — ยังไม่ได้รับยืนยัน (ติดลบได้ก่อน)</div></div>`;
+}
 function krSummaryHtml(){
   const find=(flavor,type)=>D.kr.find(x=>x.flavor===flavor && x.type===type);
   // 1 ช่อง = 1 รายการสต็อก (ของทั้งหมดอยู่ที่ APEX — ไม่แยกสต็อก/ไม่แยกการ์ด) กดช่องเพื่อดูประวัติ
@@ -3062,9 +3115,11 @@ function krSummaryHtml(){
     const isTray=type==='Tray', isCarton=type==='Carton';
     const pend = isTray ? krTrayPendingTotal(r.flavor) : (isCarton ? pendingCartonTotal('kr', r.flavor) : pendingInnerTotal('kr', r.flavor));
     const tip = isTray ? krTrayPending(r.flavor).map(d=>`${d.apexPO}: ${f(d.qty)} แผง (${d.note})`).join('\n') : pendingTooltip('kr', r.flavor);
-    const after = total-pend;
+    const inc = krIncoming(type, r.flavor);
+    const incHtml = (inc.qty||inc.unknown.length) ? `<div style="font-size:10.5px;color:#1d4a7a;white-space:nowrap" title="${inc.list.map(x=>x.po+': +'+f(x.qty)).join('\n')}">${inc.qty?'+'+(isCarton?fc(inc.qty):f(inc.qty))+' รอรับ ('+inc.list.map(x=>x.vendor).filter((v,i,a)=>a.indexOf(v)===i).join('/')+')':'มี PO รอรับ (ไม่ทราบจำนวน)'}</div>${inc.qty?`<div style="font-size:10.5px;font-weight:700;color:#1b6e3a;white-space:nowrap">พร้อมใช้ ${isCarton?fc(total+inc.qty):f(total+inc.qty)}</div>`:''}` : '';
+    const after = total+inc.qty-pend;
     const pendHtml = pend ? `<div style="font-size:10.5px;font-weight:600;color:${after<0?'#a52a2a':'#8a6d1a'};white-space:nowrap" title="${tip.replace(/"/g,'&quot;')}">เตรียมตัด −${isCarton?fc(pend):f(pend)} → ${isCarton?fc(after):f(after)}</div>` : '';
-    return `<td class="n" style="cursor:pointer" onclick="showKRSheet(null,${JSON.stringify(r).replace(/"/g,'&quot;')},'${type}')"><b class="${total<0?'nn':''}">${isCarton?fc(total):f(total)}</b>${pendHtml}</td>`;
+    return `<td class="n" style="cursor:pointer" onclick="showKRSheet(null,${JSON.stringify(r).replace(/"/g,'&quot;')},'${type}')"><b class="${total<0?'nn':''}">${isCarton?fc(total):f(total)}</b>${incHtml}${pendHtml}</td>`;
   };
   const rows=['Peppermint','Spearmint'].map(fl=>`<tr>
     <td><strong>${fl}</strong></td>
@@ -3078,7 +3133,7 @@ function krSummaryHtml(){
   return `<div class="card"><div class="card-head" onclick="toggleCard(this)"><span class="cht">สต็อกงานเกาหลี — ทั้งหมดอยู่ที่ APEX<span class="clickhint">(กดเพื่อพับ/ขยาย)</span></span><span class="chm">ตามรายงาน APEX · Ji แจ้ง 12 Nov 2026<span class="chev">▾</span></span></div>
     <div class="card-body"><div class="hint">แผงรอง = แผง · กล่องใน = กล่อง · ลัง = ลัง · กดตัวเลขเพื่อดูประวัติ · ตัวเลขอัปเดตตามการตัดสต็อกที่ทำหลังจากนี้</div>
     <div class="tw"><table class="fit"><thead><tr><th>รสชาติ</th><th>แผงรอง Anpanman</th><th>แผงรอง Pikachu</th><th>แผงรอง Standard</th><th>กล่องใน</th><th>ลัง</th></tr></thead><tbody>${rows}</tbody></table></div>
-    ${trayNeed}${notes}</div></div>`;
+    ${krIncomingBannerHtml()}${krReadinessHtml()}${notes}</div></div>`;
 }
 // ─── KR PAGE ─────────────────────────────────────────────────────────────
 // 12 Nov 2026: Ji สั่ง "สต็อกงานเกาหลีทั้งหมดอยู่ที่ APEX ไม่ต้องทำแยกสต็อก" → รวมเป็นตารางเดียว (รส × แผงรอง 3 ลาย / กล่องใน / ลัง) ไม่มีการ์ดแยก Inner box/Carton/Tray
