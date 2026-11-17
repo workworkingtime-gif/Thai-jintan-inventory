@@ -867,6 +867,13 @@ const DEF_POS = [
   // เพิ่มเติมแค่ "วันที่ส่ง PO" ที่เอกสารระบุชัดเจนว่า 22 Sep 2026 (ช่องนี้เคยว่างเพราะชีตสด
   // ไม่มีคอลัมน์นี้ให้บล็อก PPP) — ไม่กระทบ Expected/Actual ที่ sync จากชีตเหมือนเดิม
   {id:'s16',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/009',sentMs:Date.UTC(2026,8,22),sent:'22 Sep 2026',expMs:Date.UTC(2026,9,8),exp:'08 Oct 2026',actMs:null,act:null,dest:'Thai Jintan',items:[{f:'Peppermint',q:800},{f:'Spearmint',q:1000},{f:'Fusion',q:200}],remark:'กล่องลัง USA; Peppermint 800 Spearmint 1000 Fusion 200 · ยืนยันจากไฟล์ PO ตัวจริง 01INT-PPP26/009 ลงวันที่ 22 Sep 2026 (เงื่อนไขชำระเงิน 30 วัน) · USA ไม่มีตารางสต็อกแยกในแดชบอร์ด — มาร์คสถานะ + รายละเอียดไว้ใน Remark เท่านั้น ไม่กระทบตัวเลข apex/Thai Jintan ของตลาดไหนเลย'},
+  // 12 Nov 2026: Ji ส่งไฟล์ PO ตัวจริง 01INT-PPP26/010 (PPP เปเปอร์แพค, งาน USA) ลงวันที่ 11 Nov 2026 — ใบเสนอราคา Q.2606012, ชำระ 30 วัน, ไม่มี Due date
+  // ยังไม่มีกำหนดส่ง/Expected (รอ Ji แจ้ง ห้ามเดา) · เอกสารไม่ระบุปลายทาง ใช้ Thai Jintan เหมือน PPP งาน USA ก่อนหน้า
+  {id:'s_ppp10',vendor:'PPP',nat:'USA',product:'Carton',po:'01INT-PPP26/010',sentMs:Date.UTC(2026,10,11),sent:'11 Nov 2026',expMs:null,exp:null,actMs:null,act:null,dest:'Thai Jintan',items:[{f:'Peppermint',q:1500},{f:'Spearmint',q:1500},{f:'Berries',q:100},{f:'Honey lemon',q:100}],remark:'กล่องลัง USA (NUDE MINTS); Peppermint 1,500 Spearmint 1,500 Berries 100 Honey Lemon 100 · เปิด PO 11 Nov 2026 · ยังไม่มีกำหนดส่ง (รอ Ji แจ้ง) · USA ไม่มีตารางสต็อกแยกในแดชบอร์ด',
+    detail:'ผู้ขาย: บริษัท เปเปอร์แพค จำกัด · วันที่ PO 11 Nov 2026 (ผู้สั่งซื้อลงนาม 11 Nov 2026) · ใบเสนอราคา Q.2606012 · เงื่อนไขชำระ 30 วัน\n'
+      +'รายการ (NUDE MINTS งาน USA) ราคา 19.00 บาท/ใบ: Nude Capsule Peppermint 1,500 ใบ = 28,500.00 · Spearmint 1,500 ใบ = 28,500.00 · Berries 100 ใบ = 1,900.00 · Honey Lemon 100 ใบ = 1,900.00\n'
+      +'รวมก่อน VAT 60,800.00 · VAT 7% 4,256.00 · ยอดรวม 65,056.00 บาท (รวม 3,200 ใบ)\n'
+      +'หมายเหตุใน PO: 1) กล่องลังงาน US artwork ใหม่ (9 Jan 2025) · 2) ขนาดลัง W 11.875 x L 12.25 x H 9.25 cm. (ตามที่พิมพ์ในใบ) · 3) เสปคกระดาษแบบงานไทย (KI 125 / M 125 / M 125)'},
   // 15 Oct 2026: Ji ส่งสกรีนช็อตชีต Supplier — มี Supplier ใหม่ "TCM" PO แรก 01INT-TCM26/001 (USA, สินค้า Box)
   // Nude Walmart กล่องฝาชน ขนาด 8.25 x 8.75 x 4.75 นิ้ว 1,350 ใบ ยังไม่มี Expected/Actual/วันส่งในชีต (ว่างทั้งหมด)
   // จึงยังไม่ขึ้นในแท็บกำหนดการ/ปฏิทิน — พอชีตมีวันที่ sync สดจะเติมให้เอง (เพิ่ม TCM ใน syncSupplierPOs แล้ว)
