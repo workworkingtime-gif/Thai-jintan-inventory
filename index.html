@@ -897,9 +897,9 @@ const DEF_POS = [
   // schedUnit:'pcs' = สติ๊กเกอร์นับเป็นชิ้น (ไม่ใช่ "ใบ" แบบกล่อง) ในแท็บกำหนดการ
   // 10 Nov 2026: Ji ส่งไฟล์ PO ตัวจริง 01INT-JP26/005 (จรัสแสง JRS, งานเกาหลี) ลงวันที่ 9 Nov 2026 — ยังไม่มี Expected/Actual (Ji จะแจ้งกำหนดการภายหลัง)
   // และเอกสารไม่ระบุปลายทาง (PO JRS ก่อนหน้านี้ส่งไป Apex) จึงเว้น dest ว่างไว้
-  {id:'s_jp5',vendor:'JRS',nat:'KR',product:'Inner box',po:'01INT-JP26/005',sentMs:Date.UTC(2026,10,9),sent:'09 Nov 2026',expMs:Date.UTC(2026,10,23),exp:'23 Nov 2026',actMs:null,act:null,dest:'Apex',
+  {id:'s_jp5',vendor:'JRS',nat:'KR',product:'Inner box',po:'01INT-JP26/005',sentMs:Date.UTC(2026,10,9),sent:'09 Nov 2026',expMs:Date.UTC(2026,10,25),exp:'25 Nov 2026',actMs:null,act:null,dest:'Apex',
     items:[{f:'Peppermint',q:20000}],
-    remark:'กล่องใน + ไส้เสียบ NUDE Capsules (งานเกาหลี) กล่อง Duo Burster + Partition ด้านใน Peppermint 20,000 ใบ · 83,460.00 บาท (รวม VAT) · กำหนดรับประมาณ 23 หรือ 24 Nov 2026 (Ji แจ้ง 12 Nov 2026 — ใช้ 23 Nov เป็นวันกำหนด)',
+    remark:'กล่องใน + ไส้เสียบ NUDE Capsules (งานเกาหลี) กล่อง Duo Burster + Partition ด้านใน Peppermint 20,000 ใบ · 83,460.00 บาท (รวม VAT) · กำหนดรับ 25 Nov 2026 (Ji แจ้ง 17 Nov 2026 — เลื่อนจากเดิมประมาณ 23–24 Nov)',
     detail:'ผู้ขาย: หจก.จรัสแสงการพิมพ์ (2 ซอยเทียนทะเล 15 ถ.บางขุนเทียน-ชายทะเล แขวงแสมดำ เขตบางขุนเทียน กรุงเทพฯ 10150) · วันที่ PO 9 Nov 2026 (ผู้สั่งซื้อลงนาม 9 Nov 2026, ผู้อนุมัติลงนาม 9 Nov 2026) · ใบเสนอราคา QT68-00088 · เงื่อนไขชำระเงิน 60 วัน\n'
       +'รายการ: กล่องใน + ไส้เสียบ NUDE CAPSULES (งานเกาหลี) — กล่อง Duo Burster + Partition ด้านใน - Peppermint 20,000 ใบ × 3.90 บาท = 78,000.00 บาท\n'
       +'รวมก่อน VAT 78,000.00 · VAT 7% 5,460.00 · ยอดรวม 83,460.00 บาท\n'
